@@ -1,0 +1,8 @@
+# Klonede team-repos (forvaltes i sine egne repos)
+repos/
+
+# OS og editor
+.DS_Store
+.idea/
+*.iml
+.vscode/
