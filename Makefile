@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps release-frontend-config multi-commit push-all pr-all apply-ruleset
+.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps migrate-frontend-config release-frontend-config multi-commit push-all pr-all apply-ruleset
 
 ##@ Hjelp
 
@@ -300,6 +300,10 @@ update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalo
 	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
 	@python3 scripts/update-frontend-deps.py
 
+migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos â€” lager PR per repo
+	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
+	@python3 scripts/migrate-frontend-config.py
+
 release-frontend-config: ## Publiser ny versjon av frontend-config  â€” bruk: make release-frontend-config VERSION=1.1.0
 ifndef VERSION
 	$(error VERSION mangler. Bruk: make release-frontend-config VERSION=1.1.0)
@@ -323,7 +327,7 @@ update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos â€
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
 	  for npmrc in $$(find "$$dir" -name ".npmrc" -not -path "*/node_modules/*" 2>/dev/null); do \
-	    relpath=$${npmrc#$$dir/}; \
+	    relpath=$$(echo "$$npmrc" | sed "s|^$$dir/||"); \
 	    needs=0; \
 	    grep -q "ignore-scripts=true" "$$npmrc" || needs=1; \
 	    grep -q "min-release-age=7d" "$$npmrc" || needs=1; \
@@ -340,7 +344,7 @@ update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos â€
 	      [ -d "$$dir" ] || continue; \
 	      changed=0; \
 	      for npmrc in $$(find "$$dir" -name ".npmrc" -not -path "*/node_modules/*" 2>/dev/null); do \
-	        relpath=$${npmrc#$$dir/}; \
+	        relpath=$$(echo "$$npmrc" | sed "s|^$$dir/||"); \
 	        needs=0; \
 	        grep -q "ignore-scripts=true" "$$npmrc" || needs=1; \
 	        grep -q "min-release-age=7d" "$$npmrc" || needs=1; \
