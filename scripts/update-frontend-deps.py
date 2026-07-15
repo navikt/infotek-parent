@@ -24,6 +24,21 @@ def run(cmd, cwd=None, check=True):
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env)
 
 
+def run_streaming(cmd, cwd=None):
+    """Run command and stream stdout+stderr line by line. Returns exit code."""
+    env = os.environ.copy()
+    env["NODE_NO_WARNINGS"] = "1"
+    proc = subprocess.Popen(
+        cmd, cwd=cwd, env=env,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, bufsize=1,
+    )
+    for line in proc.stdout:
+        print(f"     {line}", end="", flush=True)
+    proc.wait()
+    return proc.returncode
+
+
 def load_catalog():
     data = json.loads(CATALOG_PATH.read_text())
     catalog = {}
@@ -123,9 +138,9 @@ def main():
             # Run pnpm install in the same directory as package.json to update lockfile
             pkg_dir = pkg_path.parent
             print(f"  ⏳ pnpm install i {pkg_dir.relative_to(repo_dir)}...")
-            install = run(["pnpm", "install", "--no-frozen-lockfile"], cwd=pkg_dir, check=False)
-            if install.returncode != 0:
-                print(f"  ⚠️  pnpm install feilet:\n{install.stderr[:500]}")
+            rc = run_streaming(["pnpm", "install", "--no-frozen-lockfile"], cwd=pkg_dir)
+            if rc != 0:
+                print(f"  ⚠️  pnpm install feilet")
 
         run(["git", "add", "-A"], cwd=repo_dir)
 

@@ -71,6 +71,21 @@ def run(cmd, cwd=None, check=True):
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env)
 
 
+def run_streaming(cmd, cwd=None):
+    """Run command and stream stdout+stderr line by line. Returns exit code."""
+    env = os.environ.copy()
+    env["NODE_NO_WARNINGS"] = "1"
+    proc = subprocess.Popen(
+        cmd, cwd=cwd, env=env,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, bufsize=1,
+    )
+    for line in proc.stdout:
+        print(f"     {line}", end="", flush=True)
+    proc.wait()
+    return proc.returncode
+
+
 def write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
@@ -221,10 +236,9 @@ def main():
 
         if changed:
             print(f"  ⏳ pnpm install...")
-            run(
-                ["pnpm", "install", "--no-frozen-lockfile"],
-                cwd=frontend_dir, check=False,
-            )
+            rc = run_streaming(["pnpm", "install", "--no-frozen-lockfile"], cwd=frontend_dir)
+            if rc != 0:
+                print(f"  ⚠️  pnpm install feilet")
 
     if not changed:
         print("  ⏭  Ingen infotek-konfig funnet i repoet")

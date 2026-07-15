@@ -233,6 +233,21 @@ def run(cmd, cwd=None, check=True, capture=True):
     )
 
 
+def run_streaming(cmd, cwd=None):
+    """Run command and stream stdout+stderr line by line. Returns exit code."""
+    env = os.environ.copy()
+    env["NODE_NO_WARNINGS"] = "1"
+    proc = subprocess.Popen(
+        cmd, cwd=cwd, env=env,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        text=True, bufsize=1,
+    )
+    for line in proc.stdout:
+        print(f"     {line}", end="", flush=True)
+    proc.wait()
+    return proc.returncode
+
+
 def load_jsonc(path: Path) -> dict:
     """Parse JSON or JSONC (JSON with // and /* */ comments)."""
     text = path.read_text()
@@ -402,14 +417,9 @@ def migrate_repo(repo_name: str, config: dict) -> None:
 
     # pnpm install to update lockfile
     print(f"  ⏳ pnpm install...")
-    install = run(
-        ["pnpm", "install", "--no-frozen-lockfile"],
-        cwd=frontend_dir,
-        check=False,
-    )
-    if install.returncode != 0:
+    rc = run_streaming(["pnpm", "install", "--no-frozen-lockfile"], cwd=frontend_dir)
+    if rc != 0:
         print(f"  ⚠️  pnpm install feilet (fortsetter uten lockfile-oppdatering)")
-        print(f"     {install.stderr[:300]}")
 
     run(["git", "add", "-A"], cwd=repo_dir)
     run(
@@ -428,10 +438,9 @@ def migrate_repo(repo_name: str, config: dict) -> None:
         biome_bin = frontend_dir / "node_modules" / ".bin" / "biome"
         if biome_bin.exists():
             print(f"  ⏳ biome format --write (4-space → 2-space)...")
-            run(
+            run_streaming(
                 [str(biome_bin), "format", "--write", "."],
                 cwd=frontend_dir,
-                check=False,
             )
             run(["git", "add", "-A"], cwd=repo_dir)
             diff = run(["git", "diff", "--cached", "--stat"], cwd=repo_dir)
