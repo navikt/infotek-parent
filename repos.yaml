@@ -69,7 +69,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
+    managed: false
     environments: []
 
   # ── Namespace: historisk — aktivt forvaltet ────────────────────────────────
