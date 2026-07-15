@@ -45,7 +45,7 @@ make help
 | `make pr-all TITLE="chore: ..."` | Lag PRer for alle repos på feature-branch |
 | `make update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
 | `make update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
-| `make update-frontend-deps` | Bump frontend-avhengigheter fra `platform/pnpm/catalog.json` + lager PRer |
+| `make update-frontend-deps` | Bump frontend-avhengigheter fra `platform/pnpm/package.json` + lager PRer |
 
 ### Publisering
 
@@ -94,10 +94,9 @@ infotek-parent/
 │   ├── npm/
 │   │   └── .npmrc          # teamstandard for npm/pnpm
 │   └── pnpm/
-│       ├── package.json    # @navikt/infotek-frontend-config
+│       ├── package.json    # @navikt/infotek-frontend-config + versjonskatalog
 │       ├── tsconfig.base.json
-│       ├── biome.base.json
-│       └── catalog.json    # godkjente frontend-versjoner
+│       └── biome.base.json
 ├── scripts/
 │   ├── gen-agents.py
 │   ├── fmt-table.py

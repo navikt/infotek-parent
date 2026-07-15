@@ -12,7 +12,7 @@
 | `Makefile` | Alle kommandoer for å jobbe på tvers av repos |
 | `repos/` | Klonede repos (gitignored) — klones hit av `make clone` |
 | `platform/maven/pom.xml` | Maven parent POM — publisert til GitHub Packages |
-| `platform/pnpm/catalog.json` | Godkjente frontend-versjoner |
+| `platform/pnpm/package.json` | Godkjente frontend-versjoner og katalog |
 | `platform/pnpm/tsconfig.base.json` | Felles TypeScript-konfig |
 | `platform/pnpm/biome.base.json` | Felles Biome-konfig |
 | `platform/npm/.npmrc` | Teamstandard for npm/pnpm |

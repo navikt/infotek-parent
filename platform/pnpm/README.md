@@ -10,7 +10,6 @@ Publisert på GitHub Packages: `https://npm.pkg.github.com`
 |-----|------|
 | `tsconfig.base.json` | Felles TypeScript-konfig |
 | `biome.base.json` | Felles Biome-regler |
-| `catalog.json` | Godkjente versjoner for alle avhengigheter |
 
 ## Bruk i et prosjekt
 
@@ -43,15 +42,16 @@ pnpm add -D @navikt/infotek-frontend-config
 
 ## Versjonsstyring
 
-Oppdater `catalog.json` med nye versjoner og kjør:
+Versjonene for alle frontend-avhengigheter ligger i `dependencies` og `devDependencies` i `package.json`.
+Dependabot i hvert child repo bumper avhengighetene direkte. For å tvinge synk på tvers:
 ```bash
 make update-frontend-deps
 ```
 
-Dette lager PRer til alle frontend-repos med oppdaterte versjoner.
+Dette lager PRer til alle frontend-repos med oppdaterte versjoner fra `package.json`.
 
 ## Publisering
 
 ```bash
-make release-frontend-config VERSION=1.1.0
+make release-npm VERSION=1.0.0
 ```

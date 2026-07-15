@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Oppdaterer frontend-avhengigheter i alle repos basert på catalog.json.
+Oppdaterer frontend-avhengigheter i alle repos basert på platform/pnpm/package.json.
 Lager én PR per repo som har avvik fra katalogen.
 
 Bruk: python3 scripts/update-frontend-deps.py [--dry-run]
@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).parent.parent / "platform" / "pnpm" / "catalog.json"
+CATALOG_PATH = Path(__file__).parent.parent / "platform" / "pnpm" / "package.json"
 REPOS_DIR = Path(__file__).parent.parent / "repos"
 
 DRY_RUN = "--dry-run" in sys.argv
@@ -140,7 +140,7 @@ def main():
             [
                 "gh", "pr", "create",
                 "--title", f"chore(deps): oppdater frontend-avhengigheter",
-                "--body", f"Automatisk oppdatering fra [infotek-katalog](https://github.com/navikt/infotek-parent/blob/main/platform/pnpm/catalog.json).\n\n**Oppdaterte pakker:**\n" + "\n".join(f"- `{d}`" for d in dep_names),
+                "--body", f"Automatisk oppdatering fra [infotek-katalog](https://github.com/navikt/infotek-parent/blob/main/platform/pnpm/package.json).\n\n**Oppdaterte pakker:**\n" + "\n".join(f"- `{d}`" for d in dep_names),
                 "--base", "main",
                 "--head", branch,
             ],
