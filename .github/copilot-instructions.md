@@ -42,20 +42,33 @@ make setup                           # ny maskin — installer alle verktøy
 
 Alle repos har beskyttet `main`/`master`. **Aldri commit direkte til default-branch.**
 
-Riktig arbeidsflyt:
+### Copilot gjør IKKE commits eller push
+
+**Copilot lager aldri git-commits eller kjører `git push`.**
+Etter at Copilot har gjort filendringer, presenter commit-meldingen og la utvikleren kjøre:
+
 ```bash
-git -C repos/mitt-repo checkout -b chore/min-endring
-# ... gjør endringer ...
-make multi-commit MSG="chore: beskrivelse"
-make push-all
-make pr-all
+git add -A
+git commit -m "<melding>"
+git push -u origin <branch>
+gh pr create --title "<tittel>" --body "<beskrivelse>"
+```
+
+Riktig arbeidsflyt (utvikler kjører selv):
+```bash
+git checkout -b chore/min-endring
+# Copilot gjør filendringer
+git add -A
+git commit -m "chore: beskrivelse"
+git push -u origin chore/min-endring
+gh pr create
 ```
 
 Hvis du ved en feil har commitet til default-branch:
 ```bash
-git -C repos/mitt-repo checkout -b chore/min-endring
-git -C repos/mitt-repo checkout main
-git -C repos/mitt-repo reset --hard HEAD~1
+git checkout -b chore/min-endring
+git checkout main
+git reset --hard HEAD~1
 ```
 
 ## Om teamet og kodebasen
