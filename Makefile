@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps release-frontend-config multi-commit push-all pr-all
+.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps release-frontend-config multi-commit push-all pr-all apply-ruleset
 
 ##@ Hjelp
 
@@ -238,45 +238,63 @@ ifndef VERSION
 endif
 	@echo -e "$(BOLD)Tagger og publiserer parent POM v$(VERSION)$(RESET)"
 	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
-	@git tag "v$(VERSION)" -m "release: parent POM $(VERSION)"
-	@git push origin "v$(VERSION)"
-	@echo -e "  $(GREEN)✓$(RESET) Tag v$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages"
+	@echo -e "  Tag: v$(VERSION) → GitHub Packages (maven)"
+	@echo -n "  Publiser? [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) \
+	    git tag "v$(VERSION)" -m "release: parent POM $(VERSION)"; \
+	    git push origin "v$(VERSION)"; \
+	    echo -e "  $(GREEN)✓$(RESET) Tag v$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages";; \
+	  *) echo -e "  Avbrutt.";; \
+	esac
 
 update-kotlin: _require-yq ## Oppdater kotlin.version + Dependabot i alle repos  — bruk: make update-kotlin VERSION=2.x.y
 ifndef VERSION
 	$(error VERSION mangler. Bruk: make update-kotlin VERSION=2.x.y)
 endif
-	@echo -e "$(BOLD)Oppdaterer kotlin.version til $(VERSION) i alle repos$(RESET)"
+	@echo -e "$(BOLD)Sjekker repos som kan bumpes til Kotlin $(VERSION)$(RESET)"
 	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -f "$$dir/pom.xml" ] || continue; \
 	  current=$$(grep '<kotlin.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
-	  [ -z "$$current" ] && { echo -e "  ⏭  $$name — ingen kotlin.version, skipper"; continue; }; \
+	  [ -z "$$current" ] && continue; \
 	  [ "$$current" = "$(VERSION)" ] && { echo -e "  ✅ $$name — allerede på $(VERSION)"; continue; }; \
-	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
-	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; continue; \
-	  fi; \
-	  git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
-	  git -C $$dir checkout -b "chore/kotlin-$(VERSION)" --quiet 2>/dev/null || \
-	    git -C $$dir checkout "chore/kotlin-$(VERSION)" --quiet; \
-	  sed -i '' "s|<kotlin.version>$$current</kotlin.version>|<kotlin.version>$(VERSION)</kotlin.version>|g" $$dir/pom.xml; \
-	  git -C $$dir add pom.xml; \
-	  if [ -f "$$dir/.github/dependabot.yml" ]; then \
-	    sed -i '' "s|kotlin-.*|kotlin-$(VERSION)|g" $$dir/.github/dependabot.yml 2>/dev/null || true; \
-	    grep -q 'jetbrains.kotlin\|kotlin-stdlib' $$dir/.github/dependabot.yml 2>/dev/null && \
-	      git -C $$dir add .github/dependabot.yml; \
-	  fi; \
-	  git -C $$dir diff --cached --quiet && { echo -e "  ⏭  $$name — ingen endringer å committe"; continue; }; \
-	  git -C $$dir commit -m "chore: bump kotlin.version $$current -> $(VERSION)" --quiet; \
-	  git -C $$dir push -u origin "chore/kotlin-$(VERSION)" --quiet; \
-	  repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/'); \
-	  gh pr create --repo $$repo_slug \
-	    --title "chore: bump Kotlin $$current → $(VERSION)" \
-	    --body "Oppdaterer \`kotlin.version\` fra \`$$current\` til \`$(VERSION)\`." \
-	    --base $$branch && \
-	    echo -e "  $(GREEN)+$(RESET) $$name: PR opprettet ($$current → $(VERSION))" || \
-	    echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/kotlin-$(VERSION)"; \
+	  echo -e "  $(CYAN)→$(RESET) $$name  ($$current → $(VERSION))"; \
 	done
+	@echo ""
+	@echo -n "  Bump og lag PRer? [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) \
+	    yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	      dir=$(PARENT_DIR)/$$name; \
+	      [ -f "$$dir/pom.xml" ] || continue; \
+	      current=$$(grep '<kotlin.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
+	      [ -z "$$current" ] && continue; \
+	      [ "$$current" = "$(VERSION)" ] && continue; \
+	      if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
+	        echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; continue; \
+	      fi; \
+	      git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
+	      git -C $$dir checkout -b "chore/kotlin-$(VERSION)" --quiet 2>/dev/null || \
+	        git -C $$dir checkout "chore/kotlin-$(VERSION)" --quiet; \
+	      sed -i '' "s|<kotlin.version>$$current</kotlin.version>|<kotlin.version>$(VERSION)</kotlin.version>|g" $$dir/pom.xml; \
+	      git -C $$dir add pom.xml; \
+	      if [ -f "$$dir/.github/dependabot.yml" ]; then \
+	        sed -i '' "s|kotlin-.*|kotlin-$(VERSION)|g" $$dir/.github/dependabot.yml 2>/dev/null || true; \
+	        grep -q 'jetbrains.kotlin\|kotlin-stdlib' $$dir/.github/dependabot.yml 2>/dev/null && \
+	          git -C $$dir add .github/dependabot.yml; \
+	      fi; \
+	      git -C $$dir diff --cached --quiet && { echo -e "  ⏭  $$name — ingen endringer å committe"; continue; }; \
+	      git -C $$dir commit -m "chore: bump kotlin.version $$current -> $(VERSION)" --quiet; \
+	      git -C $$dir push -u origin "chore/kotlin-$(VERSION)" --quiet; \
+	      repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/'); \
+	      gh pr create --repo $$repo_slug \
+	        --title "chore: bump Kotlin $$current → $(VERSION)" \
+	        --body "Oppdaterer \`kotlin.version\` fra \`$$current\` til \`$(VERSION)\`." \
+	        --base $$branch && \
+	        echo -e "  $(GREEN)+$(RESET) $$name: PR opprettet ($$current → $(VERSION))" || \
+	        echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/kotlin-$(VERSION)"; \
+	    done;; \
+	  *) echo -e "  Avbrutt.";; \
+	esac
 
 update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalog.json — lager PR per repo
 	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
@@ -288,51 +306,75 @@ ifndef VERSION
 endif
 	@echo -e "$(BOLD)Tagger og publiserer frontend-config v$(VERSION)$(RESET)"
 	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
-	@sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' platform/pnpm/package.json
-	@git add platform/pnpm/package.json
-	@git commit -m "chore: bump frontend-config til $(VERSION)"
-	@git tag "vfrontend-$(VERSION)" -m "release: frontend-config $(VERSION)"
-	@git push origin main "vfrontend-$(VERSION)"
-	@echo -e "  $(GREEN)✓$(RESET) Tag vfrontend-$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages"
+	@echo -e "  Tag: vfrontend-$(VERSION) → GitHub Packages (npm)"
+	@echo -n "  Publiser? [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) \
+	    sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' platform/pnpm/package.json; \
+	    git add platform/pnpm/package.json; \
+	    git commit -m "chore: bump frontend-config til $(VERSION)"; \
+	    git tag "vfrontend-$(VERSION)" -m "release: frontend-config $(VERSION)"; \
+	    git push origin main "vfrontend-$(VERSION)"; \
+	    echo -e "  $(GREEN)✓$(RESET) Tag vfrontend-$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages";; \
+	  *) echo -e "  Avbrutt.";; \
+	esac
 
 update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos — lager PR per repo
-	@echo -e "$(BOLD)Oppdaterer .npmrc til teamstandard$(RESET)"
+	@echo -e "$(BOLD)Sjekker .npmrc mot teamstandard$(RESET)"
 	@TEMPLATE=$(CURDIR)/platform/npm/.npmrc; \
-	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	needs_update_list=""; \
+	yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
-	  changed=0; \
 	  for npmrc in $$(find "$$dir" -name ".npmrc" -not -path "*/node_modules/*" 2>/dev/null); do \
 	    relpath=$${npmrc#$$dir/}; \
-	    needs_update=0; \
-	    grep -q "ignore-scripts=true" "$$npmrc" || needs_update=1; \
-	    grep -q "min-release-age=7d" "$$npmrc" || needs_update=1; \
-	    grep -q "engine-strict=true" "$$npmrc" || needs_update=1; \
-	    grep -q "npm.pkg.github.com" "$$npmrc" || needs_update=1; \
-	    if [ "$$needs_update" = "1" ]; then \
-	      python3 scripts/merge-npmrc.py "$$TEMPLATE" "$$npmrc" && \
-	        echo -e "  $(GREEN)✓$(RESET) $$name/$$relpath oppdatert"; \
-	      changed=1; \
-	    fi; \
+	    needs=0; \
+	    grep -q "ignore-scripts=true" "$$npmrc" || needs=1; \
+	    grep -q "min-release-age=7d" "$$npmrc" || needs=1; \
+	    grep -q "engine-strict=true" "$$npmrc" || needs=1; \
+	    grep -q "npm.pkg.github.com" "$$npmrc" || needs=1; \
+	    [ "$$needs" = "1" ] && echo -e "  $(CYAN)→$(RESET) $$name/$$relpath"; \
 	  done; \
-	  [ "$$changed" = "0" ] && { echo -e "  ✅ $$name — allerede ok"; continue; }; \
-	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
-	    echo -e "  ⚠️  $$name — har andre uncommitted endringer, skipper push"; continue; \
-	  fi; \
-	  git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
-	  git -C $$dir checkout -b "chore/npmrc-teamstandard" --quiet 2>/dev/null || \
-	    git -C $$dir checkout "chore/npmrc-teamstandard" --quiet; \
-	  git -C $$dir add -A; \
-	  git -C $$dir commit -m "chore: synkroniser .npmrc til teamstandard" --quiet; \
-	  git -C $$dir push -u origin "chore/npmrc-teamstandard" --quiet; \
-	  repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/'); \
-	  gh pr create --repo $$repo_slug \
-	    --title "chore: synkroniser .npmrc til teamstandard" \
-	    --body "Legger til manglende innstillinger fra teamstandard:\n- \`ignore-scripts=true\` — blokkerer pre/postinstall-scripts\n- \`min-release-age=7d\` — ikke installer pakker nyere enn 7 dager\n- \`engine-strict=true\` — krev riktig Node-versjon\n- \`@navikt:registry\` — peker på GitHub Packages" \
-	    --base $$branch && \
-	    echo -e "  $(GREEN)+$(RESET) $$name: PR opprettet" || \
-	    echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/npmrc-teamstandard"; \
-	done
+	done; \
+	echo ""; \
+	echo -n "  Oppdater og lag PRer? [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) \
+	    yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	      dir=$(PARENT_DIR)/$$name; \
+	      [ -d "$$dir" ] || continue; \
+	      changed=0; \
+	      for npmrc in $$(find "$$dir" -name ".npmrc" -not -path "*/node_modules/*" 2>/dev/null); do \
+	        relpath=$${npmrc#$$dir/}; \
+	        needs=0; \
+	        grep -q "ignore-scripts=true" "$$npmrc" || needs=1; \
+	        grep -q "min-release-age=7d" "$$npmrc" || needs=1; \
+	        grep -q "engine-strict=true" "$$npmrc" || needs=1; \
+	        grep -q "npm.pkg.github.com" "$$npmrc" || needs=1; \
+	        if [ "$$needs" = "1" ]; then \
+	          python3 scripts/merge-npmrc.py "$$TEMPLATE" "$$npmrc" && \
+	            echo -e "  $(GREEN)✓$(RESET) $$name/$$relpath oppdatert"; \
+	          changed=1; \
+	        fi; \
+	      done; \
+	      [ "$$changed" = "0" ] && continue; \
+	      if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
+	        echo -e "  ⚠️  $$name — har andre uncommitted endringer, skipper push"; continue; \
+	      fi; \
+	      git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
+	      git -C $$dir checkout -b "chore/npmrc-teamstandard" --quiet 2>/dev/null || \
+	        git -C $$dir checkout "chore/npmrc-teamstandard" --quiet; \
+	      git -C $$dir add -A; \
+	      git -C $$dir commit -m "chore: synkroniser .npmrc til teamstandard" --quiet; \
+	      git -C $$dir push -u origin "chore/npmrc-teamstandard" --quiet; \
+	      repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/'); \
+	      gh pr create --repo $$repo_slug \
+	        --title "chore: synkroniser .npmrc til teamstandard" \
+	        --body "Legger til manglende innstillinger fra teamstandard:\n- \`ignore-scripts=true\`\n- \`min-release-age=7d\`\n- \`engine-strict=true\`\n- \`@navikt:registry\`" \
+	        --base $$branch && \
+	        echo -e "  $(GREEN)+$(RESET) $$name: PR opprettet" || \
+	        echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/npmrc-teamstandard"; \
+	    done;; \
+	  *) echo -e "  Avbrutt.";; \
+	esac
 
 ##@ Dokumentasjon
 
@@ -367,6 +409,29 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@gh auth status >/dev/null 2>&1 || gh auth login
 	@echo ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make clone' for å klone alle repos.$(RESET)"
+
+##@ GitHub-konfig
+
+apply-ruleset: ## Opprett eller oppdater branch-ruleset for et repo — bruk: make apply-ruleset REPO=navikt/infotek-parent
+ifndef REPO
+	$(error REPO mangler. Bruk: make apply-ruleset REPO=navikt/mitt-repo)
+endif
+	@echo -e "$(BOLD)Synkroniserer ruleset for $(REPO)$(RESET)"
+	@existing=$$(gh api repos/$(REPO)/rulesets --jq '.[0].id' 2>/dev/null); \
+	if [ -n "$$existing" ] && [ "$$existing" != "null" ]; then \
+	  echo -e "  Ruleset finnes allerede (id $$existing) — vil du oppdatere?"; \
+	  echo -n "  [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      gh api repos/$(REPO)/rulesets/$$existing --method PUT --input platform/github/ruleset-default.json >/dev/null && \
+	        echo -e "  $(GREEN)✓$(RESET) Ruleset oppdatert for $(REPO)" || \
+	        echo -e "  ❌ Oppdatering feilet";; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	else \
+	  gh api repos/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json >/dev/null && \
+	    echo -e "  $(GREEN)✓$(RESET) Ruleset opprettet for $(REPO)" || \
+	    echo -e "  ❌ Oppretting feilet — sjekk at repoet finnes og at du har admin-tilgang"; \
+	fi
 
 ##@ Internalt
 
