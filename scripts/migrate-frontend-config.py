@@ -17,6 +17,7 @@ Forutsetning: infotek-frontend-config 1.1.0 er publisert til GitHub Packages.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 import subprocess
@@ -228,6 +229,16 @@ def run(cmd, cwd=None, check=True, capture=True):
     )
 
 
+def load_jsonc(path: Path) -> dict:
+    """Parse JSON or JSONC (JSON with // and /* */ comments)."""
+    text = path.read_text()
+    # Strip block comments /* ... */
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    # Strip line comments // ...
+    text = re.sub(r"//[^\n]*", "", text)
+    return json.loads(text)
+
+
 def write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
@@ -236,14 +247,14 @@ def already_migrated(frontend_dir: Path) -> bool:
     pkg = frontend_dir / "package.json"
     if not pkg.exists():
         return False
-    data = json.loads(pkg.read_text())
+    data = load_jsonc(pkg)
     return "@navikt/infotek-frontend-config" in data.get("devDependencies", {})
 
 
 def update_package_json(frontend_dir: Path, config: dict) -> bool:
     """Add devDep, remove eslint deps, update scripts. Returns True if changed."""
     pkg_path = frontend_dir / "package.json"
-    data = json.loads(pkg_path.read_text())
+    data = load_jsonc(pkg_path)
     changed = False
 
     # Add @navikt/infotek-frontend-config
@@ -276,9 +287,28 @@ def update_package_json(frontend_dir: Path, config: dict) -> bool:
             data.setdefault("scripts", {})[name] = cmd
             changed = True
 
+    # Migrate pnpm.overrides → pnpm-workspace.yaml (deprecated in pnpm v10)
+    pnpm_overrides = data.get("pnpm", {}).get("overrides")
+    if pnpm_overrides:
+        _write_pnpm_workspace(frontend_dir, pnpm_overrides)
+        if len(data["pnpm"]) == 1:
+            del data["pnpm"]
+        else:
+            del data["pnpm"]["overrides"]
+        changed = True
+
     if changed:
         write_json(pkg_path, data)
     return changed
+
+
+def _write_pnpm_workspace(frontend_dir: Path, overrides: dict) -> None:
+    """Write pnpm-workspace.yaml with overrides (pnpm v10+ format)."""
+    workspace_path = frontend_dir / "pnpm-workspace.yaml"
+    lines = ["overrides:\n"]
+    for pkg, version in overrides.items():
+        lines.append(f'  "{pkg}": "{version}"\n')
+    workspace_path.write_text("".join(lines))
 
 
 def write_biome_json(frontend_dir: Path) -> bool:
@@ -287,7 +317,7 @@ def write_biome_json(frontend_dir: Path) -> bool:
         "extends": ["@navikt/infotek-frontend-config/biome.base.json"]
     }
     if biome_path.exists():
-        existing = json.loads(biome_path.read_text())
+        existing = load_jsonc(biome_path)
         if existing == new_content:
             return False
     write_json(biome_path, new_content)
@@ -299,7 +329,7 @@ def write_tsconfig(frontend_dir: Path, config: dict) -> bool:
     tsconfig_path = frontend_dir / tsconfig_file
     new_content = config["tsconfig_new"]
     if tsconfig_path.exists():
-        existing = json.loads(tsconfig_path.read_text())
+        existing = load_jsonc(tsconfig_path)
         if existing == new_content:
             return False
     write_json(tsconfig_path, new_content)
