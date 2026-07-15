@@ -31,7 +31,7 @@ make help
 | `make clone` | Klon alle repos fra `repos.yaml` til `./repos/` (krever `make setup` først) |
 | `make fetch` | `git fetch` på alle repos |
 | `make pull` | `git pull` på alle repos |
-| `make main` | Switch til main + pull alle repos |
+| `make default` | Switch til default branch + pull alle repos |
 | `make status` | Vis branch, status og parent POM-versjon for alle repos |
 | `make versions` | Vis nøkkelversjoner (Java, Kotlin, Aksel, Node…) på tvers |
 | `make add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |

@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull main status add-repo setup docs update-frontend-deps release-frontend-config multi-commit push-all pr-all
+.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps release-frontend-config multi-commit push-all pr-all
 
 ##@ Hjelp
 
@@ -65,8 +65,8 @@ pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper over
 	  fi \
 	done
 
-main: _require-yq ## Switch til main + pull på alle repos
-	@echo -e "$(BOLD)Bytter til main og puller alle repos$(RESET)"
+default: _require-yq ## Switch til default branch + pull på alle repos
+	@echo -e "$(BOLD)Bytter til default branch og puller alle repos$(RESET)"
 	@yq e '.repos[] | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make clone'"; continue; }; \
@@ -193,9 +193,10 @@ endif
 	done
 	@echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make push-all' for å pushe alle branches"
 
-push-all: _require-yq ## Push alle repos som er foran remote
-	@echo -e "$(BOLD)Pusher alle repos med upubliserte commits$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
+push-all: _require-yq ## Push alle repos som er foran remote — spør om bekreftelse
+	@echo -e "$(BOLD)Sjekker repos med upubliserte commits...$(RESET)"
+	@to_push=""; \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
 	  ahead=$$(git -C $$dir rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
@@ -207,12 +208,26 @@ push-all: _require-yq ## Push alle repos som er foran remote
 	    echo -e "     git -C repos/$$name checkout -b chore/..."; \
 	    echo -e "     git -C repos/$$name checkout $$default_branch && git -C repos/$$name reset --hard HEAD~$$ahead"; \
 	    echo ""; \
-	    continue; \
+	  else \
+	    echo -e "  $(CYAN)→$(RESET) $$name  ($$branch, $$ahead commits)"; \
 	  fi; \
-	  git -C $$dir push -u origin $$branch --quiet && \
-	    echo -e "  $(GREEN)✓$(RESET) $$name pushed ($$ahead commits)" || \
-	    echo -e "  ❌ $$name feilet"; \
-	done
+	done; \
+	echo ""; \
+	echo -n "  Push? [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) \
+	    yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
+	      dir=$(PARENT_DIR)/$$name; \
+	      [ -d "$$dir" ] || continue; \
+	      ahead=$$(git -C $$dir rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
+	      [ "$$ahead" = "0" ] && continue; \
+	      branch=$$(git -C $$dir branch --show-current); \
+	      [ "$$branch" = "$$default_branch" ] && continue; \
+	      git -C $$dir push -u origin $$branch --quiet && \
+	        echo -e "  $(GREEN)✓$(RESET) $$name pushed" || \
+	        echo -e "  ❌ $$name feilet"; \
+	    done;; \
+	  *) echo -e "  Avbrutt.";; \
+	esac
 
 pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-all [BRANCH=navn]
 	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)

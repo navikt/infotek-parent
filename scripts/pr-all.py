@@ -188,19 +188,39 @@ def main():
         return
     print()
 
+    # Finn repos som trenger push
+    needs_push = []
+    for item in selected:
+        if item["existing_pr"]:
+            continue
+        remote_check = run(["git", "ls-remote", "--heads", "origin", item["branch"]], cwd=item["dir"])
+        if not remote_check.stdout.strip():
+            needs_push.append(item)
+
+    if needs_push:
+        print(f"\n  Disse branches er ikke pushet ennå:")
+        for item in needs_push:
+            print(f"    {item['name']}  ({item['branch']})")
+        try:
+            ans = input("\n  Push og lag PRer? [j/N] ").strip().lower()
+        except KeyboardInterrupt:
+            print("\n  Avbrutt.")
+            return
+        if ans not in ("j", "ja"):
+            print("  Avbrutt.")
+            return
+
     for item in selected:
         if item["existing_pr"]:
             print(f"  {CYAN}→{RESET} {item['name']} — PR finnes allerede: {item['existing_pr']}")
             continue
 
-        # Push branch hvis den ikke er på remote ennå
-        remote_check = run(["git", "ls-remote", "--heads", "origin", item["branch"]], cwd=item["dir"])
-        if not remote_check.stdout.strip():
-            print(f"  ⏫ {item['name']} — pusher branch {item['branch']}...")
+        if item in needs_push:
             push = run(["git", "push", "-u", "origin", item["branch"]], cwd=item["dir"])
             if push.returncode != 0:
                 print(f"  ❌ {item['name']} — push feilet: {push.stderr.strip()}")
                 continue
+            print(f"  ⏫ {item['name']} — pushet")
 
         r = run(
             ["gh", "pr", "create",

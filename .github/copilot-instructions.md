@@ -25,7 +25,7 @@
 make clone              # klon alle repos til repos/
 make status             # branch + status for alle repos
 make versions           # nøkkelversjoner på tvers
-make fetch / pull / main
+make fetch / pull / default
 
 make multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på default-branch)
 make push-all                        # push alle feature-branches

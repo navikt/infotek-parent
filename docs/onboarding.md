@@ -118,7 +118,7 @@ make pr-all
 | `make help` | Vis alle kommandoer |
 | `make fetch` | Fetch fra alle repos |
 | `make pull` | Pull på alle repos |
-| `make main` | Switch til main/master + pull alle |
+| `make default` | Switch til main/master + pull alle |
 | `make status` | Oversikt over alle repos |
 | `make versions` | Nøkkelversjoner på tvers |
 | `make add-repo ORG=navikt REPO=navn` | Legg til nytt repo |
