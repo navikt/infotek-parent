@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset
+.PHONY: help clone fetch pull default status add-repo setup docs detach-repo update-frontend-deps migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset
 
 ##@ Hjelp
 
@@ -300,9 +300,9 @@ update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalo
 	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
 	@python3 scripts/update-frontend-deps.py
 
-migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — lager PR per repo
+migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make migrate-frontend-config [DRY_RUN=1]
 	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
-	@python3 scripts/migrate-frontend-config.py
+	@python3 scripts/migrate-frontend-config.py $(if $(DRY_RUN),--dry-run)
 
 release-npm: ## Publiser ny versjon av @navikt/infotek-frontend-config  — bruk: make release-npm VERSION=1.0.0
 ifndef VERSION
@@ -383,6 +383,13 @@ docs: ## Regenerer ai/AGENTS.md fra repos.yaml
 	@echo -e "$(BOLD)Regenererer $(AGENTS_FILE)$(RESET)"
 	@python3 scripts/gen-agents.py $(REPOS_FILE) $(AGENTS_FILE)
 	@echo -e "  $(GREEN)✓$(RESET) $(AGENTS_FILE) oppdatert"
+
+detach-repo: ## Løsriv eit repo frå infotek — bruk: make detach-repo REPO=<namn> [DRY_RUN=1]
+ifndef REPO
+	$(error REPO manglar. Bruk: make detach-repo REPO=historisk-valutakalkulator)
+endif
+	@echo -e "$(BOLD)Løsriv $(REPO) frå infotek$(RESET)"
+	@python3 scripts/detach-repo.py REPO=$(REPO) $(if $(DRY_RUN),--dry-run)
 
 
 ##@ Oppsett
