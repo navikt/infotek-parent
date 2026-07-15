@@ -15,7 +15,7 @@ cd infotek
 make setup
 ```
 
-Dette installerer: Homebrew, `yq`, `git`, `gh` (GitHub CLI), `nais-cli`, og Java (Temurin).
+Dette installerer: Homebrew, `yq`, `git`, `gh` (GitHub CLI), `nais-cli`, Java (Temurin), `cplt` og `nav-pilot`.
 
 > **Merk:** Første gang kjøres `gh auth login` interaktivt — følg instruksjonene.
 
@@ -25,14 +25,16 @@ Dette installerer: Homebrew, `yq`, `git`, `gh` (GitHub CLI), `nais-cli`, og Java
 make clone
 ```
 
-Alle repos klones til samme nivå som `team-platform/`, dvs. `../`:
+Alle repos klones til `repos/` under dette repoet:
 
 ```
-~/dev/
-├── team-platform/   ← dette repoet
-├── historisk-pensjon/
-├── infotrygd-feed/
-└── ...
+infotek/
+├── repos/           ← alle klonede repos (gitignored)
+│   ├── historisk-pensjon/
+│   ├── infotrygd-feed-proxy-v2/
+│   └── ...
+├── Makefile
+└── repos.yaml
 ```
 
 ## 4. Verifiser oppsett
@@ -41,11 +43,11 @@ Alle repos klones til samme nivå som `team-platform/`, dvs. `../`:
 make status
 ```
 
-Du skal se alle repos med branch `main` og status `✅ ren`.
+Du skal se alle repos med riktig branch og status `✅ ren`.
 
 ## 5. Autentisering mot GitHub Packages
 
-Teamet bruker GitHub Packages for både Maven (Java/Kotlin) og npm (frontend).
+Teamet bruker GitHub Packages for Maven (Java/Kotlin) og npm (frontend).
 
 ### Maven — `~/.m2/settings.xml`
 
@@ -71,7 +73,7 @@ min-release-age=7d
 engine-strict=true
 ```
 
-> `ignore-scripts` og `min-release-age` bør ligge globalt i `~/.npmrc` — da gjelder de uansett hvilket prosjekt du jobber i, ikke bare infotek-repos.  
+> `ignore-scripts` og `min-release-age` bør ligge globalt i `~/.npmrc` — da gjelder de for alle prosjekter, ikke bare infotek.  
 > `make setup` legger dette til automatisk.
 
 > **PAT-krav:** `read:packages` (og `write:packages` om du skal publisere).  
@@ -87,6 +89,28 @@ cp ai/AGENTS.md ../mitt-repo/AGENTS.md
 cp -r .github/copilot-instructions.md ../mitt-repo/.github/
 ```
 
+## Masseoppdateringer på tvers av repos
+
+> ⚠️ **Default-branches er beskyttet.** Du kan ikke pushe direkte til `main` eller `master`.  
+> Alltid lag en ny branch før du committer endringer som skal gå via PR.
+
+```bash
+# 1. Lag branch i alle berørte repos
+git -C repos/mitt-repo checkout -b chore/min-endring
+
+# 2. Gjør endringer, stage filene
+git -C repos/mitt-repo add .github/dependabot.yml
+
+# 3. Commit på tvers
+make multi-commit MSG="chore: beskrivelse"   # stopper med feil hvis du er på default-branch
+
+# 4. Push
+make push-all
+
+# 5. Lag PRer interaktivt
+make pr-all
+```
+
 ## Nyttige kommandoer
 
 | Kommando | Beskrivelse |
@@ -94,9 +118,10 @@ cp -r .github/copilot-instructions.md ../mitt-repo/.github/
 | `make help` | Vis alle kommandoer |
 | `make fetch` | Fetch fra alle repos |
 | `make pull` | Pull på alle repos |
-| `make main` | Switch til main + pull alle |
+| `make main` | Switch til main/master + pull alle |
 | `make status` | Oversikt over alle repos |
-| `make add-repo ORG=navikt REPO=navn DESC="..."` | Legg til nytt repo |
+| `make versions` | Nøkkelversjoner på tvers |
+| `make add-repo ORG=navikt REPO=navn` | Legg til nytt repo |
 
 ## Tilgang og systemer
 

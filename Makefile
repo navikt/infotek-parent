@@ -175,13 +175,17 @@ ifndef MSG
 	$(error MSG mangler. Bruk: make multi-commit MSG="chore: beskrivelse")
 endif
 	@echo -e "$(BOLD)Committer i alle repos med staged endringer$(RESET)"
-	@count=0; \
-	yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
 	  staged=$$(git -C $$dir diff --cached --name-only 2>/dev/null); \
 	  [ -z "$$staged" ] && continue; \
-	  echo -e "  $(CYAN)→$(RESET) $$name"; \
+	  branch=$$(git -C $$dir branch --show-current 2>/dev/null); \
+	  if [ "$$branch" = "$$default_branch" ]; then \
+	    echo -e "  ❌ $$name — på $$default_branch (protected). Lag branch først: git -C repos/$$name checkout -b chore/..."; \
+	    continue; \
+	  fi; \
+	  echo -e "  $(CYAN)→$(RESET) $$name ($$branch)"; \
 	  echo "$$staged" | sed 's/^/      /'; \
 	  git -C $$dir commit -m "$(MSG)" --quiet && \
 	    echo -e "  $(GREEN)✓$(RESET) $$name committed" || \
@@ -191,45 +195,29 @@ endif
 
 push-all: _require-yq ## Push alle repos som er foran remote
 	@echo -e "$(BOLD)Pusher alle repos med upubliserte commits$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
 	  ahead=$$(git -C $$dir rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
 	  [ "$$ahead" = "0" ] && continue; \
 	  branch=$$(git -C $$dir branch --show-current); \
+	  if [ "$$branch" = "$$default_branch" ]; then \
+	    echo -e "  ❌ $$name — på $$default_branch (protected)"; \
+	    echo -e "     Flytt commit til ny branch:"; \
+	    echo -e "     git -C repos/$$name checkout -b chore/..."; \
+	    echo -e "     git -C repos/$$name checkout $$default_branch && git -C repos/$$name reset --hard HEAD~$$ahead"; \
+	    echo ""; \
+	    continue; \
+	  fi; \
 	  git -C $$dir push -u origin $$branch --quiet && \
 	    echo -e "  $(GREEN)✓$(RESET) $$name pushed ($$ahead commits)" || \
 	    echo -e "  ❌ $$name feilet"; \
 	done
 
-pr-all: _require-yq ## Lag PRer for alle repos på feature-branch — TITLE valgfri (henter fra første commit i branch)
-	@echo -e "$(BOLD)Lager PRer for alle repos på feature-branch$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
-	  dir=$(PARENT_DIR)/$$name; \
-	  [ -d "$$dir" ] || continue; \
-	  branch=$$(git -C $$dir branch --show-current 2>/dev/null); \
-	  [ -z "$$branch" ] || [ "$$branch" = "$$default_branch" ] && continue; \
-	  repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github\.com[:/]\(.*\)\.git$$/\1/; s/.*github\.com[:/]\(.*\)$$/\1/'); \
-	  pr_url=$$(gh pr view --repo $$repo_slug --head $$branch --json url --jq .url 2>/dev/null); \
-	  if [ -n "$$pr_url" ]; then \
-	    echo -e "  $(CYAN)→$(RESET) $$name finnes allerede: $$pr_url"; \
-	  else \
-	    if [ -n "$(TITLE)" ]; then \
-	      title="$(TITLE)"; \
-	    else \
-	      title=$$(git -C $$dir log --oneline $$default_branch..$$branch | tail -1 | sed 's/^[a-f0-9]* //'); \
-	    fi; \
-	    gh pr create --repo $$repo_slug \
-	      --title "$$title" \
-	      --body "$(BODY)" \
-	      --base $$default_branch \
-	      --head $$branch && \
-	      echo -e "  $(GREEN)+$(RESET) $$name PR opprettet: $$title" || \
-	      echo -e "  ⚠️  $$name PR feilet"; \
-	  fi; \
-	done
+pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-all [BRANCH=navn]
+	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
 
-
+release-parent: ## Publiser ny versjon av parent POM  — bruk: make release-parent VERSION=4.1.1
 ifndef VERSION
 	$(error VERSION mangler. Bruk: make release-parent VERSION=4.1.1)
 endif

@@ -1,16 +1,74 @@
 # GitHub Copilot-instruksjoner for infotek-teamet
 
+## Dette repoet — infotek-parent
+
+`infotek-parent` er teamets umbrella-repo. Det inneholder ikke appkode, men verktøy og felles konfig for alle team-repos.
+
+### Viktige filer
+
+| Fil/mappe | Formål |
+|-----------|--------|
+| `repos.yaml` | Kilde til sannhet — alle teamets repos med org, namespace, default_branch |
+| `Makefile` | Alle kommandoer for å jobbe på tvers av repos |
+| `repos/` | Klonede repos (gitignored) — klones hit av `make clone` |
+| `platform/maven/pom.xml` | Maven parent POM — publisert til GitHub Packages |
+| `platform/pnpm/catalog.json` | Godkjente frontend-versjoner |
+| `platform/pnpm/tsconfig.base.json` | Felles TypeScript-konfig |
+| `platform/pnpm/biome.base.json` | Felles Biome-konfig |
+| `platform/npm/.npmrc` | Teamstandard for npm/pnpm |
+| `scripts/` | Python-scripts for masseoppdateringer |
+| `ai/AGENTS.md` | Auto-generert repo-oversikt (ikke rediger manuelt) |
+
+### Makefile-kommandoer
+
+```bash
+make clone              # klon alle repos til repos/
+make status             # branch + status for alle repos
+make versions           # nøkkelversjoner på tvers
+make fetch / pull / main
+
+make multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på default-branch)
+make push-all                        # push alle feature-branches
+make pr-all                          # interaktiv PR-oppretter
+
+make update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR
+make update-npmrc                    # sync .npmrc til teamstandard + PR
+make release-parent VERSION=4.x.x   # publiser Maven parent POM
+make release-frontend-config VERSION=1.x.x
+make setup                           # ny maskin — installer alle verktøy
+```
+
+### Protected branches — viktig
+
+Alle repos har beskyttet `main`/`master`. **Aldri commit direkte til default-branch.**
+
+Riktig arbeidsflyt:
+```bash
+git -C repos/mitt-repo checkout -b chore/min-endring
+# ... gjør endringer ...
+make multi-commit MSG="chore: beskrivelse"
+make push-all
+make pr-all
+```
+
+Hvis du ved en feil har commitet til default-branch:
+```bash
+git -C repos/mitt-repo checkout -b chore/min-endring
+git -C repos/mitt-repo checkout main
+git -C repos/mitt-repo reset --hard HEAD~1
+```
+
 ## Om teamet og kodebasen
 
 Infotek-teamet forvalter historiske pensjonsdata og ytelser i Nav.
 Repos er fordelt på org `navikt` med namespace `infotek`, `infotrygd` og `historisk` i Nais.
 
-Se `ai/AGENTS.md` for fullstendig repo-oversikt og teamkonvensjoner.
+Se `ai/AGENTS.md` for fullstendig repo-oversikt.
 
 ## Stack
 
 - **Backend:** Kotlin + Spring Boot (noen Ktor), Maven
-- **Frontend:** React / Next.js
+- **Frontend:** React/Vite, pnpm, TypeScript, Biome
 - **Plattform:** Nais (GCP og FSS)
 - **Auth:** TokenX (brukerkontekst), Azure AD (maskin-til-maskin)
 - **Database:** PostgreSQL med Flyway
@@ -22,6 +80,7 @@ Se `ai/AGENTS.md` for fullstendig repo-oversikt og teamkonvensjoner.
 - Aldri sett CPU-limits i nais.yaml — bruk kun requests
 - Alle endepunkter skal ha `accessPolicy.inbound` i nais.yaml
 - Bruk versjoner fra parent POM (`navikt/infotek-parent`) — ikke overstyr uten begrunnelse
+- Default-branches er beskyttet — alltid bruk feature-branch
 
 ## Kodestil
 

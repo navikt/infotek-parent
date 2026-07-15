@@ -55,7 +55,5 @@ Infotek-teamet jobber med historiske pensjonsdata og ytelser. Teamet har repos f
 | [historisk-riddler](https://github.com/navikt/historisk-riddler) | `navikt` | `historisk` | dev-gcp | ✅ |
 | [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | `navikt` | `historisk` | dev-gcp | ✅ |
 | [historisk-avgiftssystem](https://github.com/navikt/historisk-avgiftssystem) | `navikt` | `historisk` | dev-gcp, prod-gcp | ❌ |
-| [historisk-helsetjenester](https://github.com/navikt/historisk-helsetjenester) | `navikt` | `historisk` | — | ❌ |
-| [historisk-superhelt](https://github.com/navikt/historisk-superhelt) | `navikt` | `historisk` | dev-gcp, prod-gcp | ❌ |
 
 <!-- AUTO-GENERATED:REPOS END -->
