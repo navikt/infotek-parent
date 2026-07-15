@@ -51,8 +51,8 @@ make help
 
 | Kommando | Beskrivelse |
 |----------|-------------|
-| `make release-parent VERSION=4.1.1` | Publiser ny versjon av Maven parent POM |
-| `make release-frontend-config VERSION=1.1.0` | Publiser ny versjon av `@navikt/infotek-frontend-config` |
+| `make release-maven VERSION=1.0.0` | Publiser ny versjon av Maven parent POM |
+| `make release-npm VERSION=1.0.0` | Publiser ny versjon av `@navikt/infotek-frontend-config` |
 
 ### Typisk arbeidsflyt for endringer på tvers
 

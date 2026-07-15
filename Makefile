@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps migrate-frontend-config release-frontend-config multi-commit push-all pr-all apply-ruleset
+.PHONY: help clone fetch pull default status add-repo setup docs update-frontend-deps migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset
 
 ##@ Hjelp
 
@@ -232,11 +232,11 @@ push-all: _require-yq ## Push alle repos som er foran remote — spør om bekref
 pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-all [BRANCH=navn]
 	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
 
-release-parent: ## Publiser ny versjon av parent POM  — bruk: make release-parent VERSION=4.1.1
+release-maven: ## Publiser ny versjon av Maven parent POM  — bruk: make release-maven VERSION=1.0.0
 ifndef VERSION
-	$(error VERSION mangler. Bruk: make release-parent VERSION=4.1.1)
+	$(error VERSION mangler. Bruk: make release-maven VERSION=1.0.0)
 endif
-	@echo -e "$(BOLD)Tagger og publiserer parent POM v$(VERSION)$(RESET)"
+	@echo -e "$(BOLD)Tagger og publiserer Maven parent POM v$(VERSION)$(RESET)"
 	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
 	@echo -e "  Tag: v$(VERSION) → GitHub Packages (maven)"
 	@echo -n "  Publiser? [j/N] " && read ans && case "$$ans" in \
@@ -304,11 +304,11 @@ migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config 
 	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
 	@python3 scripts/migrate-frontend-config.py
 
-release-frontend-config: ## Publiser ny versjon av frontend-config  — bruk: make release-frontend-config VERSION=1.1.0
+release-npm: ## Publiser ny versjon av @navikt/infotek-frontend-config  — bruk: make release-npm VERSION=1.0.0
 ifndef VERSION
-	$(error VERSION mangler. Bruk: make release-frontend-config VERSION=1.1.0)
+	$(error VERSION mangler. Bruk: make release-npm VERSION=1.0.0)
 endif
-	@echo -e "$(BOLD)Tagger og publiserer frontend-config v$(VERSION)$(RESET)"
+	@echo -e "$(BOLD)Tagger og publiserer @navikt/infotek-frontend-config v$(VERSION)$(RESET)"
 	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
 	@echo -e "  Tag: vfrontend-$(VERSION) → GitHub Packages (npm)"
 	@echo -n "  Publiser? [j/N] " && read ans && case "$$ans" in \

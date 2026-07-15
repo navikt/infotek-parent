@@ -23,7 +23,7 @@ import subprocess
 
 DRY_RUN = "--dry-run" in sys.argv
 REPOS_DIR = Path(__file__).parent.parent / "repos"
-PACKAGE_VERSION = "^1.1.0"
+PACKAGE_VERSION = "^1.0.0"
 BRANCH = "migrate/frontend-config"
 
 # ── Per-repo konfigurasjon ─────────────────────────────────────────────────
