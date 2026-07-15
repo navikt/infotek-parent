@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs detach-repo update-frontend-deps migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset
+.PHONY: help clone fetch pull default status add-repo setup docs detach-repo update-frontend-deps pnpm-install migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset
 
 ##@ Hjelp
 
@@ -299,6 +299,10 @@ endif
 update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalog.json — lager PR per repo
 	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
 	@python3 scripts/update-frontend-deps.py
+
+pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos
+	@echo -e "$(BOLD)Kjører pnpm install i alle repos$(RESET)"
+	@python3 scripts/pnpm-install.py $(if $(DRY_RUN),--dry-run)
 
 migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make migrate-frontend-config [DRY_RUN=1]
 	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
