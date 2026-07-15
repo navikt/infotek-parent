@@ -5,11 +5,14 @@ Infotek-teamets felles plattform-repo. Her finner du verktøy for å jobbe med a
 ## Kom i gang (ny maskin / ny utvikler)
 
 ```bash
-git clone git@github.com:navikt/infotek-parent.git
+gh repo clone navikt/infotek-parent
 cd infotek-parent
 make setup      # installer verktøy (brew, java, gh-cli, nais-cli)
 make clone      # klon alle team-repos til ./repos/
 ```
+
+> **Forutsetter** at `gh` er installert og autentisert (`gh auth login`).
+> Alternativt hvis SSH er satt opp: `git clone git@github.com:navikt/infotek-parent.git`
 
 `make setup` installerer:
 - `yq`, `git`, `gh` — grunnverktøy

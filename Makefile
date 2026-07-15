@@ -33,8 +33,8 @@ clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
 	    echo -e "  $(GREEN)↓$(RESET) $$name — finnes allerede, skipper"; \
 	  else \
 	    echo -e "  $(GREEN)+$(RESET) Kloner $$repo → $$dest"; \
-	    git clone git@github.com:$$repo.git $$dest 2>&1 | grep -v "^remote:" | grep -v "^Receiving\|^Resolving\|^Compressing" || \
-	      echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk org-felt i repos.yaml"; \
+	    gh repo clone $$repo $$dest 2>&1 | grep -v "^remote:" | grep -v "^Receiving\|^Resolving\|^Compressing" || \
+	      echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk at 'gh auth login' er kjørt"; \
 	  fi \
 	done
 
