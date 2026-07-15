@@ -45,7 +45,7 @@
 
         <!-- ── Test ───────────────────────────────────────────────────── -->
         <testcontainers.version>1.21.4</testcontainers.version>
-        <mockk.version>1.14.2</mockk.version>
+        <mockk.version>1.14.3</mockk.version>
     </properties>
 
     <dependencyManagement>
