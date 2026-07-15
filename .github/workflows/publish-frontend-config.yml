@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "vfrontend-*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versjon å publisere (f.eks. 1.1.0)"
+        required: true
 
 jobs:
   publish:
@@ -25,9 +30,13 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@navikt"
 
-      - name: Set version from tag
+      - name: Set version
         run: |
-          VERSION="${GITHUB_REF_NAME#vfrontend-}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#vfrontend-}"
+          fi
           echo "Publishing version $VERSION"
           pnpm version "$VERSION" --no-git-tag-version
         working-directory: platform/pnpm

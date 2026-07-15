@@ -309,11 +309,8 @@ endif
 	@echo -e "  Tag: vfrontend-$(VERSION) → GitHub Packages (npm)"
 	@echo -n "  Publiser? [j/N] " && read ans && case "$$ans" in \
 	  [jJ]*) \
-	    sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' platform/pnpm/package.json; \
-	    git add platform/pnpm/package.json; \
-	    git commit -m "chore: bump frontend-config til $(VERSION)"; \
 	    git tag "vfrontend-$(VERSION)" -m "release: frontend-config $(VERSION)"; \
-	    git push origin main "vfrontend-$(VERSION)"; \
+	    git push origin "vfrontend-$(VERSION)"; \
 	    echo -e "  $(GREEN)✓$(RESET) Tag vfrontend-$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages";; \
 	  *) echo -e "  Avbrutt.";; \
 	esac
