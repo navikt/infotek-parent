@@ -17,6 +17,7 @@ Forutsetning: infotek-frontend-config 1.1.0 er publisert til GitHub Packages.
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -221,11 +222,14 @@ REPOS = {
 
 
 def run(cmd, cwd=None, check=True, capture=True):
+    env = os.environ.copy()
+    env["NODE_NO_WARNINGS"] = "1"
     return subprocess.run(
         cmd, cwd=cwd,
         capture_output=capture,
         text=True,
         check=check,
+        env=env,
     )
 
 
@@ -399,7 +403,7 @@ def migrate_repo(repo_name: str, config: dict) -> None:
     # pnpm install to update lockfile
     print(f"  ⏳ pnpm install...")
     install = run(
-        ["pnpm", "install", "--frozen-lockfile=false"],
+        ["pnpm", "install", "--no-frozen-lockfile"],
         cwd=frontend_dir,
         check=False,
     )
