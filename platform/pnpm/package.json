@@ -1,0 +1,21 @@
+{
+  "name": "@navikt/infotek-frontend-config",
+  "version": "1.0.0",
+  "description": "Delte konfigurasjoner og versjonskataloget for infotek sine frontend-prosjekter",
+  "private": false,
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./biome.base.json": "./biome.base.json",
+    "./catalog.json": "./catalog.json"
+  },
+  "files": [
+    "tsconfig.base.json",
+    "biome.base.json",
+    "catalog.json",
+    "README.md"
+  ]
+}

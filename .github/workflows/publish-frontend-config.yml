@@ -1,0 +1,39 @@
+name: Publish frontend config
+
+on:
+  push:
+    tags:
+      - "vfrontend-*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: "10"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@navikt"
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#vfrontend-}"
+          echo "Publishing version $VERSION"
+          pnpm version "$VERSION" --no-git-tag-version
+        working-directory: platform/pnpm
+
+      - name: Publish
+        run: pnpm publish --no-git-checks
+        working-directory: platform/pnpm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

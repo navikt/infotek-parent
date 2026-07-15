@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>no.nav.infotek</groupId>
+    <artifactId>infotek-parent</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+
+    <name>infotek-parent</name>
+    <description>Felles Maven parent POM for infotek-teamet</description>
+
+    <properties>
+        <revision>0-SNAPSHOT</revision>
+        <java.version>25</java.version>
+
+        <!-- ── Språk ──────────────────────────────────────────────────── -->
+        <kotlin.version>2.3.21</kotlin.version>
+
+        <!-- ── Nav-biblioteker ────────────────────────────────────────── -->
+        <!--
+            token-support publiseres til GitHub Packages.
+            Krever autentisering — se README for lokal settings.xml.
+        -->
+        <token-validation.version>6.0.11</token-validation.version>
+        <mock-oauth2-server.version>5.0.2</mock-oauth2-server.version>
+        <logback-syslog4j.version>1.0.0</logback-syslog4j.version>
+
+        <!-- ── Database ───────────────────────────────────────────────── -->
+        <!--
+            Overstyr eksplisitt slik at vi kan bumpe uavhengig av Spring BOM.
+            Spring Boot 4 BOM styrer Flyway og Hibernate — overstyr kun ved behov.
+        -->
+        <postgresql.version>42.7.7</postgresql.version>
+        <tomcat.version>11.0.22</tomcat.version>
+
+        <!-- ── Test ───────────────────────────────────────────────────── -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+        <mockk.version>1.14.2</mockk.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+
+            <!-- ── Nav token-support ──────────────────────────────────── -->
+            <dependency>
+                <groupId>no.nav.security</groupId>
+                <artifactId>token-validation-spring</artifactId>
+                <version>${token-validation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>no.nav.security</groupId>
+                <artifactId>token-validation-spring-test</artifactId>
+                <version>${token-validation.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>no.nav.security</groupId>
+                <artifactId>token-client-spring</artifactId>
+                <version>${token-validation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>no.nav.security</groupId>
+                <artifactId>mock-oauth2-server</artifactId>
+                <version>${mock-oauth2-server.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- ── Logging ────────────────────────────────────────────── -->
+            <dependency>
+                <groupId>com.papertrailapp</groupId>
+                <artifactId>logback-syslog4j</artifactId>
+                <version>${logback-syslog4j.version}</version>
+            </dependency>
+
+            <!-- ── Test ───────────────────────────────────────────────── -->
+            <dependency>
+                <groupId>io.mockk</groupId>
+                <artifactId>mockk-jvm</artifactId>
+                <version>${mockk.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <repositories>
+        <!-- GitHub Packages — nav token-support -->
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/navikt/token-support</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/navikt/infotek-parent</url>
+        </repository>
+    </distributionManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-maven-plugin</artifactId>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <goals><goal>prepare-agent</goal></goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>test</phase>
+                            <goals><goal>report</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

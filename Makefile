@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull main status add-repo setup docs
+.PHONY: help clone fetch pull main status add-repo setup docs update-frontend-deps release-frontend-config multi-commit push-all pr-all
 
 ##@ Hjelp
 
@@ -158,15 +158,86 @@ ifndef REPO
 	$(error REPO mangler. Bruk: make add-repo ORG=navikt REPO=navn DESC="beskrivelse")
 endif
 	@DESC=$${DESC:-"Ingen beskrivelse"}; \
+	DEFAULT_BRANCH=$$(gh repo view $(ORG)/$(REPO) --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null); \
+	DEFAULT_BRANCH=$${DEFAULT_BRANCH:-main}; \
 	if yq e '.repos[] | .name' $(REPOS_FILE) | grep -q "^$(REPO)$$"; then \
 	  echo -e "  ⚠️  $(REPO) er allerede registrert i $(REPOS_FILE)"; \
 	else \
-	  yq e -i '.repos += [{"name": "$(REPO)", "org": "$(ORG)", "description": "'"$$DESC"'", "stack": [], "default_branch": "main"}]' $(REPOS_FILE); \
-	  echo -e "  $(GREEN)+$(RESET) $(REPO) lagt til i $(REPOS_FILE)"; \
+	  yq e -i '.repos += [{"name": "$(REPO)", "org": "$(ORG)", "description": "'"$$DESC"'", "stack": [], "default_branch": "'"$$DEFAULT_BRANCH"'"}]' $(REPOS_FILE); \
+	  echo -e "  $(GREEN)+$(RESET) $(REPO) lagt til i $(REPOS_FILE) (branch: $$DEFAULT_BRANCH)"; \
 	  $(MAKE) docs; \
 	fi
 
 ##@ Masseoppdateringer
+
+multi-commit: _require-yq ## Commit staged endringer i alle repos med samme melding — bruk: make multi-commit MSG="chore: ..."
+ifndef MSG
+	$(error MSG mangler. Bruk: make multi-commit MSG="chore: beskrivelse")
+endif
+	@echo -e "$(BOLD)Committer i alle repos med staged endringer$(RESET)"
+	@count=0; \
+	yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir" ] || continue; \
+	  staged=$$(git -C $$dir diff --cached --name-only 2>/dev/null); \
+	  [ -z "$$staged" ] && continue; \
+	  echo -e "  $(CYAN)→$(RESET) $$name"; \
+	  echo "$$staged" | sed 's/^/      /'; \
+	  git -C $$dir commit -m "$(MSG)" --quiet && \
+	    echo -e "  $(GREEN)✓$(RESET) $$name committed" || \
+	    echo -e "  ❌ $$name feilet"; \
+	done
+	@echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make push-all' for å pushe alle branches"
+
+push-all: _require-yq ## Push alle repos som er foran remote
+	@echo -e "$(BOLD)Pusher alle repos med upubliserte commits$(RESET)"
+	@yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir" ] || continue; \
+	  ahead=$$(git -C $$dir rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
+	  [ "$$ahead" = "0" ] && continue; \
+	  branch=$$(git -C $$dir branch --show-current); \
+	  git -C $$dir push -u origin $$branch --quiet && \
+	    echo -e "  $(GREEN)✓$(RESET) $$name pushed ($$ahead commits)" || \
+	    echo -e "  ❌ $$name feilet"; \
+	done
+
+pr-all: _require-yq ## Lag PRer for alle repos på feature-branch — TITLE valgfri (henter fra første commit i branch)
+	@echo -e "$(BOLD)Lager PRer for alle repos på feature-branch$(RESET)"
+	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir" ] || continue; \
+	  branch=$$(git -C $$dir branch --show-current 2>/dev/null); \
+	  [ -z "$$branch" ] || [ "$$branch" = "$$default_branch" ] && continue; \
+	  repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github\.com[:/]\(.*\)\.git$$/\1/; s/.*github\.com[:/]\(.*\)$$/\1/'); \
+	  pr_url=$$(gh pr view --repo $$repo_slug --head $$branch --json url --jq .url 2>/dev/null); \
+	  if [ -n "$$pr_url" ]; then \
+	    echo -e "  $(CYAN)→$(RESET) $$name finnes allerede: $$pr_url"; \
+	  else \
+	    if [ -n "$(TITLE)" ]; then \
+	      title="$(TITLE)"; \
+	    else \
+	      title=$$(git -C $$dir log --oneline $$default_branch..$$branch | tail -1 | sed 's/^[a-f0-9]* //'); \
+	    fi; \
+	    gh pr create --repo $$repo_slug \
+	      --title "$$title" \
+	      --body "$(BODY)" \
+	      --base $$default_branch \
+	      --head $$branch && \
+	      echo -e "  $(GREEN)+$(RESET) $$name PR opprettet: $$title" || \
+	      echo -e "  ⚠️  $$name PR feilet"; \
+	  fi; \
+	done
+
+
+ifndef VERSION
+	$(error VERSION mangler. Bruk: make release-parent VERSION=4.1.1)
+endif
+	@echo -e "$(BOLD)Tagger og publiserer parent POM v$(VERSION)$(RESET)"
+	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
+	@git tag "v$(VERSION)" -m "release: parent POM $(VERSION)"
+	@git push origin "v$(VERSION)"
+	@echo -e "  $(GREEN)✓$(RESET) Tag v$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages"
 
 update-kotlin: _require-yq ## Oppdater kotlin.version + Dependabot i alle repos  — bruk: make update-kotlin VERSION=2.x.y
 ifndef VERSION
@@ -204,6 +275,62 @@ endif
 	    echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/kotlin-$(VERSION)"; \
 	done
 
+update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalog.json — lager PR per repo
+	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
+	@python3 scripts/update-frontend-deps.py
+
+release-frontend-config: ## Publiser ny versjon av frontend-config  — bruk: make release-frontend-config VERSION=1.1.0
+ifndef VERSION
+	$(error VERSION mangler. Bruk: make release-frontend-config VERSION=1.1.0)
+endif
+	@echo -e "$(BOLD)Tagger og publiserer frontend-config v$(VERSION)$(RESET)"
+	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
+	@sed -i '' 's/"version": "[^"]*"/"version": "$(VERSION)"/' platform/pnpm/package.json
+	@git add platform/pnpm/package.json
+	@git commit -m "chore: bump frontend-config til $(VERSION)"
+	@git tag "vfrontend-$(VERSION)" -m "release: frontend-config $(VERSION)"
+	@git push origin main "vfrontend-$(VERSION)"
+	@echo -e "  $(GREEN)✓$(RESET) Tag vfrontend-$(VERSION) pushet — GitHub Actions publiserer til GitHub Packages"
+
+update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos — lager PR per repo
+	@echo -e "$(BOLD)Oppdaterer .npmrc til teamstandard$(RESET)"
+	@TEMPLATE=$(CURDIR)/platform/npm/.npmrc; \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir" ] || continue; \
+	  changed=0; \
+	  for npmrc in $$(find "$$dir" -name ".npmrc" -not -path "*/node_modules/*" 2>/dev/null); do \
+	    relpath=$${npmrc#$$dir/}; \
+	    needs_update=0; \
+	    grep -q "ignore-scripts=true" "$$npmrc" || needs_update=1; \
+	    grep -q "min-release-age=7d" "$$npmrc" || needs_update=1; \
+	    grep -q "engine-strict=true" "$$npmrc" || needs_update=1; \
+	    grep -q "npm.pkg.github.com" "$$npmrc" || needs_update=1; \
+	    if [ "$$needs_update" = "1" ]; then \
+	      python3 scripts/merge-npmrc.py "$$TEMPLATE" "$$npmrc" && \
+	        echo -e "  $(GREEN)✓$(RESET) $$name/$$relpath oppdatert"; \
+	      changed=1; \
+	    fi; \
+	  done; \
+	  [ "$$changed" = "0" ] && { echo -e "  ✅ $$name — allerede ok"; continue; }; \
+	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
+	    echo -e "  ⚠️  $$name — har andre uncommitted endringer, skipper push"; continue; \
+	  fi; \
+	  git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
+	  git -C $$dir checkout -b "chore/npmrc-teamstandard" --quiet 2>/dev/null || \
+	    git -C $$dir checkout "chore/npmrc-teamstandard" --quiet; \
+	  git -C $$dir add -A; \
+	  git -C $$dir commit -m "chore: synkroniser .npmrc til teamstandard" --quiet; \
+	  git -C $$dir push -u origin "chore/npmrc-teamstandard" --quiet; \
+	  repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/'); \
+	  gh pr create --repo $$repo_slug \
+	    --title "chore: synkroniser .npmrc til teamstandard" \
+	    --body "Legger til manglende innstillinger fra teamstandard:\n- \`ignore-scripts=true\` — blokkerer pre/postinstall-scripts\n- \`min-release-age=7d\` — ikke installer pakker nyere enn 7 dager\n- \`engine-strict=true\` — krev riktig Node-versjon\n- \`@navikt:registry\` — peker på GitHub Packages" \
+	    --base $$branch && \
+	    echo -e "  $(GREEN)+$(RESET) $$name: PR opprettet" || \
+	    echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/npmrc-teamstandard"; \
+	done
+
 ##@ Dokumentasjon
 
 docs: ## Regenerer ai/AGENTS.md fra repos.yaml
@@ -220,7 +347,19 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@echo -e "  $(CYAN)→$(RESET) Installerer verktøy via Homebrew..."
 	@brew install yq git gh nais/tap/nais 2>/dev/null || true
 	@brew install --cask temurin 2>/dev/null || true
+	@brew install navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
+	@echo -e "  $(CYAN)→$(RESET) Oppgraderer verktøy..."
+	@brew upgrade yq git gh nais navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
+	@brew upgrade --cask temurin 2>/dev/null || true
 	@echo -e "  $(GREEN)✓$(RESET) Verktøy installert"
+	@echo -e "  $(CYAN)→$(RESET) Sikkerhetsinnstillinger for npm/pnpm..."
+	@echo -e "  Vil du legge til teamstandard i ~/.npmrc? (ignore-scripts, min-release-age=7d, engine-strict)"
+	@echo -n "  [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) python3 scripts/merge-npmrc.py platform/npm/.npmrc $$HOME/.npmrc 2>/dev/null || \
+	    cp platform/npm/.npmrc $$HOME/.npmrc; \
+	    echo -e "  $(GREEN)✓$(RESET) ~/.npmrc oppdatert";; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: python3 scripts/merge-npmrc.py platform/npm/.npmrc ~/.npmrc";; \
+	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
 	@echo ""

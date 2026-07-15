@@ -1,0 +1,39 @@
+version: 2
+
+registries:
+  maven-github:
+    type: maven-repository
+    url: https://maven.pkg.github.com/navikt/token-support
+    username: x-access-token
+    password: ${{secrets.GITHUB_TOKEN}}
+
+updates:
+  - package-ecosystem: "maven"
+    directory: "/platform/maven"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "org.springframework.boot*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.jetbrains.kotlin*"
+        versions: ["> 2.3.21"]
+    groups:
+      spring-boot-minor:
+        patterns: ["org.springframework.boot*"]
+        update-types: ["minor"]
+      maven-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      maven-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]

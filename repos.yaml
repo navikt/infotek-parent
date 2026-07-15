@@ -32,7 +32,7 @@ repos:
     namespace: infotrygd
     description: ""
     stack: []
-    default_branch: main
+    default_branch: master
     managed: true
     environments: [dev-fss, prod-fss, dev-gcp, prod-gcp]
 
@@ -59,7 +59,7 @@ repos:
     namespace: infotrygd
     description: ""
     stack: []
-    default_branch: main
+    default_branch: master
     managed: true
     environments: [dev-fss, prod-fss]
 
@@ -96,7 +96,7 @@ repos:
     namespace: historisk
     description: ""
     stack: []
-    default_branch: main
+    default_branch: master
     managed: true
     environments: [dev-fss, prod-fss]
 
@@ -105,7 +105,7 @@ repos:
     namespace: historisk
     description: ""
     stack: []
-    default_branch: main
+    default_branch: master
     managed: true
     environments: [dev-gcp, prod-gcp]
 
@@ -114,7 +114,7 @@ repos:
     namespace: historisk
     description: ""
     stack: []
-    default_branch: main
+    default_branch: master
     managed: true
     environments: [dev-gcp, prod-gcp]
 
@@ -123,7 +123,7 @@ repos:
     namespace: historisk
     description: ""
     stack: []
-    default_branch: main
+    default_branch: master
     managed: true
     environments: [dev-gcp, prod-gcp]
 
@@ -150,25 +150,6 @@ repos:
     namespace: historisk
     description: ""
     stack: []
-    default_branch: main
-    managed: false
-    environments: [dev-gcp, prod-gcp]
-
-  - name: historisk-helsetjenester
-    org: navikt
-    namespace: historisk
-    description: ""
-    stack: []
-    default_branch: main
-    managed: false
-    environments: []
-
-  # ── Namespace: historisk — ikke lenger aktivt forvaltet ───────────────────
-  - name: historisk-superhelt
-    org: navikt
-    namespace: historisk
-    description: ""
-    stack: []
-    default_branch: main
+    default_branch: master
     managed: false
     environments: [dev-gcp, prod-gcp]
