@@ -19,7 +19,9 @@ DRY_RUN = "--dry-run" in sys.argv
 
 
 def run(cmd, cwd=None, check=True):
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check)
+    env = os.environ.copy()
+    env["NODE_NO_WARNINGS"] = "1"
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env)
 
 
 def load_catalog():
@@ -121,7 +123,7 @@ def main():
             # Run pnpm install in the same directory as package.json to update lockfile
             pkg_dir = pkg_path.parent
             print(f"  ⏳ pnpm install i {pkg_dir.relative_to(repo_dir)}...")
-            install = run(["pnpm", "install", "--frozen-lockfile=false"], cwd=pkg_dir, check=False)
+            install = run(["pnpm", "install", "--no-frozen-lockfile"], cwd=pkg_dir, check=False)
             if install.returncode != 0:
                 print(f"  ⚠️  pnpm install feilet:\n{install.stderr[:500]}")
 

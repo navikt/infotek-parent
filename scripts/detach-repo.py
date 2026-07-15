@@ -18,6 +18,7 @@ Bruk:
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -65,7 +66,9 @@ STANDALONE_BIOME = {
 
 
 def run(cmd, cwd=None, check=True):
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check)
+    env = os.environ.copy()
+    env["NODE_NO_WARNINGS"] = "1"
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env)
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -219,7 +222,7 @@ def main():
         if changed:
             print(f"  ⏳ pnpm install...")
             run(
-                ["pnpm", "install", "--frozen-lockfile=false"],
+                ["pnpm", "install", "--no-frozen-lockfile"],
                 cwd=frontend_dir, check=False,
             )
 
