@@ -249,13 +249,44 @@ def run_streaming(cmd, cwd=None):
 
 
 def load_jsonc(path: Path) -> dict:
-    """Parse JSON or JSONC (JSON with // and /* */ comments)."""
+    """Parse JSON or JSONC (JSON with // and /* */ comments).
+    Strips comments while respecting string literals (e.g. https:// in URLs).
+    """
     text = path.read_text()
-    # Strip block comments /* ... */
-    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
-    # Strip line comments // ...
-    text = re.sub(r"//[^\n]*", "", text)
-    return json.loads(text)
+    result: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == '"':
+            result.append(c)
+            i += 1
+            while i < n:
+                sc = text[i]
+                result.append(sc)
+                if sc == '\\':
+                    i += 1
+                    if i < n:
+                        result.append(text[i])
+                elif sc == '"':
+                    break
+                i += 1
+        elif c == '/' and i + 1 < n:
+            if text[i + 1] == '/':
+                while i < n and text[i] != '\n':
+                    i += 1
+                continue
+            elif text[i + 1] == '*':
+                i += 2
+                while i < n - 1 and not (text[i] == '*' and text[i + 1] == '/'):
+                    i += 1
+                i += 2
+                continue
+            else:
+                result.append(c)
+        else:
+            result.append(c)
+        i += 1
+    return json.loads(''.join(result))
 
 
 def write_json(path: Path, data: dict) -> None:
@@ -400,9 +431,11 @@ def migrate_repo(repo_name: str, config: dict) -> None:
         return
 
     default_branch = config["default_branch"]
+    run(["git", "fetch", "origin"], cwd=repo_dir)
     run(["git", "checkout", default_branch], cwd=repo_dir)
-    run(["git", "pull", "--quiet"], cwd=repo_dir)
-    run(["git", "checkout", "-b", BRANCH], cwd=repo_dir, check=False)
+    run(["git", "reset", "--hard", f"origin/{default_branch}"], cwd=repo_dir)
+    run(["git", "branch", "-D", BRANCH], cwd=repo_dir, check=False)
+    run(["git", "checkout", "-b", BRANCH], cwd=repo_dir)
 
     # Apply changes
     pkg_changed = update_package_json(frontend_dir, config)
@@ -418,7 +451,8 @@ def migrate_repo(repo_name: str, config: dict) -> None:
     # pnpm install to update lockfile
     print(f"  ⏳ pnpm install...")
     rc = run_streaming(["pnpm", "install", "--no-frozen-lockfile"], cwd=frontend_dir)
-    if rc != 0:
+    pnpm_ok = rc == 0
+    if not pnpm_ok:
         print(f"  ⚠️  pnpm install feilet (fortsetter uten lockfile-oppdatering)")
 
     run(["git", "add", "-A"], cwd=repo_dir)
@@ -433,8 +467,8 @@ def migrate_repo(repo_name: str, config: dict) -> None:
     )
     print(f"  ✅ Commit 1: konfig-migrasjon")
 
-    # Reformat pass for repos with style deviations
-    if config.get("needs_reformat"):
+    # Reformat pass for repos with style deviations — kun hvis pnpm install lyktes
+    if config.get("needs_reformat") and pnpm_ok:
         biome_bin = frontend_dir / "node_modules" / ".bin" / "biome"
         if biome_bin.exists():
             print(f"  ⏳ biome format --write (4-space → 2-space)...")
@@ -457,7 +491,7 @@ def migrate_repo(repo_name: str, config: dict) -> None:
             print(f"  ⚠️  biome ikke installert — kjør 'pnpm install && biome format --write .' manuelt")
 
     # Push and create PR
-    run(["git", "push", "-u", "origin", BRANCH], cwd=repo_dir)
+    run(["git", "push", "--force-with-lease", "-u", "origin", BRANCH], cwd=repo_dir)
 
     pr_body = (
         "## Migrasjon til `@navikt/infotek-frontend-config`\n\n"
@@ -485,6 +519,10 @@ def migrate_repo(repo_name: str, config: dict) -> None:
     )
     if result.returncode == 0:
         print(f"  🔗 PR: {result.stdout.strip()}")
+    elif "already exists" in result.stderr:
+        m = re.search(r"https://\S+", result.stderr)
+        url = m.group(0) if m else result.stderr.strip()
+        print(f"  🔗 PR eksisterer allerede: {url}")
     else:
         print(f"  ❌ PR feilet: {result.stderr.strip()}")
 

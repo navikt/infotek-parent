@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs detach-repo update-frontend-deps pnpm-install migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset
+.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo update-frontend-deps pnpm-install migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status
 
 ##@ Hjelp
 
@@ -194,8 +194,8 @@ endif
 	@echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make push-all' for å pushe alle branches"
 
 push-all: _require-yq ## Push alle repos som er foran remote — spør om bekreftelse
-	@echo -e "$(BOLD)Sjekker repos med upubliserte commits...$(RESET)"
-	@to_push=""; \
+	@echo -e "$(BOLD)Sjekker repos med upubliserte commits...$(RESET)\n"
+	@tmpfile=$$(mktemp); \
 	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
@@ -203,34 +203,36 @@ push-all: _require-yq ## Push alle repos som er foran remote — spør om bekref
 	  [ "$$ahead" = "0" ] && continue; \
 	  branch=$$(git -C $$dir branch --show-current); \
 	  if [ "$$branch" = "$$default_branch" ]; then \
-	    echo -e "  ❌ $$name — på $$default_branch (protected)"; \
-	    echo -e "     Flytt commit til ny branch:"; \
-	    echo -e "     git -C repos/$$name checkout -b chore/..."; \
-	    echo -e "     git -C repos/$$name checkout $$default_branch && git -C repos/$$name reset --hard HEAD~$$ahead"; \
-	    echo ""; \
+	    echo -e "  ❌ $$name — på $$default_branch (protected, $$ahead commits)"; \
+	    echo -e "     git -C repos/$$name checkout -b chore/... && git -C repos/$$name checkout $$default_branch && git -C repos/$$name reset --hard HEAD~$$ahead"; \
 	  else \
-	    echo -e "  $(CYAN)→$(RESET) $$name  ($$branch, $$ahead commits)"; \
+	    echo -e "  $(CYAN)→$(RESET) $$name  [$$branch]  $$ahead commit(s)"; \
+	    echo "$$name $$branch" >> $$tmpfile; \
 	  fi; \
 	done; \
 	echo ""; \
-	echo -n "  Push? [j/N] " && read ans && case "$$ans" in \
-	  [jJ]*) \
-	    yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
-	      dir=$(PARENT_DIR)/$$name; \
-	      [ -d "$$dir" ] || continue; \
-	      ahead=$$(git -C $$dir rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
-	      [ "$$ahead" = "0" ] && continue; \
-	      branch=$$(git -C $$dir branch --show-current); \
-	      [ "$$branch" = "$$default_branch" ] && continue; \
-	      git -C $$dir push -u origin $$branch --quiet && \
-	        echo -e "  $(GREEN)✓$(RESET) $$name pushed" || \
-	        echo -e "  ❌ $$name feilet"; \
-	    done;; \
-	  *) echo -e "  Avbrutt.";; \
-	esac
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å pushe."; \
+	  rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Push $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name branch; do \
+	        git -C $(PARENT_DIR)/$$name push -u origin $$branch --quiet && \
+	          echo -e "  $(GREEN)✓$(RESET) $$name  [$$branch]" || \
+	          echo -e "  ❌ $$name feilet"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
 pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-all [BRANCH=navn]
 	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
+
+pr-status: ## Vis åpne PRer og CI-tilstand for alle repos — bruk: make pr-status [MINE=1]
+	@python3 scripts/pr-status.py $(if $(MINE),--mine,)
 
 release-maven: ## Publiser ny versjon av Maven parent POM  — bruk: make release-maven VERSION=1.0.0
 ifndef VERSION
@@ -299,6 +301,10 @@ endif
 update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalog.json — lager PR per repo
 	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
 	@python3 scripts/update-frontend-deps.py
+
+merge-main: ## Merger default-branch inn i alle feature-branches på tvers av repos — bruk: make merge-main [DRY_RUN=1]
+	@echo -e "$(BOLD)Merger main inn i alle feature-branches$(RESET)"
+	@python3 scripts/merge-main.py $(if $(DRY_RUN),--dry-run)
 
 pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos
 	@echo -e "$(BOLD)Kjører pnpm install i alle repos$(RESET)"
@@ -387,6 +393,11 @@ docs: ## Regenerer ai/AGENTS.md fra repos.yaml
 	@echo -e "$(BOLD)Regenererer $(AGENTS_FILE)$(RESET)"
 	@python3 scripts/gen-agents.py $(REPOS_FILE) $(AGENTS_FILE)
 	@echo -e "  $(GREEN)✓$(RESET) $(AGENTS_FILE) oppdatert"
+
+update-readme: ## Regenerer repo-oversikt i README.md fra repos.yaml (henter beskrivelser fra GitHub)
+	@echo -e "$(BOLD)Regenererer repo-oversikt i README.md$(RESET)"
+	@python3 scripts/gen-readme-repos.py $(REPOS_FILE) README.md
+	@echo -e "  $(GREEN)✓$(RESET) README.md oppdatert"
 
 detach-repo: ## Løsriv eit repo frå infotek — bruk: make detach-repo REPO=<namn> [DRY_RUN=1]
 ifndef REPO
