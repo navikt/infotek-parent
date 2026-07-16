@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status pnpm-install
+.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo migrate-frontend-config update-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status pnpm-install
 
 ##@ Hjelp
 
@@ -305,6 +305,10 @@ merge-main: ## Merger default-branch inn i alle feature-branches på tvers av re
 migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make migrate-frontend-config [DRY_RUN=1]
 	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
 	@python3 scripts/migrate-frontend-config.py $(if $(DRY_RUN),--dry-run)
+
+update-frontend-config: ## Bump @navikt/infotek-frontend-config til versjon i katalogen i alle migrerte repos — bruk: make update-frontend-config [DRY_RUN=1]
+	@echo -e "$(BOLD)Bumper @navikt/infotek-frontend-config i alle frontend-repos$(RESET)"
+	@python3 scripts/update-frontend-config.py $(if $(DRY_RUN),--dry-run)
 
 pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos — bruk: make pnpm-install [DRY_RUN=1]
 	@echo -e "$(BOLD)Kjører pnpm install i alle repos$(RESET)"
