@@ -58,7 +58,6 @@ make help
 | `make pr-all TITLE="chore: ..."` | Lag PRer for alle repos på feature-branch |
 | `make update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
 | `make update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
-| `make update-frontend-deps` | Bump frontend-avhengigheter fra `platform/pnpm/package.json` + lager PRer |
 
 ### Publisering
 
@@ -113,8 +112,7 @@ infotek-parent/
 ├── scripts/
 │   ├── gen-agents.py
 │   ├── fmt-table.py
-│   ├── merge-npmrc.py
-│   └── update-frontend-deps.py
+│   └── merge-npmrc.py
 └── repos/                  # alle klonede team-repos (gitignored)
 ```
 

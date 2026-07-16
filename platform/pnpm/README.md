@@ -43,12 +43,7 @@ pnpm add -D @navikt/infotek-frontend-config
 ## Versjonsstyring
 
 Versjonene for alle frontend-avhengigheter ligger i `dependencies` og `devDependencies` i `package.json`.
-Dependabot i hvert child repo bumper avhengighetene direkte. For å tvinge synk på tvers:
-```bash
-make update-frontend-deps
-```
-
-Dette lager PRer til alle frontend-repos med oppdaterte versjoner fra `package.json`.
+Dependabot i hvert repo bumper avhengighetene direkte og lager PRer automatisk.
 
 ## Publisering
 

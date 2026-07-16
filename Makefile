@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo update-frontend-deps pnpm-install migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status
+.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status
 
 ##@ Hjelp
 
@@ -298,9 +298,9 @@ endif
 	  *) echo -e "  Avbrutt.";; \
 	esac
 
-update-frontend-deps: ## Oppdater frontend-avhengigheter til versjonene i catalog.json — lager PR per repo
-	@echo -e "$(BOLD)Oppdaterer frontend-avhengigheter fra platform/pnpm/catalog.json$(RESET)"
-	@python3 scripts/update-frontend-deps.py
+merge-main: ## Merger default-branch inn i alle feature-branches på tvers av repos — bruk: make merge-main [DRY_RUN=1]
+	@echo -e "$(BOLD)Merger main inn i alle feature-branches$(RESET)"
+	@python3 scripts/merge-main.py $(if $(DRY_RUN),--dry-run)
 
 merge-main: ## Merger default-branch inn i alle feature-branches på tvers av repos — bruk: make merge-main [DRY_RUN=1]
 	@echo -e "$(BOLD)Merger main inn i alle feature-branches$(RESET)"
@@ -340,7 +340,7 @@ update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos �
 	    relpath=$$(echo "$$npmrc" | sed "s|^$$dir/||"); \
 	    needs=0; \
 	    grep -q "ignore-scripts=true" "$$npmrc" || needs=1; \
-	    grep -q "min-release-age=7d" "$$npmrc" || needs=1; \
+	    grep -q "min-release-age=7" "$$npmrc" || needs=1; \
 	    grep -q "engine-strict=true" "$$npmrc" || needs=1; \
 	    grep -q "npm.pkg.github.com" "$$npmrc" || needs=1; \
 	    [ "$$needs" = "1" ] && echo -e "  $(CYAN)→$(RESET) $$name/$$relpath"; \
@@ -357,7 +357,7 @@ update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos �
 	        relpath=$$(echo "$$npmrc" | sed "s|^$$dir/||"); \
 	        needs=0; \
 	        grep -q "ignore-scripts=true" "$$npmrc" || needs=1; \
-	        grep -q "min-release-age=7d" "$$npmrc" || needs=1; \
+	        grep -q "min-release-age=7" "$$npmrc" || needs=1; \
 	        grep -q "engine-strict=true" "$$npmrc" || needs=1; \
 	        grep -q "npm.pkg.github.com" "$$npmrc" || needs=1; \
 	        if [ "$$needs" = "1" ]; then \
@@ -379,7 +379,7 @@ update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos �
 	      repo_slug=$$(git -C $$dir remote get-url origin | sed 's/.*github.com[:/]\(.*\)\.git/\1/'); \
 	      gh pr create --repo $$repo_slug \
 	        --title "chore: synkroniser .npmrc til teamstandard" \
-	        --body "Legger til manglende innstillinger fra teamstandard:\n- \`ignore-scripts=true\`\n- \`min-release-age=7d\`\n- \`engine-strict=true\`\n- \`@navikt:registry\`" \
+	        --body "Legger til manglende innstillinger fra teamstandard:\n- \`ignore-scripts=true\`\n- \`min-release-age=7\`\n- \`engine-strict=true\`\n- \`@navikt:registry\`" \
 	        --base $$branch && \
 	        echo -e "  $(GREEN)+$(RESET) $$name: PR opprettet" || \
 	        echo -e "  $(GREEN)→$(RESET) $$name: pushet branch chore/npmrc-teamstandard"; \
@@ -421,7 +421,7 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@brew upgrade --cask temurin 2>/dev/null || true
 	@echo -e "  $(GREEN)✓$(RESET) Verktøy installert"
 	@echo -e "  $(CYAN)→$(RESET) Sikkerhetsinnstillinger for npm/pnpm..."
-	@echo -e "  Vil du legge til teamstandard i ~/.npmrc? (ignore-scripts, min-release-age=7d, engine-strict)"
+	@echo -e "  Vil du legge til teamstandard i ~/.npmrc? (ignore-scripts, min-release-age=7, engine-strict)"
 	@echo -n "  [j/N] " && read ans && case "$$ans" in \
 	  [jJ]*) python3 scripts/merge-npmrc.py platform/npm/.npmrc $$HOME/.npmrc 2>/dev/null || \
 	    cp platform/npm/.npmrc $$HOME/.npmrc; \
