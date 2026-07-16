@@ -58,6 +58,7 @@ make help
 | `make pr-all TITLE="chore: ..."` | Lag PRer for alle repos på feature-branch |
 | `make update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
 | `make update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
+| `make pnpm-install` | Kjør `pnpm install` i alle frontend-mapper på tvers av repos |
 
 ### Publisering
 
