@@ -8,6 +8,7 @@ Bruk: python3 scripts/update-frontend-deps.py [--dry-run]
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -102,6 +103,20 @@ def main():
         if not pkg_jsons:
             continue
 
+        # Sjekk ren arbeidstre før vi gjør noe
+        status = run(["git", "status", "--porcelain"], cwd=repo_dir)
+        if status.stdout.strip():
+            print(f"\n  ⚠️  Skipper {repo_dir.name} — ikke ren arbeidstre")
+            continue
+
+        # Hent siste endringer og sørg for at vi er på oppdatert default-branch
+        run(["git", "fetch", "origin"], cwd=repo_dir)
+        head_ref = run(["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"], cwd=repo_dir, check=False)
+        default_branch = head_ref.stdout.strip().removeprefix("origin/") if head_ref.returncode == 0 else "main"
+        run(["git", "checkout", default_branch], cwd=repo_dir)
+        run(["git", "reset", "--hard", f"origin/{default_branch}"], cwd=repo_dir)
+
+        # Beregn oppdateringer basert på siste main
         all_updates = {}
         for pkg_path in pkg_jsons:
             updates, _ = compute_updates(pkg_path, catalog)
@@ -121,14 +136,9 @@ def main():
         if DRY_RUN:
             continue
 
-        # Check for clean working tree
-        status = run(["git", "status", "--porcelain"], cwd=repo_dir)
-        if status.stdout.strip():
-            print(f"  ⚠️  Skipper {repo_name} — ikke ren arbeidstre")
-            continue
-
-        branch = f"infotek/update-frontend-deps"
-        run(["git", "checkout", "-b", branch], cwd=repo_dir, check=False)
+        branch = "infotek/update-frontend-deps"
+        run(["git", "branch", "-D", branch], cwd=repo_dir, check=False)
+        run(["git", "checkout", "-b", branch], cwd=repo_dir)
 
         for pkg_path, updates in all_updates.items():
             _, data = compute_updates(pkg_path, catalog)
@@ -151,14 +161,14 @@ def main():
         commit_msg = f"chore(deps): oppdater frontend-avhengigheter fra infotek-katalog\n\nOppdaterer: {short_list}"
 
         run(["git", "commit", "-m", commit_msg], cwd=repo_dir)
-        run(["git", "push", "origin", branch], cwd=repo_dir)
+        run(["git", "push", "--force-with-lease", "origin", branch], cwd=repo_dir)
 
         result = run(
             [
                 "gh", "pr", "create",
-                "--title", f"chore(deps): oppdater frontend-avhengigheter",
+                "--title", "chore(deps): oppdater frontend-avhengigheter",
                 "--body", f"Automatisk oppdatering fra [infotek-katalog](https://github.com/navikt/infotek-parent/blob/main/platform/pnpm/package.json).\n\n**Oppdaterte pakker:**\n" + "\n".join(f"- `{d}`" for d in dep_names),
-                "--base", "main",
+                "--base", default_branch,
                 "--head", branch,
             ],
             cwd=repo_dir,
@@ -166,6 +176,10 @@ def main():
         )
         if result.returncode == 0:
             print(f"  ✅ PR opprettet: {result.stdout.strip()}")
+        elif "already exists" in result.stderr:
+            m = re.search(r"https://\S+", result.stderr)
+            url = m.group(0) if m else result.stderr.strip()
+            print(f"  ✅ PR eksisterer allerede: {url}")
         else:
             print(f"  ❌ PR feilet: {result.stderr.strip()}")
 
