@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs detach-repo update-frontend-deps pnpm-install migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status
+.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo update-frontend-deps pnpm-install migrate-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status
 
 ##@ Hjelp
 
@@ -393,6 +393,11 @@ docs: ## Regenerer ai/AGENTS.md fra repos.yaml
 	@echo -e "$(BOLD)Regenererer $(AGENTS_FILE)$(RESET)"
 	@python3 scripts/gen-agents.py $(REPOS_FILE) $(AGENTS_FILE)
 	@echo -e "  $(GREEN)✓$(RESET) $(AGENTS_FILE) oppdatert"
+
+update-readme: ## Regenerer repo-oversikt i README.md fra repos.yaml (henter beskrivelser fra GitHub)
+	@echo -e "$(BOLD)Regenererer repo-oversikt i README.md$(RESET)"
+	@python3 scripts/gen-readme-repos.py $(REPOS_FILE) README.md
+	@echo -e "  $(GREEN)✓$(RESET) README.md oppdatert"
 
 detach-repo: ## Løsriv eit repo frå infotek — bruk: make detach-repo REPO=<namn> [DRY_RUN=1]
 ifndef REPO
