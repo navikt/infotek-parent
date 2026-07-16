@@ -25,8 +25,18 @@ import subprocess
 
 DRY_RUN = "--dry-run" in sys.argv
 REPOS_DIR = Path(__file__).parent.parent / "repos"
-PACKAGE_VERSION = "^1.0.0"
+CATALOG_PATH = Path(__file__).parent.parent / "platform" / "pnpm" / "package.json"
+PACKAGE_VERSION = "^1.0.1"
 BRANCH = "migrate/frontend-config"
+
+
+def load_catalog_version(pkg: str) -> str:
+    data = json.loads(CATALOG_PATH.read_text())
+    return (
+        data.get("devDependencies", {}).get(pkg)
+        or data.get("dependencies", {}).get(pkg)
+        or ""
+    )
 
 # ── Per-repo konfigurasjon ─────────────────────────────────────────────────
 
@@ -313,7 +323,7 @@ def update_package_json(frontend_dir: Path, config: dict) -> bool:
         dev_deps["@navikt/infotek-frontend-config"] = PACKAGE_VERSION
         # Also add @biomejs/biome if not present (for repos without it)
         if "@biomejs/biome" not in dev_deps:
-            dev_deps["@biomejs/biome"] = "^2.5.4"
+            dev_deps["@biomejs/biome"] = load_catalog_version("@biomejs/biome") or "2.5.2"
         changed = True
 
     # Remove eslint devDeps
