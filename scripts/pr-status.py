@@ -7,6 +7,7 @@ Bruk: python3 scripts/pr-status.py [--mine]
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -22,6 +23,33 @@ YELLOW = "\033[33m"
 CYAN  = "\033[36m"
 DIM   = "\033[2m"
 RESET = "\033[0m"
+
+
+def supports_osc8() -> bool:
+    """Returner True dersom terminalen støtter OSC 8 hyperlenker."""
+    term_program = os.environ.get("TERM_PROGRAM", "")
+    supported = {"iTerm.app", "WarpTerminal", "WezTerm", "vscode", "Hyper"}
+    if term_program in supported:
+        return True
+    if os.environ.get("VTE_VERSION"):  # GNOME Terminal og andre VTE-baserte
+        return True
+    if os.environ.get("ALACRITTY_SOCKET") or os.environ.get("ALACRITTY_LOG"):
+        return True
+    if os.environ.get("TERM") == "xterm-kitty":
+        return True
+    return False
+
+
+OSC8_SUPPORTED = supports_osc8()
+
+
+def link(url: str, text: str = None, style: str = None) -> str:
+    """Lag klikkbar lenke. Bruker OSC 8 dersom terminalen støtter det, ellers ren URL."""
+    label = text or url
+    if OSC8_SUPPORTED:
+        inner = f"{style}{label}{RESET}" if style else f"{DIM}{label}{RESET}"
+        return f"\033]8;;{url}\007{inner}\033]8;;\007"
+    return f"{style}{label}{RESET}" if (style and text) else url
 
 
 def run(cmd, check=False):
@@ -76,7 +104,7 @@ def fetch_prs(org: str, name: str) -> list:
     args = [
         "gh", "pr", "list",
         "--repo", f"{org}/{name}",
-        "--json", "number,title,headRefName,statusCheckRollup,author,isDraft",
+        "--json", "number,title,headRefName,statusCheckRollup,author,isDraft,url,mergeable",
         "--limit", "10",
         "--state", "open",
     ]
@@ -111,7 +139,8 @@ def main():
             continue
 
         total_prs += len(prs)
-        print(f"  {BOLD}{name}{RESET}")
+        repo_url = f"https://github.com/{org}/{name}"
+        print(f"  {link(repo_url, name, BOLD)}")
 
         for pr in prs:
             icon, detail = ci_status(pr.get("statusCheckRollup", []))
@@ -123,9 +152,12 @@ def main():
             title = pr["title"][:55] + ("…" if len(pr["title"]) > 55 else "")
             branch = f"{CYAN}{pr['headRefName']}{RESET}"
             detail_str = f"  {DIM}{detail}{RESET}" if detail else ""
+            conflict_str = f"  {RED}⚡ merge-konflikt{RESET}" if pr.get("mergeable") == "CONFLICTING" else ""
+            url = pr.get("url", "")
 
-            print(f"    {icon} {number} {draft}{title}")
+            print(f"    {icon} {number} {draft}{title}{conflict_str}")
             print(f"       {branch}{detail_str}")
+            print(f"       {link(url)}")
 
         print()
 
