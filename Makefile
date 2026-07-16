@@ -302,14 +302,6 @@ merge-main: ## Merger default-branch inn i alle feature-branches på tvers av re
 	@echo -e "$(BOLD)Merger main inn i alle feature-branches$(RESET)"
 	@python3 scripts/merge-main.py $(if $(DRY_RUN),--dry-run)
 
-merge-main: ## Merger default-branch inn i alle feature-branches på tvers av repos — bruk: make merge-main [DRY_RUN=1]
-	@echo -e "$(BOLD)Merger main inn i alle feature-branches$(RESET)"
-	@python3 scripts/merge-main.py $(if $(DRY_RUN),--dry-run)
-
-pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos
-	@echo -e "$(BOLD)Kjører pnpm install i alle repos$(RESET)"
-	@python3 scripts/pnpm-install.py $(if $(DRY_RUN),--dry-run)
-
 migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make migrate-frontend-config [DRY_RUN=1]
 	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
 	@python3 scripts/migrate-frontend-config.py $(if $(DRY_RUN),--dry-run)
