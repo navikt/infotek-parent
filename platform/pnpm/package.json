@@ -1,6 +1,6 @@
 {
   "name": "@navikt/infotek-frontend-config",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Delte konfigurasjoner og versjonskataloget for infotek sine frontend-prosjekter",
   "private": false,
   "license": "MIT",

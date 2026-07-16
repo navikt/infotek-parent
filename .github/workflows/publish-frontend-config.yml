@@ -38,7 +38,12 @@ jobs:
             VERSION="${GITHUB_REF_NAME#vfrontend-}"
           fi
           echo "Publishing version $VERSION"
-          pnpm version "$VERSION" --no-git-tag-version
+          CURRENT=$(node -p "require('./package.json').version")
+          if [ "$CURRENT" != "$VERSION" ]; then
+            pnpm version "$VERSION" --no-git-tag-version
+          else
+            echo "Versjon allerede satt til $VERSION, hopper over bump"
+          fi
         working-directory: platform/pnpm
 
       - name: Publish
