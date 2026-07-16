@@ -104,7 +104,7 @@ def fetch_prs(org: str, name: str) -> list:
     args = [
         "gh", "pr", "list",
         "--repo", f"{org}/{name}",
-        "--json", "number,title,headRefName,statusCheckRollup,author,isDraft,url,mergeable",
+        "--json", "number,title,headRefName,statusCheckRollup,author,isDraft,url,mergeable,isDraft",
         "--limit", "10",
         "--state", "open",
     ]

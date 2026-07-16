@@ -31,6 +31,11 @@
     "@navikt/aksel-icons": "^8.14.0",
     "@navikt/ds-css": "^8.14.0",
     "@navikt/ds-react": "^8.14.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.2",
     "@navikt/infotek-frontend-config": "^1.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
