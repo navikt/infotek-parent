@@ -4,6 +4,7 @@
     "includes": [
       "**",
       "!dist",
+      "!build",
       "!node_modules",
       "!.vite",
       "!generated",
