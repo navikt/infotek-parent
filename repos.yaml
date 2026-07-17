@@ -15,6 +15,7 @@ repos:
     stack: []
     default_branch: main
     managed: true
+    dependabot_skip: true  # buggy app, kandidat for sletting
     environments: [dev-gcp]
 
   - name: infotek-statistikk

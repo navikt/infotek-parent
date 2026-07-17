@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-pr-all gh-pr-status gh-apply-ruleset gh-detach-repo mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-pr-all gh-pr-status gh-apply-ruleset gh-detach-repo dependabot-status dependabot-behandle dependabot-rerun-failed dependabot-help mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -220,6 +220,53 @@ gh-pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make
 gh-pr-status: ## Vis åpne PRer og CI-tilstand for alle repos — bruk: make gh-pr-status [MINE=1]
 	@python3 scripts/pr-status.py $(if $(MINE),--mine,)
 
+##@ dependabot — Avhengighetsoppdateringer
+
+dependabot-status: ## Vis alle åpne Dependabot-PRer og CI-status på tvers av repos
+	@python3 scripts/dependabot-status.py
+
+dependabot-behandle: ## Interaktiv behandler: velg repos, vis diff, merge/update-branch/rerun — bruk: make dependabot-behandle [DRY_RUN=1]
+	@python3 scripts/dependabot-behandle.py $(if $(DRY_RUN),--dry-run,)
+
+dependabot-rerun-failed: ## Rerun feilede CI-sjekker på Dependabot-PRer — bruk: make dependabot-rerun-failed [DRY_RUN=1]
+	@python3 scripts/dependabot-rerun-failed.py $(if $(DRY_RUN),--dry-run,)
+
+dependabot-help: ## Vis detaljert hjelp og arbeidsflyt for Dependabot-kommandoene
+	@echo -e ""
+	@echo -e "$(BOLD)Dependabot — arbeidsflyt$(RESET)"
+	@echo -e ""
+	@echo -e "  Kjør denne flyten gjentatte ganger til alle PRer er merget:"
+	@echo -e ""
+	@echo -e "    $(CYAN)make dependabot-status$(RESET)        — oversikt over alle åpne PRer og CI-status"
+	@echo -e "    $(CYAN)make dependabot-behandle$(RESET)          — behandle PRer interaktivt (merge/update/rerun)"
+	@echo -e "    $(CYAN)make dependabot-rerun-failed$(RESET)  — rerun feilede CI-sjekker på tvers av repos"
+	@echo -e ""
+	@echo -e "$(BOLD)dependabot-behandle — valg per PR:$(RESET)"
+	@echo -e ""
+	@echo -e "  $(GREEN)[a]$(RESET) Godkjenn + auto-merge   Approve PR og aktiver auto-merge (når godkjenning mangler)"
+	@echo -e "  $(GREEN)[m]$(RESET) Merge                   Aktiver auto-merge (allerede godkjent)"
+	@echo -e "  $(GREEN)[u]$(RESET) Update-branch           Oppdater branch mot main, starter CI"
+	@echo -e "  $(GREEN)[r]$(RESET) Rerun CI                Rerun feilede jobs"
+	@echo -e "  $(GREEN)[v]$(RESET) Åpne i nettleser        Åpner PR i nettleser (tilgjengelig for alle PRer)"
+	@echo -e "  $(GREEN)[d]$(RESET) Se diff i nettleser     Åpner PR-diff i nettleser (vises kun når diff er trunkert)"
+	@echo -e "  $(GREEN)[s]$(RESET) Skip                    Hopp over denne PRen"
+	@echo -e ""
+	@echo -e "$(BOLD)Begrensede valg (auto-merge aktivert / venter):$(RESET)"
+	@echo -e ""
+	@echo -e "  Kun én PR per repo kan ha aktiv auto-merge om gangen."
+	@echo -e "  PRer som venter tilbyr kun: $(GREEN)[u]$(RESET) Update-branch  $(GREEN)[v]$(RESET) Åpne  $(GREEN)[r]$(RESET) Rerun CI  $(GREEN)[s]$(RESET) Skip"
+	@echo -e ""
+	@echo -e "$(BOLD)Typisk runde:$(RESET)"
+	@echo -e ""
+	@echo -e "  1. $(CYAN)make dependabot-behandle$(RESET)   — merge klare, update-branch utdaterte"
+	@echo -e "  2. Vent på CI"
+	@echo -e "  3. $(CYAN)make dependabot-behandle$(RESET)   — neste runde"
+	@echo -e "  4. Gjenta til $(GREEN)Ingen åpne Dependabot-PRer 🎉$(RESET)"
+	@echo -e ""
+	@echo -e "$(BOLD)Hopp over et repo:$(RESET)"
+	@echo -e "  Legg til $(CYAN)dependabot_skip: true$(RESET) på repoet i repos.yaml"
+	@echo -e ""
+
 ##@ git — Masseoperasjoner
 
 git-stage-all: _require-yq ## Stage alle lokale endringer i alle repos (skipper default-branch) — bruk: make git-stage-all [ALLOW_DEFAULT=1]
@@ -388,7 +435,7 @@ endif
 	  [ "$$current" = "$(VERSION)" ] && { echo -e "  ✅ $$name — allerede på $(VERSION)"; continue; }; \
 	  echo -e "  $(CYAN)→$(RESET) $$name  ($$current → $(VERSION))"; \
 	done
-	@echo ""
+	@echo -e ""
 	@echo -n "  Bump og lag PRer? [j/N] " && read ans && case "$$ans" in \
 	  [jJ]*) \
 	    yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
@@ -595,7 +642,7 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
-	@echo ""
+	@echo -e ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
 
 ##@ Internalt
