@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help clone fetch pull default status add-repo setup docs update-readme detach-repo migrate-frontend-config update-frontend-config release-maven release-npm multi-commit push-all pr-all apply-ruleset merge-main pr-status pnpm-install
+.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-pr-all gh-pr-status gh-apply-ruleset gh-detach-repo mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -20,9 +20,9 @@ help: ## Vis alle tilgjengelige kommandoer
 	  /^[a-zA-Z_-]+:.*?##/ { printf "  $(CYAN)%-18s$(RESET) %s\n", $$1, $$2 } \
 	  /^##@/ { printf "\n$(BOLD)%s$(RESET)\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 
-##@ Repo-administrasjon
+##@ git — Grunnoperasjoner
 
-clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
+git-clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
 	@echo -e "$(BOLD)Kloner alle repos til $(PARENT_DIR)/$(RESET)"
 	@mkdir -p $(PARENT_DIR)
 	@yq e '.repos[] | select(.managed == true) | .org + "/" + .name' $(REPOS_FILE) | while read repo; do \
@@ -38,57 +38,67 @@ clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
 	  fi \
 	done
 
-fetch: _require-yq ## Kjør git fetch --all på alle repos
+git-fetch: _require-yq ## Kjør git fetch --all på alle repos
 	@echo -e "$(BOLD)Fetcher alle repos$(RESET)"
-	@yq e '.repos[] | .name' $(REPOS_FILE) | while read name; do \
-	  dir=$(PARENT_DIR)/$$name; \
-	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make clone'"; continue; }; \
-	  echo -e "  $(CYAN)↻$(RESET) $$name"; \
-	  git -C $$dir fetch --all --prune --quiet; \
+	@yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
 	done
 
-pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper over dirty)
+git-pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper over dirty)
 	@echo -e "$(BOLD)Puller alle repos$(RESET)"
-	@yq e '.repos[] | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
-	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make clone'"; continue; }; \
+	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
 	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
 	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
 	    continue; \
 	  fi; \
 	  current=$$(git -C $$dir branch --show-current); \
 	  if [ "$$current" = "$$branch" ]; then \
-	    echo -e "  $(GREEN)↓$(RESET) $$name ($$branch)"; \
-	    git -C $$dir pull --quiet; \
+	    echo -e "  $(GREEN)↓$(RESET) $$name (default: $$branch)"; \
 	  else \
-	    echo -e "  ⏭  $$name — på branch '$$current', skipper pull"; \
-	  fi \
+	    echo -e "  $(GREEN)↓$(RESET) $$name ($$current)"; \
+	  fi; \
+	  git -C $$dir pull --ff-only --quiet; \
 	done
 
-default: _require-yq ## Switch til default branch + pull på alle repos
+git-default: _require-yq ## Switch til default branch + pull på alle repos
 	@echo -e "$(BOLD)Bytter til default branch og puller alle repos$(RESET)"
-	@yq e '.repos[] | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
-	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make clone'"; continue; }; \
+	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
 	  if git -C $$dir diff --quiet && git -C $$dir diff --cached --quiet; then \
 	    echo -e "  $(GREEN)→$(RESET) $$name: checkout $$branch + pull"; \
-	    git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
+	    git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet; \
 	  else \
 	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
 	  fi \
 	done
 
-status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-versjon
+git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til default branch
+	@echo -e "$(BOLD)Sletter mergede lokale branches$(RESET)"
+	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir/.git" ] || { echo -e "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
+	  git -C $$dir fetch --prune --quiet; \
+	  merged=$$(git -C $$dir branch --merged $$branch 2>/dev/null | grep -v "^\*\|^  $$branch$$" | sed 's/^[[:space:]]*//' | grep -v "^$$"); \
+	  if [ -z "$$merged" ]; then \
+	    echo -e "  $(GREEN)✓$(RESET) $$name — ingen branches å slette"; \
+	  else \
+	    echo -e "  $(CYAN)→$(RESET) $$name — sletter:"; \
+	    echo "$$merged" | while read b; do \
+	      git -C $$dir branch -d "$$b" --quiet && echo -e "    $(GREEN)-$(RESET) $$b"; \
+	    done; \
+	  fi \
+	done
+
+git-status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-versjon
 	@echo -e "$(BOLD)Status for alle repos$(RESET)"
 	@{ \
 	  printf "REPO\tBRANCH\tDIRTY\tBEHIND\tPARENT POM\n"; \
 	  printf "%s\t%s\t%s\t%s\t%s\n" "----" "------" "-----" "------" "----------"; \
-	  yq e '.repos[] | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	  yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	    dir=$(PARENT_DIR)/$$name; \
-	    if [ ! -d "$$dir/.git" ]; then \
-	      printf "%s\t%s\t%s\t%s\t%s\n" "$$name" "—" "—" "—" "❌ ikke klonet"; \
-	      continue; \
-	    fi; \
+	    [ -d "$$dir" ] || continue; \
 	    current=$$(git -C $$dir branch --show-current 2>/dev/null || echo "detached"); \
 	    if git -C $$dir diff --quiet && git -C $$dir diff --cached --quiet; then \
 	      dirty="✅"; \
@@ -109,53 +119,61 @@ status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-versj
 	  done; \
 	} | python3 scripts/fmt-table.py
 
-versions: _require-yq ## Vis avhengighetsversjoner på tvers av alle repos
-	@echo -e "$(BOLD)Versjoner på tvers av repos$(RESET)"
+mvn-versions: _require-yq ## Vis Maven-versjoner på tvers av alle repos (Java, Kotlin, parent POM…)
+	@echo -e "$(BOLD)Maven-versjoner på tvers av repos$(RESET)"
 	@{ \
-	  printf "REPO\tJAVA\tPARENT POM\tKOTLIN\tTOKEN-VAL\tHIBERNATE\tPOSTGRES\tTOMCAT\tNODE\tPNPM\tAKSEL\n"; \
-	  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "----" "----" "----------" "------" "---------" "---------" "--------" "------" "----" "----" "-----"; \
-	  yq e '.repos[] | .name' $(REPOS_FILE) | while read name; do \
+	  printf "REPO\tJAVA\tPARENT POM\tKOTLIN\tTOKEN-VAL\tHIBERNATE\tPOSTGRES\tTOMCAT\n"; \
+	  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "----" "----" "----------" "------" "---------" "---------" "--------" "------"; \
+	  yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
 	    dir=$(PARENT_DIR)/$$name; \
-	    [ -d "$$dir" ] || continue; \
-	    java_ver="—"; parent_ver="—"; kotlin_ver="—"; token_ver="—"; hibernate_ver="—"; pg_ver="—"; tomcat_ver="—"; node_ver="—"; pnpm_ver="—"; aksel_ver="—"; \
-	    if [ -f "$$dir/pom.xml" ]; then \
-	      java_ver=$$(grep -m1 '<java.version>\|<maven.compiler.source>' $$dir/pom.xml | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' ' | head -1); \
-	      [ -z "$$java_ver" ] && java_ver="—"; \
-	      parent_ver=$$(grep -A3 '<parent>' $$dir/pom.xml | grep '<version>' | head -1 | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | tr -d ' '); \
-	      [ -z "$$parent_ver" ] && parent_ver="—"; \
-	      kotlin_ver=$$(grep '<kotlin.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
-	      [ -z "$$kotlin_ver" ] && kotlin_ver="(BOM)"; \
-	      token_ver=$$(grep '<token-validation.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
-	      [ -z "$$token_ver" ] && token_ver="(BOM)"; \
-	      hibernate_ver=$$(grep '<hibernate.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
-	      [ -z "$$hibernate_ver" ] && hibernate_ver="(BOM)"; \
-	      pg_ver=$$(grep '<postgresql.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
-	      [ -z "$$pg_ver" ] && pg_ver="(BOM)"; \
-	      tomcat_ver=$$(grep '<tomcat.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
-	      [ -z "$$tomcat_ver" ] && tomcat_ver="(BOM)"; \
-	    fi; \
-	    pkg=$$(grep -rl '@navikt/ds-react' "$$dir" --include="package.json" 2>/dev/null | grep -v node_modules | head -1); \
-	    [ -z "$$pkg" ] && pkg=$$(find "$$dir" -name "package.json" -not -path "*/node_modules/*" -not -path "*/e2e/*" 2>/dev/null | head -1); \
-	    if [ -n "$$pkg" ]; then \
-	      pkgdir=$$(dirname $$pkg); \
-	      node_ver=$$(python3 -c "import json; d=json.load(open('$$pkg')); print(d.get('engines',{}).get('node','—'))" 2>/dev/null || echo "—"); \
-	      [ -f "$$pkgdir/.nvmrc" ] && node_ver=$$(cat $$pkgdir/.nvmrc | tr -d 'v\n'); \
-	      [ -z "$$node_ver" ] || [ "$$node_ver" = "None" ] && node_ver="—"; \
-	      pnpm_ver=$$(python3 -c "import json; d=json.load(open('$$pkg')); pm=d.get('packageManager',''); v=pm.split('@')[1] if '@' in pm and 'pnpm' in pm else '—'; print(v.split('+')[0])" 2>/dev/null || echo "—"); \
-	      aksel_ver=$$(python3 -c "import json; d=json.load(open('$$pkg')); deps={**d.get('dependencies',{}),**d.get('devDependencies',{})}; print(deps.get('@navikt/ds-react','—').lstrip('^~'))" 2>/dev/null || echo "—"); \
-	    fi; \
-	    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$$name" "$$java_ver" "$$parent_ver" "$$kotlin_ver" "$$token_ver" "$$hibernate_ver" "$$pg_ver" "$$tomcat_ver" "$$node_ver" "$$pnpm_ver" "$$aksel_ver"; \
+	    [ -f "$$dir/pom.xml" ] || continue; \
+	    java_ver="—"; parent_ver="—"; kotlin_ver="—"; token_ver="—"; hibernate_ver="—"; pg_ver="—"; tomcat_ver="—"; \
+	    java_ver=$$(grep -m1 '<java.version>\|<maven.compiler.source>' $$dir/pom.xml | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' ' | head -1); \
+	    [ -z "$$java_ver" ] && java_ver="—"; \
+	    parent_ver=$$(grep -A3 '<parent>' $$dir/pom.xml | grep '<version>' | head -1 | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | tr -d ' '); \
+	    [ -z "$$parent_ver" ] && parent_ver="—"; \
+	    kotlin_ver=$$(grep '<kotlin.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
+	    [ -z "$$kotlin_ver" ] && kotlin_ver="(BOM)"; \
+	    token_ver=$$(grep '<token-validation.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
+	    [ -z "$$token_ver" ] && token_ver="(BOM)"; \
+	    hibernate_ver=$$(grep '<hibernate.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
+	    [ -z "$$hibernate_ver" ] && hibernate_ver="(BOM)"; \
+	    pg_ver=$$(grep '<postgresql.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
+	    [ -z "$$pg_ver" ] && pg_ver="(BOM)"; \
+	    tomcat_ver=$$(grep '<tomcat.version>' $$dir/pom.xml | head -1 | sed 's/.*>\(.*\)<.*/\1/' | tr -d ' '); \
+	    [ -z "$$tomcat_ver" ] && tomcat_ver="(BOM)"; \
+	    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$$name" "$$java_ver" "$$parent_ver" "$$kotlin_ver" "$$token_ver" "$$hibernate_ver" "$$pg_ver" "$$tomcat_ver"; \
 	  done; \
 	} | python3 scripts/fmt-table.py
 
-##@ Legg til repo
+pnpm-versions: _require-yq ## Vis frontend-versjoner på tvers av alle repos (Node, pnpm, Aksel)
+	@echo -e "$(BOLD)Frontend-versjoner på tvers av repos$(RESET)"
+	@{ \
+	  printf "REPO\tNODE\tPNPM\tAKSEL\n"; \
+	  printf "%s\t%s\t%s\t%s\n" "----" "----" "----" "-----"; \
+	  yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	    dir=$(PARENT_DIR)/$$name; \
+	    pkg=$$(grep -rl '@navikt/ds-react' "$$dir" --include="package.json" 2>/dev/null | grep -v node_modules | head -1); \
+	    [ -z "$$pkg" ] && pkg=$$(find "$$dir" -name "package.json" -not -path "*/node_modules/*" -not -path "*/e2e/*" 2>/dev/null | head -1); \
+	    [ -z "$$pkg" ] && continue; \
+	    pkgdir=$$(dirname $$pkg); \
+	    node_ver=$$(python3 -c "import json; d=json.load(open('$$pkg')); print(d.get('engines',{}).get('node','—'))" 2>/dev/null || echo "—"); \
+	    [ -f "$$pkgdir/.nvmrc" ] && node_ver=$$(cat $$pkgdir/.nvmrc | tr -d 'v\n'); \
+	    [ -z "$$node_ver" ] || [ "$$node_ver" = "None" ] && node_ver="—"; \
+	    pnpm_ver=$$(python3 -c "import json; d=json.load(open('$$pkg')); pm=d.get('packageManager',''); v=pm.split('@')[1] if '@' in pm and 'pnpm' in pm else '—'; print(v.split('+')[0])" 2>/dev/null || echo "—"); \
+	    aksel_ver=$$(python3 -c "import json; d=json.load(open('$$pkg')); deps={**d.get('dependencies',{}),**d.get('devDependencies',{})}; print(deps.get('@navikt/ds-react','—').lstrip('^~'))" 2>/dev/null || echo "—"); \
+	    printf "%s\t%s\t%s\t%s\n" "$$name" "$$node_ver" "$$pnpm_ver" "$$aksel_ver"; \
+	  done; \
+	} | python3 scripts/fmt-table.py
 
-add-repo: _require-yq ## Registrer nytt repo  — bruk: make add-repo ORG=navikt REPO=navn DESC="beskrivelse"
+##@ gh — GitHub-administrasjon
+
+gh-add-repo: _require-yq ## Registrer nytt repo  — bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse"
 ifndef ORG
-	$(error ORG mangler. Bruk: make add-repo ORG=navikt REPO=navn DESC="beskrivelse")
+	$(error ORG mangler. Bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse")
 endif
 ifndef REPO
-	$(error REPO mangler. Bruk: make add-repo ORG=navikt REPO=navn DESC="beskrivelse")
+	$(error REPO mangler. Bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse")
 endif
 	@DESC=$${DESC:-"Ingen beskrivelse"}; \
 	DEFAULT_BRANCH=$$(gh repo view $(ORG)/$(REPO) --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null); \
@@ -168,14 +186,86 @@ endif
 	  $(MAKE) docs; \
 	fi
 
-##@ Masseoppdateringer
-
-multi-commit: _require-yq ## Commit staged endringer i alle repos med samme melding — bruk: make multi-commit MSG="chore: ..."
-ifndef MSG
-	$(error MSG mangler. Bruk: make multi-commit MSG="chore: beskrivelse")
+gh-detach-repo: ## Løsriv eit repo frå infotek — bruk: make gh-detach-repo REPO=<namn> [DRY_RUN=1]
+ifndef REPO
+	$(error REPO manglar. Bruk: make gh-detach-repo REPO=historisk-valutakalkulator)
 endif
-	@echo -e "$(BOLD)Committer i alle repos med staged endringer$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
+	@echo -e "$(BOLD)Løsriv $(REPO) frå infotek$(RESET)"
+	@python3 scripts/detach-repo.py REPO=$(REPO) $(if $(DRY_RUN),--dry-run)
+
+gh-apply-ruleset: ## Opprett eller oppdater branch-ruleset for et repo — bruk: make gh-apply-ruleset REPO=navikt/infotek-parent
+ifndef REPO
+	$(error REPO mangler. Bruk: make gh-apply-ruleset REPO=navikt/mitt-repo)
+endif
+	@echo -e "$(BOLD)Synkroniserer ruleset for $(REPO)$(RESET)"
+	@existing=$$(gh api repos/$(REPO)/rulesets --jq '.[0].id' 2>/dev/null); \
+	if [ -n "$$existing" ] && [ "$$existing" != "null" ]; then \
+	  echo -e "  Ruleset finnes allerede (id $$existing) — vil du oppdatere?"; \
+	  echo -n "  [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      gh api repos/$(REPO)/rulesets/$$existing --method PUT --input platform/github/ruleset-default.json >/dev/null && \
+	        echo -e "  $(GREEN)✓$(RESET) Ruleset oppdatert for $(REPO)" || \
+	        echo -e "  ❌ Oppdatering feilet";; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	else \
+	  gh api repos/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json >/dev/null && \
+	    echo -e "  $(GREEN)✓$(RESET) Ruleset opprettet for $(REPO)" || \
+	    echo -e "  ❌ Oppretting feilet — sjekk at repoet finnes og at du har admin-tilgang"; \
+	fi
+
+gh-pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make gh-pr-all [BRANCH=navn]
+	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
+
+gh-pr-status: ## Vis åpne PRer og CI-tilstand for alle repos — bruk: make gh-pr-status [MINE=1]
+	@python3 scripts/pr-status.py $(if $(MINE),--mine,)
+
+##@ git — Masseoperasjoner
+
+git-stage-all: _require-yq ## Stage alle lokale endringer i alle repos (skipper default-branch) — bruk: make git-stage-all [ALLOW_DEFAULT=1]
+	@echo -e "$(BOLD)Sjekker repos med lokale endringer$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir" ] || continue; \
+	  changes=$$(git -C $$dir status --porcelain 2>/dev/null); \
+	  [ -z "$$changes" ] && continue; \
+	  branch=$$(git -C $$dir branch --show-current 2>/dev/null); \
+	  if [ "$$branch" = "$$default_branch" ] && [ "$(ALLOW_DEFAULT)" != "1" ]; then \
+	    echo -e "  ⚠️  $$name — på $$default_branch, skipper (bruk ALLOW_DEFAULT=1 for å overstyre)"; \
+	    continue; \
+	  fi; \
+	  files=$$(echo "$$changes" | wc -l | tr -d ' '); \
+	  echo -e "  $(CYAN)→$(RESET) $$name  [$$branch]  $$files fil(er)"; \
+	  echo "$$name" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å stage."; \
+	  rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Stage endringer i $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        git -C $$dir add -A; \
+	        staged_count=$$(git -C $$dir diff --cached --name-only | wc -l | tr -d ' '); \
+	        echo -e "  $(GREEN)✓$(RESET) $$name staged ($$staged_count filer)"; \
+	      done < $$tmpfile; \
+	      echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make git-multi-commit MSG=\"chore: ...\"' etter staging";; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
+
+git-multi-commit: _require-yq ## Commit staged endringer i alle repos med samme melding — bruk: make git-multi-commit MSG="chore: ..."
+ifndef MSG
+	$(error MSG mangler. Bruk: make git-multi-commit MSG="chore: beskrivelse")
+endif
+	@echo -e "$(BOLD)Sjekker repos med staged endringer$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
 	  staged=$$(git -C $$dir diff --cached --name-only 2>/dev/null); \
@@ -185,23 +275,49 @@ endif
 	    echo -e "  ❌ $$name — på $$default_branch (protected). Lag branch først: git -C repos/$$name checkout -b chore/..."; \
 	    continue; \
 	  fi; \
-	  echo -e "  $(CYAN)→$(RESET) $$name ($$branch)"; \
-	  echo "$$staged" | sed 's/^/      /'; \
-	  git -C $$dir commit -m "$(MSG)" --quiet && \
-	    echo -e "  $(GREEN)✓$(RESET) $$name committed" || \
-	    echo -e "  ❌ $$name feilet"; \
-	done
-	@echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make push-all' for å pushe alle branches"
+	  files=$$(echo "$$staged" | wc -l | tr -d ' '); \
+	  echo -e "  $(CYAN)→$(RESET) $$name  [$$branch]  $$files fil(er)"; \
+	  echo "$$name" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å committe."; \
+	  rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Commit i $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        branch=$$(git -C $$dir branch --show-current 2>/dev/null); \
+	        staged=$$(git -C $$dir diff --cached --name-only 2>/dev/null); \
+	        [ -z "$$staged" ] && continue; \
+	        echo -e "  $(CYAN)→$(RESET) $$name ($$branch)"; \
+	        echo "$$staged" | sed 's/^/      /'; \
+	        git -C $$dir commit -m "$(MSG)" --quiet && \
+	          echo -e "  $(GREEN)✓$(RESET) $$name committed" || \
+	          echo -e "  ❌ $$name feilet"; \
+	      done < $$tmpfile; \
+	      echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make git-push-all' for å pushe alle branches";; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
-push-all: _require-yq ## Push alle repos som er foran remote — spør om bekreftelse
+git-push-all: _require-yq ## Push alle repos som er foran remote — spør om bekreftelse
 	@echo -e "$(BOLD)Sjekker repos med upubliserte commits...$(RESET)\n"
 	@tmpfile=$$(mktemp); \
 	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir" ] || continue; \
-	  ahead=$$(git -C $$dir rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
-	  [ "$$ahead" = "0" ] && continue; \
 	  branch=$$(git -C $$dir branch --show-current); \
+	  upstream=$$(git -C $$dir rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true); \
+	  if [ -n "$$upstream" ]; then \
+	    ahead=$$(git -C $$dir rev-list --count $$upstream..HEAD 2>/dev/null || echo 0); \
+	  else \
+	    ahead=$$(git -C $$dir rev-list --count origin/$$default_branch..HEAD 2>/dev/null || echo 0); \
+	  fi; \
+	  [ "$$ahead" = "0" ] && continue; \
 	  if [ "$$branch" = "$$default_branch" ]; then \
 	    echo -e "  ❌ $$name — på $$default_branch (protected, $$ahead commits)"; \
 	    echo -e "     git -C repos/$$name checkout -b chore/... && git -C repos/$$name checkout $$default_branch && git -C repos/$$name reset --hard HEAD~$$ahead"; \
@@ -228,15 +344,25 @@ push-all: _require-yq ## Push alle repos som er foran remote — spør om bekref
 	  rm -f $$tmpfile; \
 	fi
 
-pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-all [BRANCH=navn]
-	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
+git-merge-main: ## Merger default-branch inn i alle feature-branches på tvers av repos — bruk: make git-merge-main [DRY_RUN=1]
+	@echo -e "$(BOLD)Merger default-branch inn i alle feature-branches$(RESET)"
+	@if [ -n "$(DRY_RUN)" ]; then \
+	  python3 scripts/merge-main.py --dry-run; \
+	else \
+	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
+	  python3 scripts/merge-main.py --dry-run; \
+	  echo ""; \
+	  echo -n "  Kjør merge-main nå? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) python3 scripts/merge-main.py;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	fi
 
-pr-status: ## Vis åpne PRer og CI-tilstand for alle repos — bruk: make pr-status [MINE=1]
-	@python3 scripts/pr-status.py $(if $(MINE),--mine,)
+##@ mvn — Maven
 
-release-maven: ## Publiser ny versjon av Maven parent POM  — bruk: make release-maven VERSION=1.0.0
+mvn-release: ## Publiser ny versjon av Maven parent POM  — bruk: make mvn-release VERSION=1.0.0
 ifndef VERSION
-	$(error VERSION mangler. Bruk: make release-maven VERSION=1.0.0)
+	$(error VERSION mangler. Bruk: make mvn-release VERSION=1.0.0)
 endif
 	@echo -e "$(BOLD)Tagger og publiserer Maven parent POM v$(VERSION)$(RESET)"
 	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
@@ -249,9 +375,9 @@ endif
 	  *) echo -e "  Avbrutt.";; \
 	esac
 
-update-kotlin: _require-yq ## Oppdater kotlin.version + Dependabot i alle repos  — bruk: make update-kotlin VERSION=2.x.y
+mvn-update-kotlin: _require-yq ## Oppdater kotlin.version + Dependabot i alle repos  — bruk: make mvn-update-kotlin VERSION=2.x.y
 ifndef VERSION
-	$(error VERSION mangler. Bruk: make update-kotlin VERSION=2.x.y)
+	$(error VERSION mangler. Bruk: make mvn-update-kotlin VERSION=2.x.y)
 endif
 	@echo -e "$(BOLD)Sjekker repos som kan bumpes til Kotlin $(VERSION)$(RESET)"
 	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
@@ -274,7 +400,7 @@ endif
 	      if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
 	        echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; continue; \
 	      fi; \
-	      git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
+	      git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet; \
 	      git -C $$dir checkout -b "chore/kotlin-$(VERSION)" --quiet 2>/dev/null || \
 	        git -C $$dir checkout "chore/kotlin-$(VERSION)" --quiet; \
 	      sed -i '' "s|<kotlin.version>$$current</kotlin.version>|<kotlin.version>$(VERSION)</kotlin.version>|g" $$dir/pom.xml; \
@@ -298,25 +424,60 @@ endif
 	  *) echo -e "  Avbrutt.";; \
 	esac
 
-merge-main: ## Merger default-branch inn i alle feature-branches på tvers av repos — bruk: make merge-main [DRY_RUN=1]
-	@echo -e "$(BOLD)Merger main inn i alle feature-branches$(RESET)"
-	@python3 scripts/merge-main.py $(if $(DRY_RUN),--dry-run)
+##@ pnpm — Frontend
 
-migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make migrate-frontend-config [DRY_RUN=1]
+pnpm-migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make pnpm-migrate-frontend-config [DRY_RUN=1]
 	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
-	@python3 scripts/migrate-frontend-config.py $(if $(DRY_RUN),--dry-run)
+	@if [ -n "$(DRY_RUN)" ]; then \
+	  python3 scripts/migrate-frontend-config.py --dry-run; \
+	else \
+	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
+	  python3 scripts/migrate-frontend-config.py --dry-run; \
+	  echo ""; \
+	  echo -n "  Kjør migrering nå? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) python3 scripts/migrate-frontend-config.py;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	fi
 
-update-frontend-config: ## Bump @navikt/infotek-frontend-config til versjon i katalogen i alle migrerte repos — bruk: make update-frontend-config [DRY_RUN=1]
+pnpm-update-frontend-config: ## Bump @navikt/infotek-frontend-config til versjon i katalogen i alle migrerte repos — bruk: make pnpm-update-frontend-config [DRY_RUN=1]
 	@echo -e "$(BOLD)Bumper @navikt/infotek-frontend-config i alle frontend-repos$(RESET)"
-	@python3 scripts/update-frontend-config.py $(if $(DRY_RUN),--dry-run)
+	@if [ -n "$(DRY_RUN)" ]; then \
+	  python3 scripts/update-frontend-config.py --dry-run; \
+	else \
+	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
+	  python3 scripts/update-frontend-config.py --dry-run; \
+	  echo ""; \
+	  echo -n "  Kjør bump nå? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) python3 scripts/update-frontend-config.py;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	fi
 
 pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos — bruk: make pnpm-install [DRY_RUN=1]
 	@echo -e "$(BOLD)Kjører pnpm install i alle repos$(RESET)"
-	@python3 scripts/pnpm-install.py $(if $(DRY_RUN),--dry-run)
+	@if [ -n "$(DRY_RUN)" ]; then \
+	  python3 scripts/pnpm-install.py --dry-run; \
+	else \
+	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
+	  python3 scripts/pnpm-install.py --dry-run; \
+	  echo ""; \
+	  echo -n "  Kjør pnpm install i alle funn nå? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) python3 scripts/pnpm-install.py;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	fi
 
-release-npm: ## Publiser ny versjon av @navikt/infotek-frontend-config  — bruk: make release-npm VERSION=1.0.0
+pnpm-biome-check: ## Kjør Biome-sjekk og typesjekk i alle frontend-repos — spør om auto-fix ved feil. Bruk: make pnpm-biome-check [FIX=1]
+	@if [ -n "$(FIX)" ]; then \
+	  python3 scripts/pnpm-biome-check.py --fix; \
+	else \
+	  python3 scripts/pnpm-biome-check.py; \
+	fi
+
+pnpm-release: ## Publiser ny versjon av @navikt/infotek-frontend-config  — bruk: make pnpm-release VERSION=1.0.0
 ifndef VERSION
-	$(error VERSION mangler. Bruk: make release-npm VERSION=1.0.0)
+	$(error VERSION mangler. Bruk: make pnpm-release VERSION=1.0.0)
 endif
 	@echo -e "$(BOLD)Tagger og publiserer @navikt/infotek-frontend-config v$(VERSION)$(RESET)"
 	@git diff --quiet && git diff --cached --quiet || { echo -e "  ⚠️  Har uncommitted endringer — commit først"; exit 1; }
@@ -329,7 +490,7 @@ endif
 	  *) echo -e "  Avbrutt.";; \
 	esac
 
-update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos — lager PR per repo
+pnpm-update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos — lager PR per repo
 	@echo -e "$(BOLD)Sjekker .npmrc mot teamstandard$(RESET)"
 	@TEMPLATE=$(CURDIR)/platform/npm/.npmrc; \
 	needs_update_list=""; \
@@ -370,7 +531,7 @@ update-npmrc: _require-yq ## Synkroniser .npmrc til teamstandard i alle repos �
 	      if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
 	        echo -e "  ⚠️  $$name — har andre uncommitted endringer, skipper push"; continue; \
 	      fi; \
-	      git -C $$dir checkout $$branch --quiet && git -C $$dir pull --quiet; \
+	      git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet; \
 	      git -C $$dir checkout -b "chore/npmrc-teamstandard" --quiet 2>/dev/null || \
 	        git -C $$dir checkout "chore/npmrc-teamstandard" --quiet; \
 	      git -C $$dir add -A; \
@@ -399,14 +560,6 @@ update-readme: ## Regenerer repo-oversikt i README.md fra repos.yaml (henter bes
 	@python3 scripts/gen-readme-repos.py $(REPOS_FILE) README.md
 	@echo -e "  $(GREEN)✓$(RESET) README.md oppdatert"
 
-detach-repo: ## Løsriv eit repo frå infotek — bruk: make detach-repo REPO=<namn> [DRY_RUN=1]
-ifndef REPO
-	$(error REPO manglar. Bruk: make detach-repo REPO=historisk-valutakalkulator)
-endif
-	@echo -e "$(BOLD)Løsriv $(REPO) frå infotek$(RESET)"
-	@python3 scripts/detach-repo.py REPO=$(REPO) $(if $(DRY_RUN),--dry-run)
-
-
 ##@ Oppsett
 
 setup: ## Installer verktøy på ny maskin (macOS)
@@ -428,33 +581,22 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	    echo -e "  $(GREEN)✓$(RESET) ~/.npmrc oppdatert";; \
 	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: python3 scripts/merge-npmrc.py platform/npm/.npmrc ~/.npmrc";; \
 	esac
+	@echo -e "  $(CYAN)→$(RESET) pnpm brukerkonfig (minimumReleaseAge, ignore-scripts)..."
+	@echo -e "  Vil du sette teamstandard pnpm-konfig globalt?"
+	@echo -e "  (minimumReleaseAge=1440, ignore-scripts, engine-strict)"
+	@echo -n "  [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) \
+	    pnpm config set minimumReleaseAge 1440 --location=user 2>/dev/null && \
+	    pnpm config set ignore-scripts true --location=user 2>/dev/null && \
+	    pnpm config set engine-strict true --location=user 2>/dev/null && \
+	    echo -e "  $(GREEN)✓$(RESET) pnpm brukerkonfig oppdatert" || \
+	    echo -e "  ⚠️  pnpm ikke funnet — installer med: brew install pnpm";; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: pnpm config set minimumReleaseAge 1440 --location=user";; \
+	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
 	@echo ""
-	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make clone' for å klone alle repos.$(RESET)"
-
-##@ GitHub-konfig
-
-apply-ruleset: ## Opprett eller oppdater branch-ruleset for et repo — bruk: make apply-ruleset REPO=navikt/infotek-parent
-ifndef REPO
-	$(error REPO mangler. Bruk: make apply-ruleset REPO=navikt/mitt-repo)
-endif
-	@echo -e "$(BOLD)Synkroniserer ruleset for $(REPO)$(RESET)"
-	@existing=$$(gh api repos/$(REPO)/rulesets --jq '.[0].id' 2>/dev/null); \
-	if [ -n "$$existing" ] && [ "$$existing" != "null" ]; then \
-	  echo -e "  Ruleset finnes allerede (id $$existing) — vil du oppdatere?"; \
-	  echo -n "  [j/N] " && read ans && case "$$ans" in \
-	    [jJ]*) \
-	      gh api repos/$(REPO)/rulesets/$$existing --method PUT --input platform/github/ruleset-default.json >/dev/null && \
-	        echo -e "  $(GREEN)✓$(RESET) Ruleset oppdatert for $(REPO)" || \
-	        echo -e "  ❌ Oppdatering feilet";; \
-	    *) echo -e "  Avbrutt.";; \
-	  esac; \
-	else \
-	  gh api repos/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json >/dev/null && \
-	    echo -e "  $(GREEN)✓$(RESET) Ruleset opprettet for $(REPO)" || \
-	    echo -e "  ❌ Oppretting feilet — sjekk at repoet finnes og at du har admin-tilgang"; \
-	fi
+	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
 
 ##@ Internalt
 

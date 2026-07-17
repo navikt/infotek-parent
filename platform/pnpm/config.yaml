@@ -1,0 +1,15 @@
+# Teamstandard pnpm-brukerkonfig for infotek-utviklere
+# Kopier til ~/.config/pnpm/config.yaml
+# Eller kjør: make setup  (setter dette automatisk)
+#
+# Se også platform/pnpm/pnpm-workspace.yaml for repo-nivå-konfig
+
+# Supply chain: ikke installer pakker nyere enn 24 timer lokalt
+# (repos bruker 7 dager — brukerverdi kan være kortere)
+minimumReleaseAge: 1440 # minutter = 24 timer
+
+# Ikke kjør install-scripts (preinstall, postinstall, prepare osv.)
+ignore-scripts: true
+
+# Krev at engines-feltet overholdes
+engine-strict: true

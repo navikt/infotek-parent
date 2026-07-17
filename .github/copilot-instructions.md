@@ -10,7 +10,7 @@
 |-----------|--------|
 | `repos.yaml` | Kilde til sannhet — alle teamets repos med org, namespace, default_branch |
 | `Makefile` | Alle kommandoer for å jobbe på tvers av repos |
-| `repos/` | Klonede repos (gitignored) — klones hit av `make clone` |
+| `repos/` | Klonede repos (gitignored) — klones hit av `make git-clone` |
 | `platform/maven/pom.xml` | Maven parent POM — publisert til GitHub Packages |
 | `platform/pnpm/package.json` | Godkjente frontend-versjoner og katalog |
 | `platform/pnpm/tsconfig.base.json` | Felles TypeScript-konfig |
@@ -22,21 +22,44 @@
 ### Makefile-kommandoer
 
 ```bash
-make clone              # klon alle repos til repos/
-make status             # branch + status for alle repos
-make versions           # nøkkelversjoner på tvers
-make fetch / pull / default
+make git-clone              # klon alle repos til repos/
+make git-status             # branch + status for alle repos
+make mvn-versions           # maven-versjoner på tvers
+make pnpm-versions          # frontend-versjoner på tvers
+make git-fetch / git-pull / git-default
 
-make multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på default-branch)
-make push-all                        # push alle feature-branches
-make pr-all                          # interaktiv PR-oppretter
+make git-multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på default-branch)
+make git-push-all                        # push alle feature-branches
+make gh-pr-all                           # interaktiv PR-oppretter
 
-make update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR
-make update-npmrc                    # sync .npmrc til teamstandard + PR
-make release-parent VERSION=4.x.x   # publiser Maven parent POM
-make release-frontend-config VERSION=1.x.x
-make setup                           # ny maskin — installer alle verktøy
+make mvn-update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR
+make pnpm-update-npmrc                   # sync .npmrc til teamstandard + PR
+make mvn-release VERSION=4.x.x          # publiser Maven parent POM
+make pnpm-release VERSION=1.x.x         # publiser frontend-config
+make setup                               # ny maskin — installer alle verktøy
 ```
+
+### Kun managed repos i Makefile-scripts
+
+Alle Makefile-targets og scripts som itererer over repos **skal kun gjelde managed repos**. Bruk alltid `select(.managed == true)` i yq-spørringer:
+
+```makefile
+yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE)
+```
+
+Aldri bruk `.repos[]` uten `select(.managed == true)` i targets som gjør endringer eller sjekker branches. Umanagede repos skal ikke røres.
+
+### Bruk Makefile først ved masseoperasjoner
+
+Når vi gjør samme operasjon i mange repoer, skal Copilot foreslå Makefile-kommandoer før manuelle git-steg per repo.
+
+- Commit i mange repoer: `make git-multi-commit MSG="chore: ..."`
+- Stage i mange repoer: `make git-stage-all`
+- Push i mange repoer: `make git-push-all`
+- Opprett PR-er i mange repoer: `make gh-pr-all`
+- Synk `.npmrc` i mange repoer: `make pnpm-update-npmrc`
+
+Bruk manuelle `git add/commit/push/gh pr create` når endringen gjelder ett repo, eller når du trenger kontroll per repo.
 
 ### Protected branches — viktig
 

@@ -1,13 +1,21 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
   "files": {
-    "includes": ["**", "!dist", "!node_modules", "!.vite", "!generated", "!**/*.gen.ts"]
+    "includes": [
+      "**",
+      "!dist",
+      "!node_modules",
+      "!.vite",
+      "!generated",
+      "!**/*.gen.ts",
+      "!vite.config.d.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 100
+    "lineWidth": 120
   },
   "linter": {
     "enabled": true,
@@ -25,6 +33,7 @@
     "formatter": {
       "arrowParentheses": "always",
       "jsxQuoteStyle": "double",
+      "quoteStyle": "double",
       "semicolons": "always",
       "trailingCommas": "es5"
     }

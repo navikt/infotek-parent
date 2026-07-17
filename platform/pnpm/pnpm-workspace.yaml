@@ -1,0 +1,13 @@
+# Teamstandard pnpm-workspace.yaml for infotek
+# Kopier til frontend/pnpm-workspace.yaml i hvert repo
+# Behold eventuelle repo-spesifikke overrides under
+
+allowBuilds:
+  esbuild: true
+
+# Supply chain: ikke installer pakker nyere enn 7 dager
+minimumReleaseAge: 10080 # minutter = 7 dager
+
+# Unntak: egne pakker vi eier og kontrollerer
+minimumReleaseAgeExclude:
+  - '@navikt/infotek-frontend-config'

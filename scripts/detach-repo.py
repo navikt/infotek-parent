@@ -192,7 +192,7 @@ def main():
     print(f"{'[DRY-RUN] ' if DRY_RUN else ''}🔓 Løsriver {REPO_NAME} fra infotek\n")
 
     if not repo_dir.exists():
-        print(f"  ⚠️  {REPO_NAME} er ikke klonet — kjør 'make clone' først")
+        print(f"  ⚠️  {REPO_NAME} er ikke klonet — kjør 'make git-clone' først")
         sys.exit(1)
 
     if DRY_RUN:
