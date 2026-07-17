@@ -18,7 +18,7 @@ Infotek-teamets felles plattform-repo. Her finner du verktøy for å jobbe med a
 gh repo clone navikt/infotek-parent
 cd infotek-parent
 make setup      # installer verktøy (brew, java, gh-cli, nais-cli)
-make clone      # klon alle team-repos til ./repos/
+make git-clone  # klon alle team-repos til ./repos/
 ```
 
 > **Forutsetter** at `gh` er installert og autentisert (`gh auth login`).
@@ -41,31 +41,32 @@ make help
 
 | Kommando | Beskrivelse |
 |----------|-------------|
-| `make clone` | Klon alle repos fra `repos.yaml` til `./repos/` (krever `make setup` først) |
-| `make fetch` | `git fetch` på alle repos |
-| `make pull` | `git pull` på alle repos |
-| `make default` | Switch til default branch + pull alle repos |
-| `make status` | Vis branch, status og parent POM-versjon for alle repos |
-| `make versions` | Vis nøkkelversjoner (Java, Kotlin, Aksel, Node…) på tvers |
-| `make add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |
+| `make git-clone` | Klon alle repos fra `repos.yaml` til `./repos/` (krever `make setup` først) |
+| `make git-fetch` | `git fetch` på alle repos |
+| `make git-pull` | `git pull` på alle repos |
+| `make git-default` | Switch til default branch + pull alle repos |
+| `make git-status` | Vis branch, status og parent POM-versjon for alle repos |
+| `make mvn-versions` | Vis Maven-versjoner (Java, Kotlin, parent POM…) på tvers |
+| `make pnpm-versions` | Vis frontend-versjoner (Node, pnpm, Aksel) på tvers |
+| `make gh-add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |
 
 ### Masseoppdateringer
 
 | Kommando | Beskrivelse |
 |----------|-------------|
-| `make multi-commit MSG="chore: ..."` | Commit staged endringer i alle repos med samme melding |
-| `make push-all` | Push alle repos som er foran remote |
-| `make pr-all TITLE="chore: ..."` | Lag PRer for alle repos på feature-branch |
-| `make update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
-| `make update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
+| `make git-multi-commit MSG="chore: ..."` | Commit staged endringer i alle repos med samme melding |
+| `make git-push-all` | Push alle repos som er foran remote |
+| `make gh-pr-all TITLE="chore: ..."` | Lag PRer for alle repos på feature-branch |
+| `make mvn-update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
+| `make pnpm-update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
 | `make pnpm-install` | Kjør `pnpm install` i alle frontend-mapper på tvers av repos |
 
 ### Publisering
 
 | Kommando | Beskrivelse |
 |----------|-------------|
-| `make release-maven VERSION=1.0.0` | Publiser ny versjon av Maven parent POM |
-| `make release-npm VERSION=1.0.0` | Publiser ny versjon av `@navikt/infotek-frontend-config` |
+| `make mvn-release VERSION=1.0.0` | Publiser ny versjon av Maven parent POM |
+| `make pnpm-release VERSION=1.0.0` | Publiser ny versjon av `@navikt/infotek-frontend-config` |
 
 ### Typisk arbeidsflyt for endringer på tvers
 
@@ -75,13 +76,13 @@ make help
 git -C repos/mitt-repo add .github/dependabot.yml
 
 # 3. Commit på tvers
-make multi-commit MSG="chore: legg til dependabot.yml"
+make git-multi-commit MSG="chore: legg til dependabot.yml"
 
 # 4. Push
-make push-all
+make git-push-all
 
 # 5. Lag PRer
-make pr-all TITLE="chore: legg til dependabot.yml" BODY="Ukentlig Dependabot for Maven, npm og GitHub Actions."
+make gh-pr-all TITLE="chore: legg til dependabot.yml" BODY="Ukentlig Dependabot for Maven, npm og GitHub Actions."
 ```
 
 ## Struktur
@@ -120,10 +121,12 @@ infotek-parent/
 ## Legg til et nytt repo
 
 ```bash
-make add-repo ORG=navikt REPO=min-app DESC="Beskrivelse av appen"
+make gh-add-repo ORG=navikt REPO=min-app DESC="Beskrivelse av appen"
 ```
 
 Dette oppdaterer `repos.yaml` og regenererer `ai/AGENTS.md` automatisk.
+
+> **Merk:** Alle Makefile-targets (`git-fetch`, `git-pull`, `git-status`, `mvn-versions`, `git-clean-branches` osv.) kjøres kun på repos med `managed: true` i `repos.yaml`. Umanagede repos røres ikke.
 
 <!-- AUTO-GENERATED:README-REPOS START -->
 

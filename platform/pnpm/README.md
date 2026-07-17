@@ -48,5 +48,5 @@ Dependabot i hvert repo bumper avhengighetene direkte og lager PRer automatisk.
 ## Publisering
 
 ```bash
-make release-npm VERSION=1.0.0
+make pnpm-release VERSION=1.0.0
 ```

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Formatter for make status — leser tab-separert input og skriver Unicode-justerte kolonner."""
+"""Formatter for make git-status — leser tab-separert input og skriver Unicode-justerte kolonner."""
 import sys
 import unicodedata
 

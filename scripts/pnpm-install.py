@@ -43,7 +43,7 @@ def find_package_jsons(repo_path):
 def main():
     repos = sorted(d for d in REPOS_DIR.iterdir() if d.is_dir())
     if not repos:
-        print("Ingen repos funnet. Kjør 'make clone' først.")
+        print("Ingen repos funnet. Kjør 'make git-clone' først.")
         sys.exit(1)
 
     total, ok, failed = 0, 0, 0

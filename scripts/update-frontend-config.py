@@ -65,7 +65,7 @@ def find_frontend_repos() -> list[tuple[Path, Path]]:
     """Returner liste med (repo_dir, frontend_dir) for alle repos med frontend/package.json."""
     results = []
     if not REPOS_DIR.exists():
-        raise SystemExit(f"❌ {REPOS_DIR} finnes ikke — kjør 'make clone' først")
+        raise SystemExit(f"❌ {REPOS_DIR} finnes ikke — kjør 'make git-clone' først")
     for repo_dir in sorted(REPOS_DIR.iterdir()):
         if not (repo_dir / ".git").exists():
             continue
@@ -112,7 +112,7 @@ def process_repo(repo_dir: Path, frontend_dir: Path, new_version: str) -> None:
     installed = get_installed_version(frontend_dir)
 
     if installed is None:
-        print(f"  ⏭  {repo_name} — ikke migrert, kjør 'make migrate-frontend-config'")
+        print(f"  ⏭  {repo_name} — ikke migrert, kjør 'make pnpm-migrate-frontend-config'")
         return
 
     if installed == new_version:

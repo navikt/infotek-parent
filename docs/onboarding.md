@@ -22,7 +22,7 @@ Dette installerer: Homebrew, `yq`, `git`, `gh` (GitHub CLI), `nais-cli`, Java (T
 ## 3. Klon alle team-repos
 
 ```bash
-make clone
+make git-clone
 ```
 
 Alle repos klones til `repos/` under dette repoet:
@@ -40,7 +40,7 @@ infotek/
 ## 4. Verifiser oppsett
 
 ```bash
-make status
+make git-status
 ```
 
 Du skal se alle repos med riktig branch og status `✅ ren`.
@@ -102,13 +102,13 @@ git -C repos/mitt-repo checkout -b chore/min-endring
 git -C repos/mitt-repo add .github/dependabot.yml
 
 # 3. Commit på tvers
-make multi-commit MSG="chore: beskrivelse"   # stopper med feil hvis du er på default-branch
+make git-multi-commit MSG="chore: beskrivelse"   # stopper med feil hvis du er på default-branch
 
 # 4. Push
-make push-all
+make git-push-all
 
 # 5. Lag PRer interaktivt
-make pr-all
+make gh-pr-all
 ```
 
 ## Nyttige kommandoer
@@ -116,12 +116,13 @@ make pr-all
 | Kommando | Beskrivelse |
 |---|---|
 | `make help` | Vis alle kommandoer |
-| `make fetch` | Fetch fra alle repos |
-| `make pull` | Pull på alle repos |
-| `make default` | Switch til main/master + pull alle |
-| `make status` | Oversikt over alle repos |
-| `make versions` | Nøkkelversjoner på tvers |
-| `make add-repo ORG=navikt REPO=navn` | Legg til nytt repo |
+| `make git-fetch` | Fetch fra alle repos |
+| `make git-pull` | Pull på alle repos |
+| `make git-default` | Switch til main/master + pull alle |
+| `make git-status` | Oversikt over alle repos |
+| `make mvn-versions` | Maven-versjoner på tvers |
+| `make pnpm-versions` | Frontend-versjoner på tvers |
+| `make gh-add-repo ORG=navikt REPO=navn` | Legg til nytt repo |
 
 ## Tilgang og systemer
 
