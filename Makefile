@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-pr-all gh-pr-status gh-apply-ruleset gh-detach-repo mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -43,9 +43,50 @@ git-fetch: _require-yq ## Kjør git fetch --all på alle repos
 	@yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
 	done
 
-git-pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper over dirty)
-	@echo -e "$(BOLD)Puller alle repos$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+git-pull: _require-yq ## Kjør git pull på alle repos (alle branches med tracking, hopper over dirty)
+	@echo -e "$(BOLD)Forhåndsvisning — git pull$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
+	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
+	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
+	    continue; \
+	  fi; \
+	  branches=$$(git -C $$dir for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/ | awk '$$2 != ""' | wc -l | tr -d ' '); \
+	  current=$$(git -C $$dir branch --show-current); \
+	  echo -e "  $(GREEN)↓$(RESET) $$name  ($$current, $$branches branches med tracking)"; \
+	  echo "$$name" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å pulle."; rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Pull $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        current=$$(git -C $$dir branch --show-current); \
+	        updated=0; \
+	        while read local remote; do \
+	          if [ "$$local" = "$$current" ]; then \
+	            git -C $$dir pull --ff-only --quiet 2>/dev/null && updated=$$((updated+1)) || true; \
+	          else \
+	            git -C $$dir fetch origin "$$remote:$$local" --update-head-ok --quiet 2>/dev/null && updated=$$((updated+1)) || true; \
+	          fi; \
+	        done < <(git -C $$dir for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/ | awk '$$2 != ""'); \
+	        echo -e "  $(GREEN)✓$(RESET) $$name ($$current, $$updated branches oppdatert)"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
+
+git-default: _require-yq ## Switch til default branch + pull på alle repos
+	@echo -e "$(BOLD)Forhåndsvisning — git default$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
 	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
@@ -54,29 +95,34 @@ git-pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper 
 	  fi; \
 	  current=$$(git -C $$dir branch --show-current); \
 	  if [ "$$current" = "$$branch" ]; then \
-	    echo -e "  $(GREEN)↓$(RESET) $$name (default: $$branch)"; \
+	    echo -e "  $(GREEN)→$(RESET) $$name  pull (allerede på $$branch)"; \
 	  else \
-	    echo -e "  $(GREEN)↓$(RESET) $$name ($$current)"; \
+	    echo -e "  $(GREEN)→$(RESET) $$name  checkout $$branch + pull  (fra $$current)"; \
 	  fi; \
-	  git -C $$dir pull --ff-only --quiet; \
-	done
-
-git-default: _require-yq ## Switch til default branch + pull på alle repos
-	@echo -e "$(BOLD)Bytter til default branch og puller alle repos$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
-	  dir=$(PARENT_DIR)/$$name; \
-	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
-	  if git -C $$dir diff --quiet && git -C $$dir diff --cached --quiet; then \
-	    echo -e "  $(GREEN)→$(RESET) $$name: checkout $$branch + pull"; \
-	    git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet; \
-	  else \
-	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
-	  fi \
-	done
+	  echo "$$name $$branch" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å gjøre."; rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Kjør på $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name branch; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet && \
+	          echo -e "  $(GREEN)✓$(RESET) $$name ($$branch)" || \
+	          echo -e "  ❌ $$name feilet"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
 git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til default branch
-	@echo -e "$(BOLD)Sletter mergede lokale branches$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	@echo -e "$(BOLD)Forhåndsvisning — git clean-branches$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir/.git" ] || { echo -e "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
 	  git -C $$dir fetch --prune --quiet; \
@@ -84,12 +130,28 @@ git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til 
 	  if [ -z "$$merged" ]; then \
 	    echo -e "  $(GREEN)✓$(RESET) $$name — ingen branches å slette"; \
 	  else \
-	    echo -e "  $(CYAN)→$(RESET) $$name — sletter:"; \
-	    echo "$$merged" | while read b; do \
-	      git -C $$dir branch -d "$$b" --quiet && echo -e "    $(GREEN)-$(RESET) $$b"; \
-	    done; \
-	  fi \
-	done
+	    echo -e "  $(CYAN)→$(RESET) $$name — vil slette:"; \
+	    echo "$$merged" | while read b; do echo -e "    - $$b"; done; \
+	    echo "$$merged" | while read b; do echo "$$name $$b"; done >> $$tmpfile; \
+	  fi; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å slette."; rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Slett $$count branch(es)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name b; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        git -C $$dir branch -d "$$b" --quiet && \
+	          echo -e "  $(GREEN)-$(RESET) $$name  $$b" || \
+	          echo -e "  ❌ $$name  $$b feilet"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
 git-status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-versjon
 	@echo -e "$(BOLD)Status for alle repos$(RESET)"
@@ -168,23 +230,129 @@ pnpm-versions: _require-yq ## Vis frontend-versjoner på tvers av alle repos (No
 
 ##@ gh — GitHub-administrasjon
 
-gh-add-repo: _require-yq ## Registrer nytt repo  — bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse"
-ifndef ORG
-	$(error ORG mangler. Bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse")
-endif
+gh-add-repo: _require-yq ## Registrer nytt repo — bruk: make gh-add-repo REPO=namn DESC="beskriving" [NAMESPACE=infotek] [ENVS="dev-gcp prod-gcp"] [DRY_RUN=1]
 ifndef REPO
-	$(error REPO mangler. Bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse")
+	$(error REPO mangler. Bruk: make gh-add-repo REPO=namn DESC="beskriving")
 endif
 	@DESC=$${DESC:-"Ingen beskrivelse"}; \
-	DEFAULT_BRANCH=$$(gh repo view $(ORG)/$(REPO) --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null); \
+	NS=$${NAMESPACE:-infotek}; \
+	ENVS_LIST=$${ENVS:-"dev-gcp prod-gcp"}; \
+	echo -e "🔍 Henter info om navikt/$(REPO)..."; \
+	DEFAULT_BRANCH=$$(gh repo view navikt/$(REPO) --json defaultBranchRef --jq '.defaultBranchRef.name // "main"' 2>/dev/null) && GH_REPO_EXISTS=1 || GH_REPO_EXISTS=0; \
 	DEFAULT_BRANCH=$${DEFAULT_BRANCH:-main}; \
-	if yq e '.repos[] | .name' $(REPOS_FILE) | grep -q "^$(REPO)$$"; then \
-	  echo -e "  ⚠️  $(REPO) er allerede registrert i $(REPOS_FILE)"; \
+	if yq e '.repos[] | .name' $(REPOS_FILE) | grep -q "^$(REPO)$$"; then REPO_EXISTS=1; else REPO_EXISTS=0; fi; \
+	if [ "$$REPO_EXISTS" -eq 1 ]; then \
+	  NS_CUR=$$(yq e '.repos[] | select(.name == "$(REPO)") | .namespace' $(REPOS_FILE) 2>/dev/null); \
+	  MANAGED_CUR=$$(yq e '.repos[] | select(.name == "$(REPO)") | .managed' $(REPOS_FILE) 2>/dev/null); \
+	  ENV_CUR=$$(yq e '.repos[] | select(.name == "$(REPO)") | .environments | length' $(REPOS_FILE) 2>/dev/null); \
+	  expr "$$ENV_CUR" + 0 >/dev/null 2>&1 || ENV_CUR=0; \
 	else \
-	  yq e -i '.repos += [{"name": "$(REPO)", "org": "$(ORG)", "description": "'"$$DESC"'", "stack": [], "default_branch": "'"$$DEFAULT_BRANCH"'"}]' $(REPOS_FILE); \
-	  echo -e "  $(GREEN)+$(RESET) $(REPO) lagt til i $(REPOS_FILE) (branch: $$DEFAULT_BRANCH)"; \
-	  $(MAKE) docs; \
-	fi
+	  NS_CUR=null; MANAGED_CUR=null; ENV_CUR=0; \
+	fi; \
+	existing=$$(gh api repos/navikt/$(REPO)/rulesets --jq 'length' 2>/dev/null); \
+	expr "$$existing" + 0 >/dev/null 2>&1 || existing=0; \
+	echo; \
+	echo -e "$(BOLD)📋 Plan for navikt/$(REPO) (branch: $$DEFAULT_BRANCH)$(RESET)$(if $(DRY_RUN), $(CYAN)[DRY RUN — ingen endringer gjøres]$(RESET),)"; \
+	if [ "$$GH_REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "   ├─ gh repo create navikt/$(REPO) --description \"$$DESC\" --public"; \
+	else \
+	  echo -e "   ├─ ⏭  GitHub repo: finnes allerede — hopper over"; \
+	fi; \
+	if [ "$$REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "   ├─ yq e -i '.repos += [{\"name\":\"$(REPO)\",\"org\":\"navikt\",\"namespace\":\"$$NS\",\"description\":\"$$DESC\",\"stack\":[],\"default_branch\":\"$$DEFAULT_BRANCH\",\"managed\":true}]' $(REPOS_FILE)"; \
+	  for env in $$ENVS_LIST; do \
+	    echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .environments) += [\"$$env\"]' $(REPOS_FILE)"; \
+	  done; \
+	else \
+	  echo -e "   ├─ ⏭  repos.yaml: entry finnes allerede"; \
+	  if [ "$$NS_CUR" = "null" ] || [ -z "$$NS_CUR" ]; then \
+	    echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .namespace) = \"$$NS\"' $(REPOS_FILE)"; \
+	  else \
+	    echo -e "   ├─ ⏭  namespace: allerede \"$$NS_CUR\" — hopper over"; \
+	  fi; \
+	  if [ "$$MANAGED_CUR" != "true" ]; then \
+	    echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .managed) = true' $(REPOS_FILE)"; \
+	  else \
+	    echo -e "   ├─ ⏭  managed: allerede true — hopper over"; \
+	  fi; \
+	  if [ "$$ENV_CUR" -eq 0 ]; then \
+	    for env in $$ENVS_LIST; do \
+	      echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .environments) += [\"$$env\"]' $(REPOS_FILE)"; \
+	    done; \
+	  else \
+	    echo -e "   ├─ ⏭  environments: allerede satt ($$ENV_CUR stk.) — hopper over"; \
+	  fi; \
+	fi; \
+	if [ "$$existing" -eq 0 ]; then \
+	  echo -e "   ├─ gh api repos/navikt/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json"; \
+	else \
+	  echo -e "   ├─ ⏭  ruleset: finnes allerede — hopper over"; \
+	fi; \
+	echo -e "   ├─ python3 scripts/gen-agents.py $(REPOS_FILE) $(AGENTS_FILE)"; \
+	echo -e "   ├─ python3 scripts/gen-readme-repos.py $(REPOS_FILE) README.md"; \
+	if [ -d "$(PARENT_DIR)/$(REPO)/.git" ]; then \
+	  echo -e "   └─ ⏭  git clone: $(PARENT_DIR)/$(REPO) finnes allerede — hopper over"; \
+	else \
+	  echo -e "   └─ gh repo clone navikt/$(REPO) $(PARENT_DIR)/$(REPO)"; \
+	fi; \
+	echo; \
+	$(if $(DRY_RUN),exit 0;) \
+	echo -n "Fortsett? [j/N] " && read -r ans && case "$$ans" in [jJ]*) ;; *) echo "Avbrutt."; exit 0;; esac; \
+	echo; \
+	if [ "$$GH_REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "  🆕 Oppretter navikt/$(REPO) på GitHub..."; \
+	  gh repo create navikt/$(REPO) --description "$$DESC" --public && \
+	    echo -e "  $(GREEN)✓$(RESET) Repo opprettet" || \
+	    { echo -e "  ❌ Kunne ikke opprette repo — avbryter"; exit 1; }; \
+	else \
+	  echo -e "  ⏭  GitHub repo: finnes allerede — hopper over"; \
+	fi; \
+	if [ "$$REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "  📝 Legger til i $(REPOS_FILE)..."; \
+	  yq e -i '.repos += [{"name": "$(REPO)", "org": "navikt", "namespace": "'"$$NS"'", "description": "'"$$DESC"'", "stack": [], "default_branch": "'"$$DEFAULT_BRANCH"'", "managed": true}]' $(REPOS_FILE); \
+	  for env in $$ENVS_LIST; do \
+	    yq e -i '(.repos[] | select(.name == "$(REPO)") | .environments) += ["'"$$env"'"]' $(REPOS_FILE); \
+	  done; \
+	else \
+	  echo -e "  📝 Patcher $(REPOS_FILE)..."; \
+	  if [ "$$NS_CUR" = "null" ] || [ -z "$$NS_CUR" ]; then \
+	    yq e -i '(.repos[] | select(.name == "$(REPO)") | .namespace) = "'"$$NS"'"' $(REPOS_FILE); \
+	  fi; \
+	  if [ "$$MANAGED_CUR" != "true" ]; then \
+	    yq e -i '(.repos[] | select(.name == "$(REPO)") | .managed) = true' $(REPOS_FILE); \
+	  fi; \
+	  if [ "$$ENV_CUR" -eq 0 ]; then \
+	    for env in $$ENVS_LIST; do \
+	      yq e -i '(.repos[] | select(.name == "$(REPO)") | .environments) += ["'"$$env"'"]' $(REPOS_FILE); \
+	    done; \
+	  fi; \
+	  if [ "$$NS_CUR" != "null" ] && [ -n "$$NS_CUR" ] && [ "$$MANAGED_CUR" = "true" ] && [ "$$ENV_CUR" -gt 0 ]; then \
+	    echo -e "  ℹ️  $(REPO) — alle felt OK, hopper over"; \
+	  fi; \
+	fi; \
+	echo -e "  🔒 Setter opp branch-ruleset..."; \
+	if [ "$$existing" -eq 0 ]; then \
+	  gh api repos/navikt/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json >/dev/null 2>&1 && \
+	    echo -e "  $(GREEN)✓$(RESET) Ruleset opprettet" || \
+	    echo -e "  ⚠️  Ruleset feilet — kjør: make gh-apply-ruleset REPO=navikt/$(REPO)"; \
+	else \
+	  echo -e "  ℹ️  Ruleset finnes allerede — hopper over"; \
+	fi; \
+	echo -e "  📚 Oppdaterer AGENTS.md..."; \
+	$(MAKE) -s --no-print-directory docs >/dev/null; \
+	echo -e "  📋 Oppdaterer README..."; \
+	$(MAKE) -s --no-print-directory update-readme >/dev/null; \
+	echo -e "  🖥️  Kloner repo lokalt..."; \
+	if [ -d "$(PARENT_DIR)/$(REPO)/.git" ]; then \
+	  echo -e "  ⏭  $(PARENT_DIR)/$(REPO) finnes allerede — hopper over"; \
+	else \
+	  mkdir -p $(PARENT_DIR); \
+	  gh repo clone navikt/$(REPO) $(PARENT_DIR)/$(REPO) && \
+	    echo -e "  $(GREEN)✓$(RESET) Klonet til $(PARENT_DIR)/$(REPO)" || \
+	    echo -e "  ⚠️  Kloning feilet"; \
+	fi; \
+	echo; \
+	echo -e "$(GREEN)✅ $(BOLD)navikt/$(REPO) er klar!$(RESET)"
 
 gh-detach-repo: ## Løsriv eit repo frå infotek — bruk: make gh-detach-repo REPO=<namn> [DRY_RUN=1]
 ifndef REPO
@@ -214,11 +382,16 @@ endif
 	    echo -e "  ❌ Oppretting feilet — sjekk at repoet finnes og at du har admin-tilgang"; \
 	fi
 
-gh-pr-all: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make gh-pr-all [BRANCH=navn]
+##@ pr — Pull requests
+
+pr: ## Behandle PRer interaktivt — velg modus ved oppstart — bruk: make pr [DRY_RUN=1]
+	@python3 scripts/pr-behandle.py $(if $(DRY_RUN),--dry-run,)
+
+pr-lag: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-lag [BRANCH=navn]
 	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
 
-gh-pr-status: ## Vis åpne PRer og CI-tilstand for alle repos — bruk: make gh-pr-status [MINE=1]
-	@python3 scripts/pr-status.py $(if $(MINE),--mine,)
+pr-rerun: ## Rerun feilede CI-sjekker på åpne PRer — bruk: make pr-rerun [DRY_RUN=1]
+	@python3 scripts/dependabot-rerun-failed.py $(if $(DRY_RUN),--dry-run,)
 
 ##@ git — Masseoperasjoner
 
@@ -388,7 +561,7 @@ endif
 	  [ "$$current" = "$(VERSION)" ] && { echo -e "  ✅ $$name — allerede på $(VERSION)"; continue; }; \
 	  echo -e "  $(CYAN)→$(RESET) $$name  ($$current → $(VERSION))"; \
 	done
-	@echo ""
+	@echo -e ""
 	@echo -n "  Bump og lag PRer? [j/N] " && read ans && case "$$ans" in \
 	  [jJ]*) \
 	    yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
@@ -595,7 +768,7 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
-	@echo ""
+	@echo -e ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
 
 ##@ Internalt

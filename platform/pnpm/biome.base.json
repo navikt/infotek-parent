@@ -4,9 +4,14 @@
     "includes": [
       "**",
       "!dist",
+      "!build",
       "!node_modules",
       "!.vite",
       "!generated",
+      "!playwright-report",
+      "!test-results",
+      "!playwright-report",
+      "!test-results",
       "!**/*.gen.ts",
       "!vite.config.d.ts"
     ]
