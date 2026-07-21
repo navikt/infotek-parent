@@ -230,23 +230,129 @@ pnpm-versions: _require-yq ## Vis frontend-versjoner på tvers av alle repos (No
 
 ##@ gh — GitHub-administrasjon
 
-gh-add-repo: _require-yq ## Registrer nytt repo  — bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse"
-ifndef ORG
-	$(error ORG mangler. Bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse")
-endif
+gh-add-repo: _require-yq ## Registrer nytt repo — bruk: make gh-add-repo REPO=namn DESC="beskriving" [NAMESPACE=infotek] [ENVS="dev-gcp prod-gcp"] [DRY_RUN=1]
 ifndef REPO
-	$(error REPO mangler. Bruk: make gh-add-repo ORG=navikt REPO=navn DESC="beskrivelse")
+	$(error REPO mangler. Bruk: make gh-add-repo REPO=namn DESC="beskriving")
 endif
 	@DESC=$${DESC:-"Ingen beskrivelse"}; \
-	DEFAULT_BRANCH=$$(gh repo view $(ORG)/$(REPO) --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null); \
+	NS=$${NAMESPACE:-infotek}; \
+	ENVS_LIST=$${ENVS:-"dev-gcp prod-gcp"}; \
+	echo -e "🔍 Henter info om navikt/$(REPO)..."; \
+	DEFAULT_BRANCH=$$(gh repo view navikt/$(REPO) --json defaultBranchRef --jq '.defaultBranchRef.name // "main"' 2>/dev/null) && GH_REPO_EXISTS=1 || GH_REPO_EXISTS=0; \
 	DEFAULT_BRANCH=$${DEFAULT_BRANCH:-main}; \
-	if yq e '.repos[] | .name' $(REPOS_FILE) | grep -q "^$(REPO)$$"; then \
-	  echo -e "  ⚠️  $(REPO) er allerede registrert i $(REPOS_FILE)"; \
+	if yq e '.repos[] | .name' $(REPOS_FILE) | grep -q "^$(REPO)$$"; then REPO_EXISTS=1; else REPO_EXISTS=0; fi; \
+	if [ "$$REPO_EXISTS" -eq 1 ]; then \
+	  NS_CUR=$$(yq e '.repos[] | select(.name == "$(REPO)") | .namespace' $(REPOS_FILE) 2>/dev/null); \
+	  MANAGED_CUR=$$(yq e '.repos[] | select(.name == "$(REPO)") | .managed' $(REPOS_FILE) 2>/dev/null); \
+	  ENV_CUR=$$(yq e '.repos[] | select(.name == "$(REPO)") | .environments | length' $(REPOS_FILE) 2>/dev/null); \
+	  expr "$$ENV_CUR" + 0 >/dev/null 2>&1 || ENV_CUR=0; \
 	else \
-	  yq e -i '.repos += [{"name": "$(REPO)", "org": "$(ORG)", "description": "'"$$DESC"'", "stack": [], "default_branch": "'"$$DEFAULT_BRANCH"'"}]' $(REPOS_FILE); \
-	  echo -e "  $(GREEN)+$(RESET) $(REPO) lagt til i $(REPOS_FILE) (branch: $$DEFAULT_BRANCH)"; \
-	  $(MAKE) docs; \
-	fi
+	  NS_CUR=null; MANAGED_CUR=null; ENV_CUR=0; \
+	fi; \
+	existing=$$(gh api repos/navikt/$(REPO)/rulesets --jq 'length' 2>/dev/null); \
+	expr "$$existing" + 0 >/dev/null 2>&1 || existing=0; \
+	echo; \
+	echo -e "$(BOLD)📋 Plan for navikt/$(REPO) (branch: $$DEFAULT_BRANCH)$(RESET)$(if $(DRY_RUN), $(CYAN)[DRY RUN — ingen endringer gjøres]$(RESET),)"; \
+	if [ "$$GH_REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "   ├─ gh repo create navikt/$(REPO) --description \"$$DESC\" --public"; \
+	else \
+	  echo -e "   ├─ ⏭  GitHub repo: finnes allerede — hopper over"; \
+	fi; \
+	if [ "$$REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "   ├─ yq e -i '.repos += [{\"name\":\"$(REPO)\",\"org\":\"navikt\",\"namespace\":\"$$NS\",\"description\":\"$$DESC\",\"stack\":[],\"default_branch\":\"$$DEFAULT_BRANCH\",\"managed\":true}]' $(REPOS_FILE)"; \
+	  for env in $$ENVS_LIST; do \
+	    echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .environments) += [\"$$env\"]' $(REPOS_FILE)"; \
+	  done; \
+	else \
+	  echo -e "   ├─ ⏭  repos.yaml: entry finnes allerede"; \
+	  if [ "$$NS_CUR" = "null" ] || [ -z "$$NS_CUR" ]; then \
+	    echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .namespace) = \"$$NS\"' $(REPOS_FILE)"; \
+	  else \
+	    echo -e "   ├─ ⏭  namespace: allerede \"$$NS_CUR\" — hopper over"; \
+	  fi; \
+	  if [ "$$MANAGED_CUR" != "true" ]; then \
+	    echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .managed) = true' $(REPOS_FILE)"; \
+	  else \
+	    echo -e "   ├─ ⏭  managed: allerede true — hopper over"; \
+	  fi; \
+	  if [ "$$ENV_CUR" -eq 0 ]; then \
+	    for env in $$ENVS_LIST; do \
+	      echo -e "   ├─ yq e -i '(.repos[] | select(.name==\"$(REPO)\") | .environments) += [\"$$env\"]' $(REPOS_FILE)"; \
+	    done; \
+	  else \
+	    echo -e "   ├─ ⏭  environments: allerede satt ($$ENV_CUR stk.) — hopper over"; \
+	  fi; \
+	fi; \
+	if [ "$$existing" -eq 0 ]; then \
+	  echo -e "   ├─ gh api repos/navikt/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json"; \
+	else \
+	  echo -e "   ├─ ⏭  ruleset: finnes allerede — hopper over"; \
+	fi; \
+	echo -e "   ├─ python3 scripts/gen-agents.py $(REPOS_FILE) $(AGENTS_FILE)"; \
+	echo -e "   ├─ python3 scripts/gen-readme-repos.py $(REPOS_FILE) README.md"; \
+	if [ -d "$(PARENT_DIR)/$(REPO)/.git" ]; then \
+	  echo -e "   └─ ⏭  git clone: $(PARENT_DIR)/$(REPO) finnes allerede — hopper over"; \
+	else \
+	  echo -e "   └─ gh repo clone navikt/$(REPO) $(PARENT_DIR)/$(REPO)"; \
+	fi; \
+	echo; \
+	$(if $(DRY_RUN),exit 0;) \
+	echo -n "Fortsett? [j/N] " && read -r ans && case "$$ans" in [jJ]*) ;; *) echo "Avbrutt."; exit 0;; esac; \
+	echo; \
+	if [ "$$GH_REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "  🆕 Oppretter navikt/$(REPO) på GitHub..."; \
+	  gh repo create navikt/$(REPO) --description "$$DESC" --public && \
+	    echo -e "  $(GREEN)✓$(RESET) Repo opprettet" || \
+	    { echo -e "  ❌ Kunne ikke opprette repo — avbryter"; exit 1; }; \
+	else \
+	  echo -e "  ⏭  GitHub repo: finnes allerede — hopper over"; \
+	fi; \
+	if [ "$$REPO_EXISTS" -eq 0 ]; then \
+	  echo -e "  📝 Legger til i $(REPOS_FILE)..."; \
+	  yq e -i '.repos += [{"name": "$(REPO)", "org": "navikt", "namespace": "'"$$NS"'", "description": "'"$$DESC"'", "stack": [], "default_branch": "'"$$DEFAULT_BRANCH"'", "managed": true}]' $(REPOS_FILE); \
+	  for env in $$ENVS_LIST; do \
+	    yq e -i '(.repos[] | select(.name == "$(REPO)") | .environments) += ["'"$$env"'"]' $(REPOS_FILE); \
+	  done; \
+	else \
+	  echo -e "  📝 Patcher $(REPOS_FILE)..."; \
+	  if [ "$$NS_CUR" = "null" ] || [ -z "$$NS_CUR" ]; then \
+	    yq e -i '(.repos[] | select(.name == "$(REPO)") | .namespace) = "'"$$NS"'"' $(REPOS_FILE); \
+	  fi; \
+	  if [ "$$MANAGED_CUR" != "true" ]; then \
+	    yq e -i '(.repos[] | select(.name == "$(REPO)") | .managed) = true' $(REPOS_FILE); \
+	  fi; \
+	  if [ "$$ENV_CUR" -eq 0 ]; then \
+	    for env in $$ENVS_LIST; do \
+	      yq e -i '(.repos[] | select(.name == "$(REPO)") | .environments) += ["'"$$env"'"]' $(REPOS_FILE); \
+	    done; \
+	  fi; \
+	  if [ "$$NS_CUR" != "null" ] && [ -n "$$NS_CUR" ] && [ "$$MANAGED_CUR" = "true" ] && [ "$$ENV_CUR" -gt 0 ]; then \
+	    echo -e "  ℹ️  $(REPO) — alle felt OK, hopper over"; \
+	  fi; \
+	fi; \
+	echo -e "  🔒 Setter opp branch-ruleset..."; \
+	if [ "$$existing" -eq 0 ]; then \
+	  gh api repos/navikt/$(REPO)/rulesets --method POST --input platform/github/ruleset-default.json >/dev/null 2>&1 && \
+	    echo -e "  $(GREEN)✓$(RESET) Ruleset opprettet" || \
+	    echo -e "  ⚠️  Ruleset feilet — kjør: make gh-apply-ruleset REPO=navikt/$(REPO)"; \
+	else \
+	  echo -e "  ℹ️  Ruleset finnes allerede — hopper over"; \
+	fi; \
+	echo -e "  📚 Oppdaterer AGENTS.md..."; \
+	$(MAKE) -s --no-print-directory docs >/dev/null; \
+	echo -e "  📋 Oppdaterer README..."; \
+	$(MAKE) -s --no-print-directory update-readme >/dev/null; \
+	echo -e "  🖥️  Kloner repo lokalt..."; \
+	if [ -d "$(PARENT_DIR)/$(REPO)/.git" ]; then \
+	  echo -e "  ⏭  $(PARENT_DIR)/$(REPO) finnes allerede — hopper over"; \
+	else \
+	  mkdir -p $(PARENT_DIR); \
+	  gh repo clone navikt/$(REPO) $(PARENT_DIR)/$(REPO) && \
+	    echo -e "  $(GREEN)✓$(RESET) Klonet til $(PARENT_DIR)/$(REPO)" || \
+	    echo -e "  ⚠️  Kloning feilet"; \
+	fi; \
+	echo; \
+	echo -e "$(GREEN)✅ $(BOLD)navikt/$(REPO) er klar!$(RESET)"
 
 gh-detach-repo: ## Løsriv eit repo frå infotek — bruk: make gh-detach-repo REPO=<namn> [DRY_RUN=1]
 ifndef REPO
