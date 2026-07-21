@@ -972,26 +972,31 @@ def main_dependabot(repos: list):
                 print(f"   {BOLD}{j}{RESET}  {bump_label(e['bump'])}  {DIM}#{pr['number']}{RESET}  {title}  {STATE_HINT.get(e['state'], '')}{approval}")
                 print(f"      {DIM}{CYAN}{branch}{RESET}")
             print()
-            print(f"  {DIM}Velg PR — nummer / [b] Tilbake / [q] Avslutt:{RESET} ", end="", flush=True)
-            try:
-                pick = input().strip().lower()
-            except EOFError:
-                pick = "q"
-            if pick == "q":
-                print_summary(counts)
-                exit_alt_screen()
-                sys.exit(0)
-            if not pick or pick == "b":
-                break
-            try:
-                pr_idx = int(pick) - 1
-                if pr_idx < 0 or pr_idx >= len(entries):
-                    raise ValueError
-            except ValueError:
-                print(f"  {YELLOW}Ugyldig valg.{RESET}"); continue
+''            if len(entries) == 1:
+                print(f"  {DIM}→ Kun én PR — velger automatisk{RESET}\n")
+                chosen = entries[0]
+                action = handle_pr(org, name, chosen["pr"], chosen["state"], counts, bump=chosen["bump"])
+            else:
+                print(f"  {DIM}Velg PR — nummer / [b] Tilbake / [q] Avslutt:{RESET} ", end="", flush=True)
+                try:
+                    pick = input().strip().lower()
+                except EOFError:
+                    pick = "q"
+                if pick == "q":
+                    print_summary(counts)
+                    exit_alt_screen()
+                    sys.exit(0)
+                if not pick or pick == "b":
+                    break
+                try:
+                    pr_idx = int(pick) - 1
+                    if pr_idx < 0 or pr_idx >= len(entries):
+                        raise ValueError
+                except ValueError:
+                    print(f"  {YELLOW}Ugyldig valg.{RESET}"); continue
 
-            chosen = entries[pr_idx]
-            action = handle_pr(org, name, chosen["pr"], chosen["state"], counts, bump=chosen["bump"])
+                chosen = entries[pr_idx]
+                action = handle_pr(org, name, chosen["pr"], chosen["state"], counts, bump=chosen["bump"])
 
             # re-hent dette repoet
             print(f"\r{DIM}Oppdaterer {name[:35].ljust(35)}…{RESET}", end="", flush=True)
@@ -1115,26 +1120,31 @@ def main_standard(repos: list):
                 print(f"   {BOLD}{j}{RESET}  {state_icon(e['state'])}  {DIM}#{pr['number']}{RESET}  {draft}{title}{hints}")
                 print(f"      {DIM}{CYAN}{branch}{RESET}")
             print()
-            print(f"  {DIM}Velg PR — nummer / [b] Tilbake / [q] Avslutt:{RESET} ", end="", flush=True)
-            try:
-                pick = input().strip().lower()
-            except EOFError:
-                pick = "q"
-            if pick == "q":
-                print_summary(counts)
-                exit_alt_screen()
-                sys.exit(0)
-            if not pick or pick == "b":
-                break
-            try:
-                pr_idx = int(pick) - 1
-                if pr_idx < 0 or pr_idx >= len(entries):
-                    raise ValueError
-            except ValueError:
-                print(f"  {YELLOW}Ugyldig valg.{RESET}"); continue
+            if len(entries) == 1:
+                print(f"  {DIM}→ Kun én PR — velger automatisk{RESET}\n")
+                chosen = entries[0]
+                action = handle_pr(org, name, chosen["pr"], chosen["state"], counts)
+            else:
+                print(f"  {DIM}Velg PR — nummer / [b] Tilbake / [q] Avslutt:{RESET} ", end="", flush=True)
+                try:
+                    pick = input().strip().lower()
+                except EOFError:
+                    pick = "q"
+                if pick == "q":
+                    print_summary(counts)
+                    exit_alt_screen()
+                    sys.exit(0)
+                if not pick or pick == "b":
+                    break
+                try:
+                    pr_idx = int(pick) - 1
+                    if pr_idx < 0 or pr_idx >= len(entries):
+                        raise ValueError
+                except ValueError:
+                    print(f"  {YELLOW}Ugyldig valg.{RESET}"); continue
 
-            chosen = entries[pr_idx]
-            action = handle_pr(org, name, chosen["pr"], chosen["state"], counts)
+                chosen = entries[pr_idx]
+                action = handle_pr(org, name, chosen["pr"], chosen["state"], counts)
 
             # re-hent dette repoet for oppdatert liste
             print(f"\r{DIM}Oppdaterer {name[:35].ljust(35)}…{RESET}", end="", flush=True)
