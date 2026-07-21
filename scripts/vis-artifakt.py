@@ -281,16 +281,19 @@ def _open_downloaded_files(tmpdir: str) -> None:
         return
 
     if chosen.suffix.lower() in TEXT_EXTENSIONS:
-        content = chosen.read_text(errors="replace")
-        lines = content.splitlines()
-        total = len(lines)
-        shown = lines[:LOG_MAX_LINES]
-        print(f"\n  {DIM}— {chosen.name} ({total} linjer) —{RESET}\n")
-        for line in shown:
-            print(f"  {line}")
-        if total > LOG_MAX_LINES:
-            print(f"\n  {DIM}… +{total - LOG_MAX_LINES} linjer skjult. Åpne filen direkte: {chosen}{RESET}")
-        print()
+        less_bin = shutil.which("less")
+        if less_bin:
+            subprocess.run([less_bin, "-R", str(chosen)], check=False)
+        else:
+            content = chosen.read_text(errors="replace")
+            lines = content.splitlines()
+            total = len(lines)
+            print(f"\n  {DIM}— {chosen.name} ({total} linjer) —{RESET}\n")
+            for line in lines[:LOG_MAX_LINES]:
+                print(f"  {line}")
+            if total > LOG_MAX_LINES:
+                print(f"\n  {DIM}… +{total - LOG_MAX_LINES} linjer skjult. Åpne filen direkte: {chosen}{RESET}")
+            print()
     else:
         webbrowser.open(chosen.as_uri())
 

@@ -65,14 +65,11 @@ make help
 
 | Kommando | Beskrivelse |
 |----------|-------------|
-| `make pr` | Behandle åpne PRer interaktivt (ekskl. Dependabot) |
-| `make pr-dependabot` | Behandle Dependabot-PRer interaktivt |
-| `make pr-alle` | Behandle alle åpne PRer inkl. Dependabot |
+| `make pr` | Behandle PRer interaktivt — velg modus ved oppstart (alle, dependabot, mine, andres…) |
 | `make pr-lag` | Lag PRer interaktivt — velg repos, tittel og body |
 | `make pr-rerun` | Rerun feilede CI-sjekker på åpne PRer |
-| `make pr-help` | Vis arbeidsflyt og alle valg per PR |
 
-Valg per PR: `[a]` Godkjenn · `[b]` Godkjenn+auto-merge (Dependabot) · `[m]` Merge · `[u]` Update-branch · `[r]` Rerun CI · `[p]` Artifakter · `[v]` Åpne · `[s]` Skip
+Valg per PR: `[a]` Godkjenn · `[b]` Godkjenn+auto-merge (Dependabot) · `[m]` Merge · `[u]` Update-branch · `[r]` Rerun CI · `[p]` Artifakter · `[v]` Åpne · `[s]` Skip · `[n]` Neste repo
 
 Konfig i `config.json`: `diff_max_lines`, `merge_strategy`, `skip_repos`, `dependabot_skip_repos`, artifact-mønstre.
 

@@ -35,10 +35,8 @@ make git-multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på defau
 make git-push-all                        # push alle feature-branches
 make pr-lag                              # interaktiv PR-oppretter
 
-make pr                                  # behandle åpne PRer interaktivt (ekskl. Dependabot)
-make pr-dependabot                       # behandle Dependabot-PRer interaktivt
-make pr-alle                             # behandle alle PRer inkl. Dependabot
-make pr-help                             # vis arbeidsflyt og valg per PR
+make pr                                  # behandle PRer interaktivt (velg modus ved oppstart)
+make pr-rerun                            # rerun feilede CI-sjekker på tvers av repos
 
 make mvn-update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR
 make pnpm-update-npmrc                   # sync .npmrc til teamstandard + PR

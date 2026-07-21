@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-alle pr-lag pr-help pr-rerun pr-dependabot mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -216,43 +216,14 @@ endif
 
 ##@ pr — Pull requests
 
-pr: ## Behandle åpne PRer interaktivt (ekskl. Dependabot) — bruk: make pr [MINE=1] [DRY_RUN=1]
-	@python3 scripts/pr-behandle.py $(if $(MINE),--mine,) $(if $(DRY_RUN),--dry-run,)
-
-pr-alle: ## Behandle alle åpne PRer inkl. Dependabot — bruk: make pr-alle [DRY_RUN=1]
-	@python3 scripts/pr-behandle.py --alle $(if $(DRY_RUN),--dry-run,)
+pr: ## Behandle PRer interaktivt — velg modus ved oppstart — bruk: make pr [DRY_RUN=1]
+	@python3 scripts/pr-behandle.py $(if $(DRY_RUN),--dry-run,)
 
 pr-lag: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-lag [BRANCH=navn]
 	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
 
 pr-rerun: ## Rerun feilede CI-sjekker på åpne PRer — bruk: make pr-rerun [DRY_RUN=1]
 	@python3 scripts/dependabot-rerun-failed.py $(if $(DRY_RUN),--dry-run,)
-
-pr-dependabot: ## Behandle Dependabot-PRer interaktivt — bruk: make pr-dependabot [DRY_RUN=1]
-	@python3 scripts/pr-behandle.py --dependabot $(if $(DRY_RUN),--dry-run,)
-
-pr-help: ## Vis hjelp og arbeidsflyt for PR-kommandoene
-	@echo -e ""
-	@echo -e "$(BOLD)PR — arbeidsflyt$(RESET)"
-	@echo -e ""
-	@echo -e "    $(CYAN)make pr$(RESET)              — behandle åpne PRer (ekskl. Dependabot)"
-	@echo -e "    $(CYAN)make pr-alle$(RESET)         — behandle alle PRer inkl. Dependabot"
-	@echo -e "    $(CYAN)make pr-dependabot$(RESET)   — behandle Dependabot-PRer interaktivt"
-	@echo -e "    $(CYAN)make pr-lag$(RESET)          — lag PRer (velg repos, tittel og body)"
-	@echo -e "    $(CYAN)make pr-rerun$(RESET)        — rerun feilede CI-sjekker på tvers av repos"
-	@echo -e ""
-	@echo -e "$(BOLD)Valg per PR:$(RESET)"
-	@echo -e ""
-	@echo -e "  $(GREEN)[a]$(RESET) Godkjenn               Approve PR"
-	@echo -e "  $(GREEN)[b]$(RESET) Godkjenn + auto-merge   Approve og aktiver auto-merge (kun Dependabot)"
-	@echo -e "  $(GREEN)[m]$(RESET) Merge                   Aktiver auto-merge (allerede godkjent)"
-	@echo -e "  $(GREEN)[u]$(RESET) Update-branch           Oppdater branch mot main, starter CI"
-	@echo -e "  $(GREEN)[r]$(RESET) Rerun CI                Rerun feilede jobs"
-	@echo -e "  $(GREEN)[v]$(RESET) Åpne i nettleser        Åpner PR i nettleser"
-	@echo -e "  $(GREEN)[s]$(RESET) Skip                    Hopp over denne PRen"
-	@echo -e ""
-	@echo -e "  Flagg: $(CYAN)MINE=1$(RESET) — kun egne PRer  |  $(CYAN)DRY_RUN=1$(RESET) — vis uten å gjøre endringer"
-	@echo -e ""
 
 ##@ git — Masseoperasjoner
 
