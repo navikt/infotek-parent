@@ -13,6 +13,7 @@ Oversiktsskjermen:
   [f]         Bytt filter (alle / uten bot / bot / mine / andres)
   [b]         Vis kun bot-PRer (Dependabot)
   [v]         Vis detaljert oversikt i less
+  [e]         Hent alle repos på nytt
   nummer      Gå inn på repo
   [q]         Avslutt
 
@@ -152,7 +153,7 @@ def link(url: str, text: str = None, style: str = None) -> str:
     if OSC8_SUPPORTED:
         inner = f"{style}{label}{RESET}" if style else f"{DIM}{label}{RESET}"
         return f"\033]8;;{url}\007{inner}\033]8;;\007"
-    return f"{style}{label}{RESET}" if (style and text) else url
+    return f"{style}{label}{RESET}" if style else label
 
 
 def run(cmd, check=False):
@@ -347,12 +348,11 @@ def failed_check_names(pr: dict) -> list[str]:
     ]
 
 
-def show_diff(org: str, name: str, pr_number: int, max_lines: int | None = None) -> str:
-    """Hent og vis diff. Hvis for lang: spør bruker om less/nettleser/avkortet. Returnerer full_diff_text."""
+def _fetch_diff(org: str, name: str, pr_number: int) -> tuple[str, list[str]]:
+    """Hent og fargeleg diff. Returnerer (full_text, colored_lines)."""
     result = run(["gh", "pr", "diff", str(pr_number), "--repo", f"{org}/{name}"])
     if result.returncode != 0 or not result.stdout.strip():
-        print(f"     {DIM}Ingen diff tilgjengelig{RESET}")
-        return ""
+        return "", []
     lines = result.stdout.splitlines()
     colored = []
     for line in lines:
@@ -364,27 +364,7 @@ def show_diff(org: str, name: str, pr_number: int, max_lines: int | None = None)
             colored.append(f"  {CYAN}{line}{RESET}")
         else:
             colored.append(f"  {DIM}{line}{RESET}")
-    full_text = "\n".join(colored)
-    if max_lines is None or len(colored) <= max_lines:
-        print(full_text)
-        return full_text
-    # Diff passer ikke — gi bruker valg
-    print(f"  {DIM}Diff er {len(colored)} linjer (plass til {max_lines}).{RESET}")
-    print(f"  {DIM}[l] less  [w] nettleser  [t] avkortet  [s] hopp over:{RESET} ", end="", flush=True)
-    try:
-        pick = input().strip().lower()
-    except EOFError:
-        pick = "t"
-    if pick == "l":
-        show_paged(full_text)
-    elif pick == "w":
-        webbrowser.open(f"https://github.com/{org}/{name}/pull/{pr_number}/files")
-    elif pick == "s":
-        pass
-    else:
-        print("\n".join(colored[:max_lines]))
-        print(f"  {DIM}… +{len(colored) - max_lines} linjer skjult  ([d] for full diff){RESET}")
-    return full_text
+    return "\n".join(colored), colored
 
 
 def pick_rerun_interactive(org: str, name: str, branch: str) -> list[str]:
@@ -529,9 +509,14 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
     # header er ca 6 linjer, meny ca 2, buffer 3 → resten til diff
     header_lines = 8 + (1 if checks else 0) + (1 if state == "failed" else 0)
     diff_max = max(5, _term_rows() - header_lines - 4)
-    full_diff = ""
     print(f"\n     {DIM}Diff — {pr['title'][:70]}{RESET}\n")
-    full_diff = show_diff(org, name, number, max_lines=diff_max)
+    full_diff, diff_lines = _fetch_diff(org, name, number)
+    if not full_diff:
+        print(f"     {DIM}Ingen diff tilgjengelig{RESET}")
+    elif len(diff_lines) <= diff_max:
+        print(full_diff)
+    else:
+        print(f"  {DIM}Diff er {len(diff_lines)} linjer (plass til {diff_max}).{RESET}")
     print()
 
     # Begrensede valg for waiting/auto_merge
@@ -548,14 +533,20 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
         if is_behind:
             options.append("[u] Update-branch")
         if full_diff:
-            options.append("[d] Diff igjen")
+            options += ["[l] less", "[w] nettleser", "[t] avkortet"]
         options += ["[v] Åpne", "[b] Tilbake til repo", "[n] Neste repo", "[q] Avslutt"]
         while True:
             choice = prompt_cs(f"     {'  '.join(options)}  > ")
             if choice.lower() == "q":
                 print_summary(counts); exit_alt_screen(); sys.exit(0)
-            if choice.lower() == "d" and full_diff:
+            if choice.lower() == "l" and full_diff:
                 show_paged(full_diff); continue
+            if choice.lower() == "w" and full_diff:
+                webbrowser.open(f"https://github.com/{org}/{name}/pull/{number}/files"); continue
+            if choice.lower() == "t" and full_diff:
+                print("\n".join(diff_lines[:diff_max]))
+                print(f"  {DIM}… +{len(diff_lines) - diff_max} linjer skjult{RESET}")
+                continue
             if choice.lower() == "v":
                 webbrowser.open(pr_url); continue
             if choice.lower() == "b":
@@ -608,12 +599,12 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
         options.append("[r] Rerun CI")
     if is_behind:
         options.append("[u] Update-branch")
-    if needs_approval and state in ("green", "behind", "unknown", "running", "failed"):
+    if needs_approval and state in ("green", "behind", "unknown", "running", "failed", "blocked"):
         options.append("[a] Godkjenn")
     if state in ("green", "running") and not has_auto_merge:
         options.append("[m] Merge")
     if full_diff:
-        options.append("[d] Diff igjen")
+        options += ["[l] less", "[w] nettleser", "[t] avkortet"]
     options += ["[v] Åpne", "[b] Tilbake til repo", "[n] Neste repo", "[q] Avslutt"]
 
     while True:
@@ -621,6 +612,17 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
 
         if choice.lower() == "q":
             print_summary(counts); exit_alt_screen(); sys.exit(0)
+
+        if choice.lower() == "l" and full_diff:
+            show_paged(full_diff); continue
+
+        if choice.lower() == "w" and full_diff:
+            webbrowser.open(f"https://github.com/{org}/{name}/pull/{number}/files"); continue
+
+        if choice.lower() == "t" and full_diff:
+            print("\n".join(diff_lines[:diff_max]))
+            print(f"  {DIM}… +{len(diff_lines) - diff_max} linjer skjult{RESET}")
+            continue
 
         if choice.lower() == "p" and state == "failed":
             branch = pr["headRefName"]
@@ -645,13 +647,6 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
                 signal.signal(signal.SIGINT, _prev)
             continue
 
-        if choice.lower() == "d":
-            if full_diff:
-                show_paged(full_diff)
-            else:
-                print(f"     {DIM}Ingen diff tilgjengelig{RESET}")
-            continue
-
         if choice.lower() == "v":
             webbrowser.open(pr_url); continue
 
@@ -662,7 +657,7 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
             counts["skippet"] += 1
             return "next_repo"
 
-        if choice.lower() == "a" and needs_approval and state in ("green", "behind", "unknown", "running", "failed"):
+        if choice.lower() == "a" and needs_approval and state in ("green", "behind", "unknown", "running", "failed", "blocked"):
             if DRY_RUN:
                 print(f"     {DIM}→ ville godkjent{RESET}")
             else:
@@ -823,16 +818,19 @@ def print_overview_compact(repo_groups: list, total_prs: int, filter_info: str):
     active_idx = 1
     empty_repos = 0
     for group in repo_groups:
+        org  = group["org"]
+        name = group["name"]
+        repo_url = f"https://github.com/{org}/{name}"
         if not group["entries"]:
             empty_repos += 1
+            pr_count = f"{DIM}0 PRer{RESET}"
+            print(f"  {DIM}{active_idx:>2}  {link(repo_url, name):<40}  {pr_count}{RESET}")
+            active_idx += 1
             continue
         entries = group["entries"]
         total_failing += sum(1 for e in entries if e["state"] == "failed")
         icons = _repo_state_icons(entries)
         pr_count = f"{DIM}{len(entries)} PR{'er' if len(entries) != 1 else ''}{RESET}"
-        org  = group["org"]
-        name = group["name"]
-        repo_url = f"https://github.com/{org}/{name}"
         print(f"  {BOLD}{active_idx:>2}{RESET}  {link(repo_url, name, BOLD):<40}  {pr_count}  {icons}")
         active_idx += 1
     print()
@@ -840,7 +838,7 @@ def print_overview_compact(repo_groups: list, total_prs: int, filter_info: str):
     if total_failing:
         summary_parts.append(f"{RED}{total_failing} feiler{RESET}")
     if empty_repos:
-        summary_parts.append(f"{DIM}{empty_repos} repos uten PRer{RESET}")
+        summary_parts.append(f"{DIM}{empty_repos} rene repos{RESET}")
     print("  " + "  ·  ".join(summary_parts) + "\n")
 
 
@@ -854,7 +852,8 @@ def build_overview_detailed(repo_groups: list, total_prs: int, filter_info: str)
         name = group["name"]
         repo_url = f"https://github.com/{org}/{name}"
         if not group["entries"]:
-            out.append(f"  {DIM}    {name}  ingen PRer{RESET}")
+            out.append(f"  {DIM}{active_idx:>2}  {link(repo_url, name)}  ingen PRer{RESET}")
+            active_idx += 1
             continue
         num_str = f"{BOLD}{active_idx:>2}{RESET}"
         active_idx += 1
@@ -1034,6 +1033,7 @@ def main_standard(repos: list):
         return
 
     counts = {"merget": 0, "oppdatert": 0, "rerun": 0, "skippet": 0}
+    _pre_bot_filter = _current_filter_key()
 
     def _apply_and_refresh(key: str):
         nonlocal active_groups, total_prs
@@ -1046,8 +1046,24 @@ def main_standard(repos: list):
         clear_screen()
         print_overview_standard(repo_groups, active_groups, total_prs, get_filter_info())
 
+    def _refetch_all():
+        nonlocal repo_groups, active_groups, total_prs
+        repo_groups, active_groups = fetch_all(repos)
+        total_prs = sum(len(g["entries"]) for g in repo_groups)
+        clear_screen()
+        print_overview_standard(repo_groups, active_groups, total_prs, get_filter_info())
+
+    def _toggle_bot():
+        nonlocal _pre_bot_filter
+        if _current_filter_key() == "dependabot":
+            _apply_and_refresh(_pre_bot_filter)
+        else:
+            _pre_bot_filter = _current_filter_key()
+            _apply_and_refresh("dependabot")
+
     while True:
-        print(f"{DIM}Velg repo (nummer / [f] Filter / [b] Bot-PRer / [v] Detaljer / q=avslutt):{RESET} ", end="", flush=True)
+        bot_label = "Alle PRer" if _current_filter_key() == "dependabot" else "Bot-PRer"
+        print(f"{DIM}Velg repo (nummer / [f] Filter / [b] {bot_label} / [v] Detaljer / [e] Hent på nytt / q=avslutt):{RESET} ", end="", flush=True)
         try:
             raw = input().strip().lower()
         except EOFError:
@@ -1062,21 +1078,26 @@ def main_standard(repos: list):
             print_overview_standard(repo_groups, active_groups, total_prs, get_filter_info())
             continue
         if raw == "b":
-            _apply_and_refresh("dependabot")
+            _toggle_bot()
             continue
         if raw == "f":
             pick_filter_inline()
             _apply_and_refresh(_current_filter_key())
             continue
+        if raw == "e":
+            _refetch_all()
+            continue
 
         try:
             idx = int(raw) - 1
-            if idx < 0 or idx >= len(active_groups):
+            if idx < 0 or idx >= len(repo_groups):
                 raise ValueError
         except ValueError:
             print(f"\n  {DIM}Ugyldig valg.{RESET}\n"); continue
 
-        group = active_groups[idx]
+        group = repo_groups[idx]
+        if not group["entries"]:
+            print(f"\n  {DIM}Ingen åpne PRer for {group['name']}.{RESET}\n"); continue
         org   = group["org"]
         name  = group["name"]
 

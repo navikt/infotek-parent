@@ -43,9 +43,50 @@ git-fetch: _require-yq ## Kjør git fetch --all på alle repos
 	@yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
 	done
 
-git-pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper over dirty)
-	@echo -e "$(BOLD)Puller alle repos$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+git-pull: _require-yq ## Kjør git pull på alle repos (alle branches med tracking, hopper over dirty)
+	@echo -e "$(BOLD)Forhåndsvisning — git pull$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name' $(REPOS_FILE) | while read name; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
+	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
+	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
+	    continue; \
+	  fi; \
+	  branches=$$(git -C $$dir for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/ | awk '$$2 != ""' | wc -l | tr -d ' '); \
+	  current=$$(git -C $$dir branch --show-current); \
+	  echo -e "  $(GREEN)↓$(RESET) $$name  ($$current, $$branches branches med tracking)"; \
+	  echo "$$name" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å pulle."; rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Pull $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        current=$$(git -C $$dir branch --show-current); \
+	        updated=0; \
+	        while read local remote; do \
+	          if [ "$$local" = "$$current" ]; then \
+	            git -C $$dir pull --ff-only --quiet 2>/dev/null && updated=$$((updated+1)) || true; \
+	          else \
+	            git -C $$dir fetch origin "$$remote:$$local" --update-head-ok --quiet 2>/dev/null && updated=$$((updated+1)) || true; \
+	          fi; \
+	        done < <(git -C $$dir for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads/ | awk '$$2 != ""'); \
+	        echo -e "  $(GREEN)✓$(RESET) $$name ($$current, $$updated branches oppdatert)"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
+
+git-default: _require-yq ## Switch til default branch + pull på alle repos
+	@echo -e "$(BOLD)Forhåndsvisning — git default$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
 	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
@@ -54,29 +95,34 @@ git-pull: _require-yq ## Kjør git pull på alle repos (kun main/master, hopper 
 	  fi; \
 	  current=$$(git -C $$dir branch --show-current); \
 	  if [ "$$current" = "$$branch" ]; then \
-	    echo -e "  $(GREEN)↓$(RESET) $$name (default: $$branch)"; \
+	    echo -e "  $(GREEN)→$(RESET) $$name  pull (allerede på $$branch)"; \
 	  else \
-	    echo -e "  $(GREEN)↓$(RESET) $$name ($$current)"; \
+	    echo -e "  $(GREEN)→$(RESET) $$name  checkout $$branch + pull  (fra $$current)"; \
 	  fi; \
-	  git -C $$dir pull --ff-only --quiet; \
-	done
-
-git-default: _require-yq ## Switch til default branch + pull på alle repos
-	@echo -e "$(BOLD)Bytter til default branch og puller alle repos$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
-	  dir=$(PARENT_DIR)/$$name; \
-	  [ -d "$$dir/.git" ] || { echo "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
-	  if git -C $$dir diff --quiet && git -C $$dir diff --cached --quiet; then \
-	    echo -e "  $(GREEN)→$(RESET) $$name: checkout $$branch + pull"; \
-	    git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet; \
-	  else \
-	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
-	  fi \
-	done
+	  echo "$$name $$branch" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å gjøre."; rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Kjør på $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name branch; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        git -C $$dir checkout $$branch --quiet && git -C $$dir pull --ff-only --quiet && \
+	          echo -e "  $(GREEN)✓$(RESET) $$name ($$branch)" || \
+	          echo -e "  ❌ $$name feilet"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
 git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til default branch
-	@echo -e "$(BOLD)Sletter mergede lokale branches$(RESET)"
-	@yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	@echo -e "$(BOLD)Forhåndsvisning — git clean-branches$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir/.git" ] || { echo -e "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
 	  git -C $$dir fetch --prune --quiet; \
@@ -84,12 +130,28 @@ git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til 
 	  if [ -z "$$merged" ]; then \
 	    echo -e "  $(GREEN)✓$(RESET) $$name — ingen branches å slette"; \
 	  else \
-	    echo -e "  $(CYAN)→$(RESET) $$name — sletter:"; \
-	    echo "$$merged" | while read b; do \
-	      git -C $$dir branch -d "$$b" --quiet && echo -e "    $(GREEN)-$(RESET) $$b"; \
-	    done; \
-	  fi \
-	done
+	    echo -e "  $(CYAN)→$(RESET) $$name — vil slette:"; \
+	    echo "$$merged" | while read b; do echo -e "    - $$b"; done; \
+	    echo "$$merged" | while read b; do echo "$$name $$b"; done >> $$tmpfile; \
+	  fi; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å slette."; rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Slett $$count branch(es)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name b; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        git -C $$dir branch -d "$$b" --quiet && \
+	          echo -e "  $(GREEN)-$(RESET) $$name  $$b" || \
+	          echo -e "  ❌ $$name  $$b feilet"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
 git-status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-versjon
 	@echo -e "$(BOLD)Status for alle repos$(RESET)"
