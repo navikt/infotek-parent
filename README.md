@@ -138,6 +138,7 @@ Dette oppdaterer `repos.yaml` og regenererer `ai/AGENTS.md` automatisk.
 |------|-------------|---------|------|
 | [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | Applikasjon for å hente ut bruksdata av infotrygdrutiner | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-databaseuttrekk) |
 | [infotek-statistikk](https://github.com/navikt/infotek-statistikk) | Infotrygd statistikk  faste uttrekk for å lage månedsrapport. | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-statistikk) |
+| [infotek-personkort](https://github.com/navikt/infotek-personkort) | Oppslagsløsning for IP_90 personkort | — | — |
 
 ### 🟧 `infotrygd` — [Nais Console](https://console.nav.cloud.nais.io/team/infotrygd)
 
