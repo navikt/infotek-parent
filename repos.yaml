@@ -144,6 +144,4 @@ repos:
     stack: []
     default_branch: main
     managed: true
-    environments:
-      - dev-gcp
-      - prod-gcp
+    environments: [dev-gcp, prod-gcp]
