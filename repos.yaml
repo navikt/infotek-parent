@@ -16,6 +16,7 @@ repos:
     default_branch: main
     managed: true
     dependabot_skip: true  # buggy app, kandidat for sletting
+    pr_skip: true
     environments: [dev-gcp]
 
   - name: infotek-statistikk
@@ -26,6 +27,7 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-gcp]
+    playwright: true
 
   # ── Namespace: infotrygd ───────────────────────────────────────────────────
   - name: infotrygd-brukeroppslag
@@ -35,6 +37,7 @@ repos:
     stack: []
     default_branch: master
     managed: true
+    playwright: true
     environments: [dev-fss, prod-fss, dev-gcp, prod-gcp]
 
   - name: infotrygd-feed-proxy-v2
@@ -82,6 +85,7 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-gcp]
+    playwright: true
 
   - name: historisk-gravferdkalkulator
     org: navikt
@@ -91,6 +95,7 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-gcp]
+    playwright: true
 
   - name: historisk-exodus
     org: navikt
@@ -109,6 +114,7 @@ repos:
     default_branch: master
     managed: true
     environments: [dev-gcp, prod-gcp]
+    playwright: true
 
   - name: historisk-regnskap
     org: navikt
@@ -118,6 +124,7 @@ repos:
     default_branch: master
     managed: true
     environments: [dev-gcp, prod-gcp]
+    playwright: true
 
   - name: historisk-tidsbegrenset-uforestonad
     org: navikt
@@ -127,6 +134,7 @@ repos:
     default_branch: master
     managed: true
     environments: [dev-gcp, prod-gcp]
+    playwright: true
 
   - name: historisk-riddler
     org: navikt
@@ -136,6 +144,7 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-gcp]
+    playwright: true
 
   - name: historisk-valutakalkulator
     org: navikt
@@ -145,6 +154,7 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-gcp]
+    playwright: true
 
   - name: historisk-avgiftssystem
     org: navikt

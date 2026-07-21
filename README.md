@@ -56,10 +56,25 @@ make help
 |----------|-------------|
 | `make git-multi-commit MSG="chore: ..."` | Commit staged endringer i alle repos med samme melding |
 | `make git-push-all` | Push alle repos som er foran remote |
-| `make gh-pr-all TITLE="chore: ..."` | Lag PRer for alle repos på feature-branch |
+| `make pr-lag BRANCH=navn` | Lag PRer for alle repos på feature-branch |
 | `make mvn-update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
 | `make pnpm-update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
 | `make pnpm-install` | Kjør `pnpm install` i alle frontend-mapper på tvers av repos |
+
+### PR-behandling
+
+| Kommando | Beskrivelse |
+|----------|-------------|
+| `make pr` | Behandle åpne PRer interaktivt (ekskl. Dependabot) |
+| `make pr-dependabot` | Behandle Dependabot-PRer interaktivt |
+| `make pr-alle` | Behandle alle åpne PRer inkl. Dependabot |
+| `make pr-lag` | Lag PRer interaktivt — velg repos, tittel og body |
+| `make pr-rerun` | Rerun feilede CI-sjekker på åpne PRer |
+| `make pr-help` | Vis arbeidsflyt og alle valg per PR |
+
+Valg per PR: `[a]` Godkjenn · `[b]` Godkjenn+auto-merge (Dependabot) · `[m]` Merge · `[u]` Update-branch · `[r]` Rerun CI · `[p]` Artifakter · `[v]` Åpne · `[s]` Skip
+
+Konfig i `config.json`: `diff_max_lines`, `merge_strategy`, `skip_repos`, `dependabot_skip_repos`, artifact-mønstre.
 
 ### Publisering
 
@@ -82,7 +97,7 @@ make git-multi-commit MSG="chore: legg til dependabot.yml"
 make git-push-all
 
 # 5. Lag PRer
-make gh-pr-all TITLE="chore: legg til dependabot.yml" BODY="Ukentlig Dependabot for Maven, npm og GitHub Actions."
+make pr-lag
 ```
 
 ## Struktur
@@ -91,6 +106,7 @@ make gh-pr-all TITLE="chore: legg til dependabot.yml" BODY="Ukentlig Dependabot 
 infotek-parent/
 ├── repos.yaml              # kilde til sannhet — alle team-repos
 ├── Makefile                # alle kommandoer
+├── config.json             # konfig for scripts (diff, merge-strategi, skip-repos)
 ├── ai/
 │   └── AGENTS.md           # AI-oversikt over teamets repos og konvensjoner
 ├── .github/
@@ -108,10 +124,12 @@ infotek-parent/
 │   ├── npm/
 │   │   └── .npmrc          # teamstandard for npm/pnpm
 │   └── pnpm/
-│       ├── package.json    # @navikt/infotek-frontend-config + versjonskatalog
+│       ├── package.json    # @navikt/infotek-frontend-config
 │       ├── tsconfig.base.json
 │       └── biome.base.json
 ├── scripts/
+│   ├── pr-behandle.py      # interaktiv PR-behandler på tvers av repos
+│   ├── vis-artifakt.py     # last ned og vis CI-artifakter fra GitHub Actions
 │   ├── gen-agents.py
 │   ├── fmt-table.py
 │   └── merge-npmrc.py
