@@ -1,0 +1,15 @@
+{
+  "pr": {
+    "diff_max_lines": 40,
+    "merge_strategy": "squash",
+    "delete_branch_on_merge": true,
+    "pr_list_limit": 6,
+    "run_list_limit": 5,
+    "skip_repos": ["infotek-databaseuttrekk"],
+    "dependabot_skip_repos": ["infotek-databaseuttrekk"]
+  },
+  "artifakt": {
+    "patterns": ["playwright", "e2e", "report", "test-results", "pw-"],
+    "run_list_limit": 20
+  }
+}
