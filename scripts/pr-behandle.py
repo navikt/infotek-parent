@@ -23,7 +23,6 @@ Valg per PR:
   [u]  Update-branch (når PR er bak base)
   [r]  Rerun CI — interaktiv velger
   [p]  Artifakter fra siste failed run
-  [d]  Diff i less (lang diff: velg less / nettleser / avkortet)
   [v]  Åpne PR i nettleser
   [b]  Tilbake til repo
   [n]  Neste repo
@@ -533,7 +532,7 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
         if is_behind:
             options.append("[u] Update-branch")
         if full_diff:
-            options += ["[l] less", "[w] nettleser", "[t] avkortet"]
+            options += ["Diff( [l] less", "[w] nettleser", "[t] avkortet )"]
         options += ["[v] Åpne", "[b] Tilbake til repo", "[n] Neste repo", "[q] Avslutt"]
         while True:
             choice = prompt_cs(f"     {'  '.join(options)}  > ")
@@ -604,7 +603,7 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
     if state in ("green", "running") and not has_auto_merge:
         options.append("[m] Merge")
     if full_diff:
-        options += ["[l] less", "[w] nettleser", "[t] avkortet"]
+        options += ["Diff( [l] less", "[w] nettleser", "[t] avkortet )"]
     options += ["[v] Åpne", "[b] Tilbake til repo", "[n] Neste repo", "[q] Avslutt"]
 
     while True:
@@ -972,7 +971,7 @@ def main_dependabot(repos: list):
                 print(f"   {BOLD}{j}{RESET}  {bump_label(e['bump'])}  {DIM}#{pr['number']}{RESET}  {title}  {STATE_HINT.get(e['state'], '')}{approval}")
                 print(f"      {DIM}{CYAN}{branch}{RESET}")
             print()
-''            if len(entries) == 1:
+            if len(entries) == 1:
                 print(f"  {DIM}→ Kun én PR — velger automatisk{RESET}\n")
                 chosen = entries[0]
                 action = handle_pr(org, name, chosen["pr"], chosen["state"], counts, bump=chosen["bump"])

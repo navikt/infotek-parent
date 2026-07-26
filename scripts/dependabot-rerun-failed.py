@@ -133,7 +133,7 @@ def find_latest_run_id(org: str, name: str, branch: str) -> str | None:
 
 
 def ask_confirm(prompt: str) -> bool:
-    print(f"     {prompt} [{CYAN}j{RESET}/N] ", end="", flush=True)
+    print(f"     Handling: {prompt} | Bekreft: [{CYAN}j{RESET}/N] ", end="", flush=True)
     try:
         ans = input().strip().lower()
     except (EOFError, KeyboardInterrupt):

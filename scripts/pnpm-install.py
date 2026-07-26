@@ -9,6 +9,7 @@ Bruk:
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 DRY_RUN = "--dry-run" in sys.argv
@@ -46,28 +47,63 @@ def main():
         print("Ingen repos funnet. Kjør 'make git-clone' først.")
         sys.exit(1)
 
-    total, ok, failed = 0, 0, 0
-
+    targets: list[tuple[Path, Path]] = []
     for repo_dir in repos:
-        pkg_dirs = find_package_jsons(repo_dir)
-        if not pkg_dirs:
+        for pkg_dir in find_package_jsons(repo_dir):
+            targets.append((repo_dir, pkg_dir))
+
+    if not targets:
+        print("Ingen package.json funnet i klonede repos.")
+        return
+
+    selected_repo_names: set[str] | None = None
+    if sys.stdin.isatty():
+        with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
+            for name in sorted({repo_dir.name for repo_dir, _ in targets}):
+                tmp.write(f"{name}\n")
+            tmp_path = tmp.name
+        try:
+            selector = subprocess.run(
+                [
+                    "python3",
+                    str(Path(__file__).parent / "select-repos.py"),
+                    "--input",
+                    tmp_path,
+                    "--repos-dir",
+                    str(REPOS_DIR),
+                    "--default-filter",
+                    "a",
+                ],
+                stdout=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+        picked = [line.strip() for line in selector.stdout.splitlines() if line.strip()]
+        if not picked:
+            print("Avbrutt.")
+            return
+        selected_repo_names = set(picked)
+
+    total, ok, failed = 0, 0, 0
+    for repo_dir, pkg_dir in targets:
+        if selected_repo_names is not None and repo_dir.name not in selected_repo_names:
+            continue
+        rel = pkg_dir.relative_to(REPOS_DIR)
+        total += 1
+        print(f"\n{'[DRY-RUN] ' if DRY_RUN else ''}⏳ pnpm install: {rel}", flush=True)
+        if DRY_RUN:
+            ok += 1
             continue
 
-        for pkg_dir in pkg_dirs:
-            rel = pkg_dir.relative_to(REPOS_DIR)
-            total += 1
-            print(f"\n{'[DRY-RUN] ' if DRY_RUN else ''}⏳ pnpm install: {rel}", flush=True)
-            if DRY_RUN:
-                ok += 1
-                continue
-
-            rc = run_streaming(["pnpm", "install", "--no-frozen-lockfile"], cwd=pkg_dir)
-            if rc == 0:
-                print(f"  ✅ OK", flush=True)
-                ok += 1
-            else:
-                print(f"  ❌ Feilet (exit {rc})", flush=True)
-                failed += 1
+        rc = run_streaming(["pnpm", "install", "--no-frozen-lockfile"], cwd=pkg_dir)
+        if rc == 0:
+            print(f"  ✅ OK", flush=True)
+            ok += 1
+        else:
+            print(f"  ❌ Feilet (exit {rc})", flush=True)
+            failed += 1
 
     print(f"\nFerdig: {ok}/{total} OK" + (f", {failed} feilet" if failed else ""))
 
