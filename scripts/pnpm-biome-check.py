@@ -88,7 +88,7 @@ def summarize_biome_errors(output: str, max_lines: int = 6) -> list[str]:
 
 def ask_fix(label: str) -> bool:
     try:
-        ans = input("  → Kjøre biome:write for å fikse? [j/N] ").strip().lower()
+        ans = input("  Kjør biome:write automatisk? [j/N] ").strip().lower()
         return ans in ("j", "ja", "y", "yes")
     except (EOFError, KeyboardInterrupt):
         print()  # linjeskift etter prompt ved non-interaktiv kjøring

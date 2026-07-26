@@ -10,13 +10,16 @@
 |-----------|--------|
 | `repos.yaml` | Kilde til sannhet — alle teamets repos med org, namespace, default_branch |
 | `Makefile` | Alle kommandoer for å jobbe på tvers av repos |
+| `config.json` | Konfig for scripts (diff-grenser, merge-strategi, skip-repos, artifact-mønstre) |
 | `repos/` | Klonede repos (gitignored) — klones hit av `make git-clone` |
 | `platform/maven/pom.xml` | Maven parent POM — publisert til GitHub Packages |
-| `platform/pnpm/package.json` | Godkjente frontend-versjoner og katalog |
+| `platform/pnpm/package.json` | `@navikt/infotek-frontend-config` — eksporterer felles tsconfig og biome-konfig |
 | `platform/pnpm/tsconfig.base.json` | Felles TypeScript-konfig |
 | `platform/pnpm/biome.base.json` | Felles Biome-konfig |
 | `platform/npm/.npmrc` | Teamstandard for npm/pnpm |
-| `scripts/` | Python-scripts for masseoppdateringer |
+| `scripts/` | Python-scripts for masseoppdateringer og PR-behandling |
+| `scripts/pr-behandle.py` | Interaktiv PR-behandler — behandler PRer på tvers av repos |
+| `scripts/vis-artifakt.py` | Last ned og vis CI-artifakter (logg, playwright-rapport) fra GitHub Actions |
 | `ai/AGENTS.md` | Auto-generert repo-oversikt (ikke rediger manuelt) |
 
 ### Makefile-kommandoer
@@ -30,7 +33,10 @@ make git-fetch / git-pull / git-default
 
 make git-multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på default-branch)
 make git-push-all                        # push alle feature-branches
-make gh-pr-all                           # interaktiv PR-oppretter
+make pr-lag                              # interaktiv PR-oppretter
+
+make pr                                  # behandle PRer interaktivt (velg modus ved oppstart)
+make pr-rerun                            # rerun feilede CI-sjekker på tvers av repos
 
 make mvn-update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR
 make pnpm-update-npmrc                   # sync .npmrc til teamstandard + PR
@@ -56,7 +62,7 @@ Når vi gjør samme operasjon i mange repoer, skal Copilot foreslå Makefile-kom
 - Commit i mange repoer: `make git-multi-commit MSG="chore: ..."`
 - Stage i mange repoer: `make git-stage-all`
 - Push i mange repoer: `make git-push-all`
-- Opprett PR-er i mange repoer: `make gh-pr-all`
+- Opprett PR-er i mange repoer: `make pr-lag`
 - Synk `.npmrc` i mange repoer: `make pnpm-update-npmrc`
 
 Bruk manuelle `git add/commit/push/gh pr create` når endringen gjelder ett repo, eller når du trenger kontroll per repo.
