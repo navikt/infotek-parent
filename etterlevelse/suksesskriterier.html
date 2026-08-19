@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suksesskriterier – NAV Etterlevelseskatalog (komplett)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px; background: #f4f5f7; color: #1a1a2e;
+      padding: 24px; max-width: 1080px; margin: 0 auto;
+    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
+    .stats { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+    .stat-pill {
+      background:#fff; border-radius:20px; padding:6px 16px;
+      font-size:13px; box-shadow:0 1px 3px rgba(0,0,0,.1);
+    }
+    .stat-pill strong { color:#0067c5; }
+    .searchbar { margin-bottom: 20px; }
+    .searchbar input {
+      width:100%; padding:10px 16px; border:1px solid #ccc;
+      border-radius:8px; font-size:14px; outline:none;
+    }
+    .searchbar input:focus { border-color:#0067c5; box-shadow:0 0 0 3px #ddeeff; }
+    .tema-section {
+      background:#fff; border-radius:10px; margin-bottom:18px;
+      box-shadow:0 1px 4px rgba(0,0,0,.08); overflow:hidden;
+    }
+    .tema-header {
+      display:flex; align-items:center; gap:10px;
+      padding:14px 20px; cursor:pointer; user-select:none;
+    }
+    .tema-header:hover { background:#f9f9ff; }
+    .tema-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+    .tema-title { font-size:16px; font-weight:700; flex:1; }
+    .tema-count {
+      font-size:12px; background:#f0f0f0; border-radius:10px;
+      padding:2px 10px; color:#555;
+    }
+    .tema-toggle { font-size:18px; color:#aaa; transition:transform .2s; }
+    .tema-section.collapsed .tema-toggle { transform:rotate(-90deg); }
+    .tema-body { padding:4px 20px 16px; }
+    .tema-section.collapsed .tema-body { display:none; }
+    .krav-block { margin-top:14px; }
+    .krav-title {
+      display:flex; align-items:baseline; gap:8px; margin-bottom:6px;
+    }
+    .krav-id {
+      font-family:monospace; background:#eef2ff; color:#3730a3;
+      border-radius:4px; padding:2px 7px; font-size:12px;
+      font-weight:700; white-space:nowrap;
+    }
+    .krav-name { font-weight:600; font-size:14px; }
+    .krav-law { font-size:11px; color:#999; margin-left:auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
+    .sk-list { list-style:none; padding-left:0; }
+    .sk-list li {
+      display:flex; gap:10px; padding:6px 10px;
+      border-bottom:1px solid #f0f0f0; align-items:baseline;
+    }
+    .sk-list li:last-child { border-bottom:none; }
+    .sk-list li:hover { background:#fafafa; border-radius:6px; }
+    .sk-num { font-family:monospace; font-size:12px; color:#aaa; min-width:38px; flex-shrink:0; }
+    .sk-desc { font-size:13px; color:#333; }
+    .krav-divider { border:none; border-top:1px dashed #eee; margin:12px 0 0; }
+    .krav-block.hidden { display:none; }
+    .sk-list li.hidden { display:none; }
+    .tema-section.all-hidden { display:none; }
+    code { background:#f0f0f0; border-radius:3px; padding:1px 5px; font-size:.85em; font-family:monospace; }
+  </style>
+</head>
+<body>
+
+<h1>Suksesskriterier – NAV Etterlevelseskatalog</h1>
+<p class="meta">Komplett referanseliste over alle <strong>AKTIVE</strong> krav og tilhørende suksesskriterier (SK) hentet direkte fra etterlevelseskatalogen. Uavhengig av konkret system eller analyse.</p>
+<div class="stats">
+  <div class="stat-pill">Aktive krav: <strong>90</strong></div>
+  <div class="stat-pill">Suksesskriterier: <strong>270</strong></div>
+  <div class="stat-pill">Temaer: <strong>10</strong></div>
+</div>
+<div class="searchbar">
+  <input type="text" id="searchInput" placeholder="Søk etter kravnummer, navn, suksesskriterium eller lovhjemmel..." oninput="doSearch(this.value)" />
+</div>
+
+<div class="tema-section" id="tema-personvern">
+  <div class="tema-header" onclick="toggleTema('tema-personvern')">
+    <div class="tema-dot" style="background:#c0392b"></div>
+    <div class="tema-title">Personvern</div>
+    <span class="tema-count">19 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-PERSONVERN-101-2">
+      <div class="krav-title">
+        <span class="krav-id">K101.2</span>
+        <span class="krav-name">Overføring av personopplysninger til utlandet må være lovlig</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 44 · Personvernforordningen artikkel 45 · Personvernforordningen artikkel 46 · Personvernforordningen artikkel 47">Personvernforordningen artikkel 44 · Personvernforordningen artikkel 45 · Personvernforordningen artikkel 46 · Personvernforordningen artikkel 47</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har brukt sjekklisten ved overføring for å vurdere om personopplysninger overføres til tredjeland.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har brukt sjekklisten ved overføring for å avklare om vi har lov til å overføre personopplysninger til tredjeland.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-102-3">
+      <div class="krav-title">
+        <span class="krav-id">K102.3</span>
+        <span class="krav-name">Det må fastsettes et klart formål før innsamling og behandling av personopplysninger</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 5">Personvernforordningen artikkel 5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har identifisert et klart formål før vi samler inn personopplysninger, og vi har dokumentert dette i Behandlingskatalogen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har gjort en forenelighetsvurdering før vi gjenbruker personopplysninger til andre formål enn innsamlingsformålet, og vi har dokumentert behandlingsgrunnlaget for dette i Behandlingskatalogen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-103-2">
+      <div class="krav-title">
+        <span class="krav-id">K103.2</span>
+        <span class="krav-name">Personopplysninger skal kunne rettes</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 16 · Personvernforordningen artikkel 19 · Personvernforordningen artikkel 5">Personvernforordningen artikkel 16 · Personvernforordningen artikkel 19 · Personvernforordningen artikkel 5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har vurdert om det er behov for å etablere tiltak for å sikre at personopplysningene vi behandler er korrekte og oppdaterte.</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har rutiner og funksjonalitet for å rette og supplere personopplysninger i løsningen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har varslet mottaker vi har utlevert personopplysningene til om rettingen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-104-1">
+      <div class="krav-title">
+        <span class="krav-id">K104.1</span>
+        <span class="krav-name">Personopplysninger skal kunne slettes</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 17 · Personvernforordningen artikkel 19 · Personvernforordningen Artikkel 5">Personvernforordningen artikkel 17 · Personvernforordningen artikkel 19 · Personvernforordningen Artikkel 5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har rutiner og  funksjonalitet for å slette personopplysninger i løsningen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har varslet mottaker vi har utlevert personopplysningene til om slettingen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-105-1">
+      <div class="krav-title">
+        <span class="krav-id">K105.1</span>
+        <span class="krav-name">Det må tilrettelegges for dataportabilitet av personopplysninger</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 20">Personvernforordningen artikkel 20</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har  vurdert om dataportabilitet av personopplysninger er aktuelt.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har funksjonalitet for utlevering av personopplysninger hvis vilkårene for dataportabilitet er oppfylt.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-107-2">
+      <div class="krav-title">
+        <span class="krav-id">K107.2</span>
+        <span class="krav-name">Behandling av personopplysninger må være lovlig</span>
+        <span class="krav-law" title="Personopplysningsloven § 11 · Personvernforordningen artikkel 6 · Personvernforordningen artikkel 8 · Personvernforordningen artikkel 9">Personopplysningsloven § 11 · Personvernforordningen artikkel 6 · Personvernforordningen artikkel 8 · Personvernforordningen artikkel 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har besluttet hvilke(t) behandlingsgrunnlag som skal benyttes og dokumentert dette i Behandlingskatalogen.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har dokumentert vår vurdering for valg av behandlingsgrunnlag.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-108-2">
+      <div class="krav-title">
+        <span class="krav-id">K108.2</span>
+        <span class="krav-name">Den registrerte skal informeres om hvordan Nav behandler personopplysninger</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 12 · Personvernforordningen artikkel 13 · Personvernforordningen artikkel 14 · Personopplysningsloven §16">Personvernforordningen artikkel 12 · Personvernforordningen artikkel 13 · Personvernforordningen artikkel 14 · Personopplysningsloven §16</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert hvilken informasjon vi må gi om behandlingen av personopplysninger og når informasjon må gis til den registrerte</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har avklart hvilken informasjon vi skal gi til den registrerte når vi innhenter personopplysninger fra andre kilder enn den registrerte selv</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har avklart hvordan informasjonen skal gis til den registrerte</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-109-1">
+      <div class="krav-title">
+        <span class="krav-id">K109.1</span>
+        <span class="krav-name">Fødselsnummer og andre identifikasjonsmidler skal bare brukes der det er nødvendig for å oppnå sikker identifisering </span>
+        <span class="krav-law" title="Personopplysningsloven § 12 · Personvernforordningen artikkel 87">Personopplysningsloven § 12 · Personvernforordningen artikkel 87</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har avklart at det er nødvendig og saklig å bruke fødselsnummer.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har gjennomført tiltak for å sikre at fødselsnummer bare er tilgjengelig for mottakeren hvis de sendes i usikrede kommunikasjonskanaler.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-111-1">
+      <div class="krav-title">
+        <span class="krav-id">K111.1</span>
+        <span class="krav-name">Behandling av personopplysninger skal være nødvendig og proporsjonal</span>
+        <span class="krav-law" title="Menneskerettskonvensjonen (EMK) artikkel 8 · Personvernforordningen artikkel 5 · Personvernforordningen artikkel 6 · Personvernforordningen artikkel 9">Menneskerettskonvensjonen (EMK) artikkel 8 · Personvernforordningen artikkel 5 · Personvernforordningen artikkel 6 · Personvernforordningen artikkel 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert og dokumentert at behandlingen er nødvendig for å oppnå formålet.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har vurdert og dokumentert hvilke fordeler og ulemper behandlingen vil kunne innebære for de registrerte.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-113-2">
+      <div class="krav-title">
+        <span class="krav-id">K113.2</span>
+        <span class="krav-name">Den registrerte har krav på innsyn i hvilke personopplysninger Nav har registrert</span>
+        <span class="krav-law" title="Personopplysningsloven § 16 · Personopplysningsloven § 17 · Personvernforordningen artikkel 15 · Personvernforordningen artikkel 12">Personopplysningsloven § 16 · Personopplysningsloven § 17 · Personvernforordningen artikkel 15 · Personvernforordningen artikkel 12</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har laget rutine for behandling av innsynsforespørsler, inkludert gjenfinning og uttrekk i løsningen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har avklart hvilke personopplysninger som kan gis ved elektronisk innsyn i løsningen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-115-1">
+      <div class="krav-title">
+        <span class="krav-id">K115.1</span>
+        <span class="krav-name">Behandling som benytter automatisering oppfyller vilkårene for dette</span>
+        <span class="krav-law" title="Personvernforordningen art 22">Personvernforordningen art 22</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert om behandlingen er helautomatisk og dokument dette i Behandlingskatalogen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har vurdert om regelverket for selve behandlingen egner seg for automatisering.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Løsningen sikrer at likt faktagrunnlag gir likt resultat uavhengig av om behandlingen skjer manuelt eller helautomatisk.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har vurdert om datakilden er god nok til at løsningen kan legge den til grunn for å vurdere om et vilkår er oppfylt eller ikke.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi har gjort vurderinger/analyser for å sikre at den automatiserte behandlingen ikke vektlegger utenforliggende hensyn eller fører til diskriminering.</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Den automatiserte avgjørelsen kan overprøves manuelt.</span></li>
+        <li><span class="sk-num">SK&nbsp;7</span><span class="sk-desc">Vi har dokumentert den helautomatiske behandlingen i løsningen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-116-1">
+      <div class="krav-title">
+        <span class="krav-id">K116.1</span>
+        <span class="krav-name">Behandling av personopplysninger må kunne begrenses</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 18 · Personvernforordningen artikkel 19">Personvernforordningen artikkel 18 · Personvernforordningen artikkel 19</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har rutiner og funksjonalitet i løsningen for å begrense bruken av personopplysninger.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har varslet mottaker vi har utlevert personopplysningene til om begrensningen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-187-1">
+      <div class="krav-title">
+        <span class="krav-id">K187.1</span>
+        <span class="krav-name">Den registrerte skal ha tilstrekkelig informasjon om behandlingen når Nav fatter automatiske avgjørelser</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 22">Personvernforordningen artikkel 22</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har informert den registrerte om at vi treffer helautomatiske avgjørelser.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har informert den registrerte om den underliggende logikken i den automatiserte behandlingen.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har informert den registrerte om betydningen og de forventede konsekvensene av en slik automatisk behandling.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-188-1">
+      <div class="krav-title">
+        <span class="krav-id">K188.1</span>
+        <span class="krav-name">Behandling som benytter profilering oppfyller vilkårene for dette</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 22 · Personvernforordningen Artikkel 4">Personvernforordningen artikkel 22 · Personvernforordningen Artikkel 4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert om behandlingen innebærer en profilering av bruker og dokumentert dette i Behandlingskatalogen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har vurdert om det underliggende regelverket åpner for profilering.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har gjort vurderinger/analyser for å sikre at profileringen ikke vektlegger utenforliggende hensyn eller fører til diskriminering.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har vurdert om det er andre særskilte krav som særlige rettigheter til den enkelte som må ivaretas ved bruk av profilering.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-190-2">
+      <div class="krav-title">
+        <span class="krav-id">K190.2</span>
+        <span class="krav-name">Behandlingsansvar og databehandlerrelasjon er avklart og dokumentert</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 24 · Personvernforordningen artikkel 26 · Personvernforordningen artikkel 28">Personvernforordningen artikkel 24 · Personvernforordningen artikkel 26 · Personvernforordningen artikkel 28</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har avklart og dokumentert alle tredjepartsrelasjoner i Behandlingskatalogen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har inngått en skriftlig databehandleravtale der det foreligger en databehandlerrelasjon.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har inngått en skriftlig avtale der det foreligger et felles behandlingsansvar.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-191-1">
+      <div class="krav-title">
+        <span class="krav-id">K191.1</span>
+        <span class="krav-name">Lagringstid skal være avklart for alle personopplysninger Nav behandler</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 17 · Personvernforordningen artikkel 5">Personvernforordningen artikkel 17 · Personvernforordningen artikkel 5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har avklart hva som er lagringsbehovet for Navs egne formål og dokumentert lagringstid og begrunnelse i Behandlingskatalogen og i eget skjema på Confluence.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har avklart hva som skal skje med personopplysningene etter at lagringsbehovet for Navs formål er passert/opphørt og dokumentert dette i eget skjema på Confluence.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har etablert tekniske løsninger for rutinemessig sletting og andre nødvendige rutiner for oppfølging av fastsatt lagringstid.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-198-1">
+      <div class="krav-title">
+        <span class="krav-id">K198.1</span>
+        <span class="krav-name">Bruk av samtykke må oppfylle særskilte krav</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 6 · Personvernforordningen artikkel 7">Personvernforordningen artikkel 6 · Personvernforordningen artikkel 7</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi oppfyller særskilte krav til bruk av samtykke der samtykke benyttes som behandlingsgrunnlag.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-229-1">
+      <div class="krav-title">
+        <span class="krav-id">K229.1</span>
+        <span class="krav-name">Bruk av berettiget interesse må oppfylle særskilte krav</span>
+        <span class="krav-law" title="Personvernforordningen artikkel 6">Personvernforordningen artikkel 6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert om behandlingsgrunnlaget kan brukes, foretatt en interesseavveining og dokumentert denne vurderingen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-PERSONVERN-262-1">
+      <div class="krav-title">
+        <span class="krav-id">K262.1</span>
+        <span class="krav-name">Det må tilrettelegges for at den registrerte kan protestere mot behandling av personopplysninger</span>
+        <span class="krav-law" title="Personvernforordningen Artikkel 21">Personvernforordningen Artikkel 21</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har vurdert om rettigheten er aktuell for vår behandling av personopplysninger.</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har rutiner og funksjonalitet i løsningen for å stanse behandling av personopplysninger.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har informert den registrerte om retten til å protestere  i tilfeller rettigheten er aktuell.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-infosikkerhet">
+  <div class="tema-header" onclick="toggleTema('tema-infosikkerhet')">
+    <div class="tema-dot" style="background:#607d8b"></div>
+    <div class="tema-title">Informasjonssikkerhet</div>
+    <span class="tema-count">4 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-INFOSIKKERHET-245-1">
+      <div class="krav-title">
+        <span class="krav-id">K245.1</span>
+        <span class="krav-name">Krav til risikovurdering for applikasjoner, systemer og plattformer</span>
+        <span class="krav-law" title="Sikkerhetsloven Hele loven · Personvernforordningen (sikkerhet) Artikkel 32 · Personvernforordningen (sikkerhet) 25 · Personvernforordningen (sikkerhet) 24">Sikkerhetsloven Hele loven · Personvernforordningen (sikkerhet) Artikkel 32 · Personvernforordningen (sikkerhet) 25 · Personvernforordningen (sikkerhet) 24</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har gjennomført verdivurdering av systemet, applikasjonen eller plattformen, og informert Seksjon for helhetlig sikkerhet og beredskap</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har gjennomført trusselmodellering</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har gjennomført sikkerhetsrisikovurdering* (Dette suksesskriteriet gjelder kun for systemer som verdivurderes som Svært Høy eller Høy. Ta kontakt og avstem med HSB)</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har rutiner for oppdatering av vurderinger</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vurderingene og andre systemdokumentasjoner er lagret på et trygt sted.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-INFOSIKKERHET-253-1">
+      <div class="krav-title">
+        <span class="krav-id">K253.1</span>
+        <span class="krav-name">Visning av personopplysninger skal skrives til oppslagslogg (Arcsight)</span>
+        <span class="krav-law" title="Personvernforordningen (sikkerhet) Artikkel 6">Personvernforordningen (sikkerhet) Artikkel 6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Når en brukers personopplysninger vises i vårt fagsystem, blir dette logget til oppslagsloggen</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi logger kun når vi vet at personopplysninger er vist frem</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi logger ikke når en bruker &quot;dukker opp&quot; i et liste eller i en annen brukers sak</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Vi logger ikke mer enn nødvendig</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har avklart med Team Auditlogging Arcsight hvorvidt fagsystemet skal inkluderes i innsynsrapportene til innbyggere og ledere</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Team Auditlogging Arcsight har bekreftet at loggene er mottatt på rett format i produksjon</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-INFOSIKKERHET-255-1">
+      <div class="krav-title">
+        <span class="krav-id">K255.1</span>
+        <span class="krav-name">Nav skal beskytte brukere med adressebeskyttelse</span>
+        <span class="krav-law" title="Beskyttelsesinstruksen §4">Beskyttelsesinstruksen §4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi sjekker at Nav-ansatte har riktig rolle for å få tilgang til brukere med adressebeskyttelse</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Når Nav-ansatte slår opp en bruker med adressebeskyttelse, fremkommer det tydelig at brukeren har et særskilt beskyttelsesbehov</span></li>
+        <li><span class="sk-num">SK&nbsp;10</span><span class="sk-desc">Nav skal beskytte brukerens opplysninger også når de lagres på andre brukeres saker</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi beskytter brukernes opplysninger også når de fremkommer i sammenstilte oversikter</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi deler ikke adressen til brukere med adressebeskyttelse med eksterne parter</span></li>
+        <li><span class="sk-num">SK&nbsp;9</span><span class="sk-desc">Vi er varsomme ved deling av andre geolokaliserende opplysninger enn adresse</span></li>
+        <li><span class="sk-num">SK&nbsp;7</span><span class="sk-desc">Vi beskytter brukere med adressebeskyttelse i selvbetjeningsløsningene på nav.no</span></li>
+        <li><span class="sk-num">SK&nbsp;8</span><span class="sk-desc">Vi begrenser manuell håndtering av brukernes opplysninger der dette er mulig</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-INFOSIKKERHET-267-1">
+      <div class="krav-title">
+        <span class="krav-id">K267.1</span>
+        <span class="krav-name">Applikasjoner skal ha et forsvarlig sikkerhetsnivå</span>
+        <span class="krav-law" title="Sikkerhetsloven § 4-3. Plikt til å gjennomføre sikkerhetstiltak og øvelser">Sikkerhetsloven § 4-3. Plikt til å gjennomføre sikkerhetstiltak og øvelser</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi følger med på og håndterer våre sårbarheter</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi holder våre applikasjoner og avhengigheter oppdatert</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi validerer input og output</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi beskytter og roterer hemmelighetene våre</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Våre applikasjoner logger feil og sikkerhetshendelser</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi har backup av data og kode</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Vi har tilgangskontroll på alle endepunkter</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-saksbehandling">
+  <div class="tema-header" onclick="toggleTema('tema-saksbehandling')">
+    <div class="tema-dot" style="background:#1565c0"></div>
+    <div class="tema-title">Saksbehandling og forvaltningsrett</div>
+    <span class="tema-count">21 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-SAKSBEHANDLING-142-1">
+      <div class="krav-title">
+        <span class="krav-id">K142.1</span>
+        <span class="krav-name">Søknader kan mottas og registreres med riktig dato</span>
+        <span class="krav-law" title="Folketrygdloven § 22-13">Folketrygdloven § 22-13</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert hva mottaksdatoen har å si for utbetalingen i løsningen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har funksjonalitet i løsningen for å motta søknad på papir.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har funksjonalitet i løsningen for å motta søknad digitalt.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-143-2">
+      <div class="krav-title">
+        <span class="krav-id">K143.2</span>
+        <span class="krav-name">Nødvendig informasjon er innhentet og kvalitetssikret før vedtak fattes</span>
+        <span class="krav-law" title="Forvaltningsloven § 14 · Forvaltningsloven § 17 · Folketrygdloven §21-3 · Folketrygdloven §21-4">Forvaltningsloven § 14 · Forvaltningsloven § 17 · Folketrygdloven §21-3 · Folketrygdloven §21-4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert hvilken informasjon som er nødvendig for å behandle den enkelte sakstype.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har vurdert at kvaliteten er god nok for kildene vi innhenter informasjonen fra.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi kan identifisere og innhente manglende informasjon.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi kan identifisere om bruker gir uriktige opplysninger eller holder tilbake opplysninger.</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Vi har vurdert i hvilke tilfeller mottatte opplysninger skal forelegges brukeren og har funksjonalitet som støtter dette.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har vektet Navs utredningsplikt og brukers opplysningsplikt.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-144-2">
+      <div class="krav-title">
+        <span class="krav-id">K144.2</span>
+        <span class="krav-name">Det rettslige innholdet i løsningen skal være beskrevet og dokumentert på en allment forståelig måte</span>
+        <span class="krav-law" title="Forvaltningsloven § 24 · Forvaltningsloven § 25 · Forvaltningsloven § 28">Forvaltningsloven § 24 · Forvaltningsloven § 25 · Forvaltningsloven § 28</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har foretatt regelspesifisering av regelverk som skal implementeres i løsningen.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har koblet vilkår som fremgår av en bestemmelse, sammen med fakta som er vurdert.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi har dokumentert våre vurderinger om hvordan tolkningstvil skal løses.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi kan etterprøve rettsanvendelsen og  at systemet er bygget på korrekt og fullstendig grunnlag.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-145-1">
+      <div class="krav-title">
+        <span class="krav-id">K145.1</span>
+        <span class="krav-name">Melding om vedtak formidles til bruker i tråd med formkrav og gjeldende frister</span>
+        <span class="krav-law" title="Folketrygdloven § 21-6 · Folketrygdloven § 21-10 (2) · Forvaltningsloven § 6 · Forvaltningsloven § 23">Folketrygdloven § 21-6 · Folketrygdloven § 21-10 (2) · Forvaltningsloven § 6 · Forvaltningsloven § 23</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har lagt til rette for at melding om vedtak formidles samtidig som vedtaket fattes.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har lagt til rette for at melding om vedtak inneholder nødvendig informasjon ut fra hva slags type vedtak som fattes.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har lagt til rette for at melding om vedtak kan formidles ved endringsvedtak.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-146-1">
+      <div class="krav-title">
+        <span class="krav-id">K146.1</span>
+        <span class="krav-name">Nav må gi tilstrekkelig veiledning på våre saksområder</span>
+        <span class="krav-law" title="Forvaltningsloven § 11 · Forvaltningslovforskriften §5 · Forvaltningslovforskriften kapittel 2">Forvaltningsloven § 11 · Forvaltningslovforskriften §5 · Forvaltningslovforskriften kapittel 2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har lagt til rette for at bruker får tilstrekkelig veiledning til å ivareta sine rettigheter på et gitt saksområde.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har dokumentert for ettertiden hvilken veiledning bruker har fått.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-147-3">
+      <div class="krav-title">
+        <span class="krav-id">K147.3</span>
+        <span class="krav-name">Bruker kan klage eller anke på et vedtak</span>
+        <span class="krav-law" title="Folketrygdloven § 21-12 · Forvaltningsloven § 28 · Forvaltningsloven § 29 · Forvaltningsloven § 30">Folketrygdloven § 21-12 · Forvaltningsloven § 28 · Forvaltningsloven § 29 · Forvaltningsloven § 30</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har avklart hvem som er part i saken og hvem som har rettslig klageinteresse.</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har lagt til rette for at det er enkelt å motta klage eller anke.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har lagt til rette for at klager og anker kan behandles.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-148-2">
+      <div class="krav-title">
+        <span class="krav-id">K148.2</span>
+        <span class="krav-name">Bruker skal få saken avgjort uten ugrunnet opphold og gis informasjon når Nav ikke behandler saken innen oppgitt frist</span>
+        <span class="krav-law" title="Forvaltningsloven § 11 a · Forvaltningsloven § 11d">Forvaltningsloven § 11 a · Forvaltningsloven § 11d</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har funksjonalitet for å kunne behandle sakene uten ugrunnet opphold</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi kan identifisere de sakene som ikke vil bli ferdig behandlet innen fristen og informere bruker.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-149-2">
+      <div class="krav-title">
+        <span class="krav-id">K149.2</span>
+        <span class="krav-name">Bruker skal kunne forhåndsvarsles før vedtak fattes</span>
+        <span class="krav-law" title="Forvaltningsloven § 16 · Folketrygdloven § 21-3">Forvaltningsloven § 16 · Folketrygdloven § 21-3</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har funksjonalitet i løsningen for å identifisere når bruker skal forhåndsvarsles</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-150-2">
+      <div class="krav-title">
+        <span class="krav-id">K150.2</span>
+        <span class="krav-name">Nav må kunne gi partene i saken innsyn i sakens opplysninger</span>
+        <span class="krav-law" title="Forvaltningsloven § 18 · Forvaltningsloven § 19 · Forvaltningsloven § 20 · Forvaltningsloven § 21">Forvaltningsloven § 18 · Forvaltningsloven § 19 · Forvaltningsloven § 20 · Forvaltningsloven § 21</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har definert hva som ligger i «sakens dokumenter».</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har tilgjengeliggjort «sakens dokumenter» i så stor grad som mulig i selvbetjent flate for de som har innsynsrett.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har etablert rutiner for krav om innsyn i informasjon som ikke er tilgjengelige i selvbetjent flate for partene.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi har funksjonalitet eller rutiner for å unnta dokumenter det ikke skal gis innsyn i.</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Vi har rutiner og funksjonalitet i løsningen for å håndtere og besvare innsynskrav innenfor fristen.</span></li>
+        <li><span class="sk-num">SK&nbsp;7</span><span class="sk-desc">Vi har rutiner for å håndtere barns rett til innsyn i egen sak</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-151-3">
+      <div class="krav-title">
+        <span class="krav-id">K151.3</span>
+        <span class="krav-name">Fullmektig eller verge skal kunne opptre på vegne av bruker</span>
+        <span class="krav-law" title="Forvaltningsloven § 12 · Vergemålsloven § 9">Forvaltningsloven § 12 · Vergemålsloven § 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi kan identifisere om bruker er representert ved advokat, fullmektig eller verge, og vi kan håndtere oppheving av fullmakt og vergemål.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har identifisert omfanget og varighet av fullmakten eller vergemålet.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi har kontrollmekanismer i løsningen for å sjekke om bruker har rettslig handleevne, og funksjonalitet som sikrer at det ikke skal kommuniseres med brukere som er fratatt rettslig handleevne.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-152-1">
+      <div class="krav-title">
+        <span class="krav-id">K152.1</span>
+        <span class="krav-name">Ytelser må kunne utbetales til andre enn bruker selv hvis bruker er under tvungen forvaltning</span>
+        <span class="krav-law" title="Folketrygdloven § 22-4 · Folketrygdloven § 22-6">Folketrygdloven § 22-4 · Folketrygdloven § 22-6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har sikret at aktuelle trekk er på plass i økonomiløsningen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-153-1">
+      <div class="krav-title">
+        <span class="krav-id">K153.1</span>
+        <span class="krav-name">Ansvarsfordeling må kunne endres og direktoratet skal kunne overprøve saker</span>
+        <span class="krav-law" title="Folketrygdloven § 21-11 · Forvaltningsloven § 35">Folketrygdloven § 21-11 · Forvaltningsloven § 35</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har fleksible løsninger for å endre hvem som er ansvarlig når ansvar flyttes eller oppgaver sentraliseres.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har tilrettelagt for at direktoratet kan overprøve vedtak fattet i løsningen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-154-1">
+      <div class="krav-title">
+        <span class="krav-id">K154.1</span>
+        <span class="krav-name">Nav må overholde taushetsplikten</span>
+        <span class="krav-law" title="Nav-loven § 7 · Forvaltningsloven § 13">Nav-loven § 7 · Forvaltningsloven § 13</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har gjort en konkret faglig vurdering av hvilke regler om taushetsplikt som gjelder i de konkrete tilfellene og overfor hvem taushetsplikten gjelder.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har definert hvilke roller som har tjenstlig behov for hvilken type informasjon før det lages nye systemer.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi utleverer som hovedregel ikke taushetsbelagte opplysninger til andre enn den opplysningene gjelder.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi har lagt til rette for at taushetsbelagte opplysninger kan utleveres til andre enn parten selv der vilkårene for dette er oppfylt.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-155-1">
+      <div class="krav-title">
+        <span class="krav-id">K155.1</span>
+        <span class="krav-name">Ansatte kan erklære seg inhabil i hele eller deler av en sak</span>
+        <span class="krav-law" title="Forvaltningsloven § 6 · Forvaltningsloven § 9">Forvaltningsloven § 6 · Forvaltningsloven § 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har lagt til rette for at den ansatte kan erklære seg inhabil til å behandle saken.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-183-1">
+      <div class="krav-title">
+        <span class="krav-id">K183.1</span>
+        <span class="krav-name">Bruker får prøvd sin sak etter riktig regelverk</span>
+        <span class="krav-law" title="Grunnloven § 97">Grunnloven § 97</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Det er til enhver tid gjeldende regelverk som er implementert i løsningen.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har definert tidspunkt for hvilken versjon av regelverket som skal gjelde for hvilke saker.</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Alle versjoner av regelverk må være tilgjengelig og det må være sporbart hvilken versjon av regelverket som er anvendt.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-186-3">
+      <div class="krav-title">
+        <span class="krav-id">K186.3</span>
+        <span class="krav-name">Bruker må søke for å kunne få en ytelse fra Nav</span>
+        <span class="krav-law" title="Folketrygdloven § 22-13">Folketrygdloven § 22-13</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har gjort en vurdering av om bruker må søke for å få ytelsen.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har mekanismer i løsningen for å sikkert kunne identifisere bruker når søknad fremsettes.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi kan dokumentere at bruker har bekreftet å ha mottatt nødvendig informasjon når søknad fremsettes.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-216-2">
+      <div class="krav-title">
+        <span class="krav-id">K216.2</span>
+        <span class="krav-name">Nytt vedtak kan fattes når det skjer endringer og ved omgjøring</span>
+        <span class="krav-law" title="Folketrygdloven § 22-12 · Forvaltningsloven § 35">Folketrygdloven § 22-12 · Forvaltningsloven § 35</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har funksjonalitet i løsningen for å fatte vedtak om endring når vi mottar nye opplysninger</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har funksjonalitet i løsningen for at Nav etter begjæring fra bruker eller på eget initiativ kan vurdere omgjøring av tidligere vedtak</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-238-1">
+      <div class="krav-title">
+        <span class="krav-id">K238.1</span>
+        <span class="krav-name">Nav må gi tilstrekkelig informasjon om våre ytelser og tjenester</span>
+        <span class="krav-law" title="Nav-loven § 4">Nav-loven § 4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har lagt til rette for at enhver kan få tilstrekkelig informasjon om saksområdet.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-251-1">
+      <div class="krav-title">
+        <span class="krav-id">K251.1</span>
+        <span class="krav-name">Barnets beste skal være et grunnleggende hensyn i alle saker og avgjørelser som berører barn</span>
+        <span class="krav-law" title="Grunnloven § 104 · Menneskerettsloven § 3 · Barnekonvensjonen artikkel 3 · Barnekonvensjonen artikkel 12">Grunnloven § 104 · Menneskerettsloven § 3 · Barnekonvensjonen artikkel 3 · Barnekonvensjonen artikkel 12</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har vurdert om barn blir direkte eller indirekte berørt av systemet</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har gjort en vurdering av hva som er barnets beste og dokumentert vurderingen</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-254-1">
+      <div class="krav-title">
+        <span class="krav-id">K254.1</span>
+        <span class="krav-name">Nav må notere ned opplysninger som er gitt muntlig</span>
+        <span class="krav-law" title="Forvaltningsloven § 11 d">Forvaltningsloven § 11 d</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har funksjonalitet for å notere ned det som har framkommet i muntlige samtaler</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SAKSBEHANDLING-268-1">
+      <div class="krav-title">
+        <span class="krav-id">K268.1</span>
+        <span class="krav-name">Nav følger reglene, standardene, føringene og prinsippene i EØS-avtalen</span>
+        <span class="krav-law" title="EØS-loven § 1 · Folketrygdloven § 1-3 · Folketrygdloven § 1-3a">EØS-loven § 1 · Folketrygdloven § 1-3 · Folketrygdloven § 1-3a</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi kontrollerer at produktet eller tjenesten vi lager, følger EØS-regelverket og ikke forskjellsbehandler EØS-borgere – og dokumenterer vurderingene våre.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-okonomi">
+  <div class="tema-header" onclick="toggleTema('tema-okonomi')">
+    <div class="tema-dot" style="background:#2e7d32"></div>
+    <div class="tema-title">Økonomi</div>
+    <span class="tema-count">15 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-OKONOMI-119-2">
+      <div class="krav-title">
+        <span class="krav-id">K119.2</span>
+        <span class="krav-name">Totrinnskontroll</span>
+        <span class="krav-law" title="Økonomibestemmelsene 2.4, 2.5.2.1, 6.3.8.1 og 7.3.9.1">Økonomibestemmelsene 2.4, 2.5.2.1, 6.3.8.1 og 7.3.9.1</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Manuelle vedtak</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Delautomatiske vedtak</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Automatiske vedtak</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Justering av kontrollnivået i fagsystemet</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Budsjettdisponeringsmyndighet</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-120-1">
+      <div class="krav-title">
+        <span class="krav-id">K120.1</span>
+        <span class="krav-name">Toveis sporing</span>
+        <span class="krav-law" title="Økonomireglementet 4.4.4">Økonomireglementet 4.4.4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Sporingsnøkler</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Oppsett av sak for å utnytte funksjonalitet i økonomisystemene</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-121-1">
+      <div class="krav-title">
+        <span class="krav-id">K121.1</span>
+        <span class="krav-name">Avstemming mellom fag og økonomi</span>
+        <span class="krav-law" title="Økonomireglementet 2.5, 2.5.4">Økonomireglementet 2.5, 2.5.4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Sikre utbetaling til rett tid</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Alle vedtak som skal gi utbetaling eller feilutbetaling faktisk er overført til økonomiløsningen</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-122-1">
+      <div class="krav-title">
+        <span class="krav-id">K122.1</span>
+        <span class="krav-name">Fatte vedtak</span>
+        <span class="krav-law" title="Økonomireglementet 2.5.2.1 a · Økonomireglementet 2.5.5 · Økonomireglementet 4.2.d, f, g · Økonomireglementet 4.4.5">Økonomireglementet 2.5.2.1 a · Økonomireglementet 2.5.5 · Økonomireglementet 4.2.d, f, g · Økonomireglementet 4.4.5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Fagsystemet skal eksplisitt inneholde og dokumentere grunnlaget som ligger som betingelse for vedtaket</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-123-1">
+      <div class="krav-title">
+        <span class="krav-id">K123.1</span>
+        <span class="krav-name">Iverksette vedtak</span>
+        <span class="krav-law" title="Økonomireglementet 4.2">Økonomireglementet 4.2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Utbetaling til rett tid</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-124-1">
+      <div class="krav-title">
+        <span class="krav-id">K124.1</span>
+        <span class="krav-name">Historikk</span>
+        <span class="krav-law" title="Økonomireglementet 4.3.6 og 4.4.7 · Økonomireglementet 4.4.10.2">Økonomireglementet 4.3.6 og 4.4.7 · Økonomireglementet 4.4.10.2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Lagring av oppsettsdata</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-125-2">
+      <div class="krav-title">
+        <span class="krav-id">K125.2</span>
+        <span class="krav-name">Sikkerhet i økonomisystemet</span>
+        <span class="krav-law" title="Økonomireglementet 4.3.5 og 4.3.6 · Økonomireglementet 2.4 g · Økonomireglementet 4.4.10.2 h">Økonomireglementet 4.3.5 og 4.3.6 · Økonomireglementet 2.4 g · Økonomireglementet 4.4.10.2 h</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Tilgangskontroll og roller:</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Logger (auditlogg)</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-126-1">
+      <div class="krav-title">
+        <span class="krav-id">K126.1</span>
+        <span class="krav-name">Dokumentasjon</span>
+        <span class="krav-law" title="Økonomireglementet 4.3.5">Økonomireglementet 4.3.5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har dokumentert løsningen etter NAVs retningslinjer og prinsipper</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-127-1">
+      <div class="krav-title">
+        <span class="krav-id">K127.1</span>
+        <span class="krav-name">Migrering</span>
+        <span class="krav-law" title="Økonomireglementet 4.2">Økonomireglementet 4.2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har lagt til rette for automatisk behandling av saker tilbake i tid før innføring av ny saksbehandlingsløsning</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-233-1">
+      <div class="krav-title">
+        <span class="krav-id">K233.1</span>
+        <span class="krav-name">Virksomhetens interne styring (Kap 2 ØR) (KUN FOR ØSA)</span>
+        <span class="krav-law" title="Økonomireglementet Kapittel 2">Økonomireglementet Kapittel 2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Myndighet og ansvar (Kap 2.2 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Styringsprosessen (Kap 2.3 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Internkontroll (Kap 2.4 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Kontroll av utgifts og inntektstransaksjoner (Kap 2.5 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Organisering av økonomioppgaver (Kap 2.6 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Evalueringer (Kap 2.7 ØR)</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-234-1">
+      <div class="krav-title">
+        <span class="krav-id">K234.1</span>
+        <span class="krav-name">Felles standarder og systemer for budsjettering, regnskapsføring og betalingsformidling (Kap 3 ØR) (KUN FOR ØSA)</span>
+        <span class="krav-law" title="Økonomireglementet Kapittel 3">Økonomireglementet Kapittel 3</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Statsbudsjettet og virksomhetens gjennomføring av vedtatt budsjett (Kap 3.2 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Statsregnskapet og virksomhetsregnskapet (Kap 3.3 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Virksomhetens årsregnskap (Kap 3.4 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Rapportering til statsregnskapet (Kap 3.5 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Forvaltning av finansielle eiendeler og midler (Kap 3.6 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Betalingsformidling (Kap 3.7 ØR)</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-235-1">
+      <div class="krav-title">
+        <span class="krav-id">K235.1</span>
+        <span class="krav-name">Felles standarder for bokføring og økonomisystem (Kap 4 ØR) (KUN FOR ØSA)</span>
+        <span class="krav-law" title="Økonomireglementet Kapittel 4">Økonomireglementet Kapittel 4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Grunnleggende forutsetninger for bokføring (Kap. 4.2 ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Funksjonalitet i økonomisystemet (Kap 4.3 i ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Bokføring, spesifikasjon, dokumentasjon og oppbevaring (Kap 4.4 i ØR).</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-236-1">
+      <div class="krav-title">
+        <span class="krav-id">K236.1</span>
+        <span class="krav-name">Rutiner for behandling av lønn, anskaffelser og inntekter (Kap 5 ØR) (KUN FOR ØSA)</span>
+        <span class="krav-law" title="Økonomireglementet Kapittel 5">Økonomireglementet Kapittel 5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Lønn og lønnsopplysningspliktige ytelser (Kap 5.2 i ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Anskaffelser (Kap 5.3 i ØR)</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Inntekter (5.4 ØR)</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-240-1">
+      <div class="krav-title">
+        <span class="krav-id">K240.1</span>
+        <span class="krav-name">Tilbakekrevingskomponenten (TBK)</span>
+        <span class="krav-law" title="Økonomireglementet 7.3.5 · Økonomireglementet 7.3.6 · Økonomireglementet 7.3.9.1 · Økonomireglementet 2.4">Økonomireglementet 7.3.5 · Økonomireglementet 7.3.6 · Økonomireglementet 7.3.9.1 · Økonomireglementet 2.4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vedtaksløsningen har koblet seg opp mot tilbakekrevingskomponenten</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-OKONOMI-248-1">
+      <div class="krav-title">
+        <span class="krav-id">K248.1</span>
+        <span class="krav-name">Skattebetalingsforskriften (KUN FOR ØSA)</span>
+        <span class="krav-law" title="Økonomireglementet 7.3.6">Økonomireglementet 7.3.6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">§ 5-1. Skattekort</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">§ 5-2. Fastsetting av forskuddstrekkets størrelse</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">§ 5-3. Fritak for forskuddstrekk og tilbakebetaling av innbetalt forskuddstrekk</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">§ 5-4. Plikt til å foreta forskuddstrekk</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">§ 5-5. Forskuddstrekkets størrelse</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">§ 5-6. Ytelser som det skal foretas forskuddstrekk i</span></li>
+        <li><span class="sk-num">SK&nbsp;7</span><span class="sk-desc">§ 5-7. Ytelser som det ikke skal foretas forskuddstrekk i</span></li>
+        <li><span class="sk-num">SK&nbsp;8</span><span class="sk-desc">§ 5-8. Nærmere om beregningsgrunnlaget for forskuddstrekk</span></li>
+        <li><span class="sk-num">SK&nbsp;9</span><span class="sk-desc">§ 5-9. Fradrag i beregningsgrunnlaget for forskuddstrekk</span></li>
+        <li><span class="sk-num">SK&nbsp;10</span><span class="sk-desc">§ 5-10. Gjennomføring av forskuddstrekk</span></li>
+        <li><span class="sk-num">SK&nbsp;11</span><span class="sk-desc">§ 5-11. Opplysninger om forskuddstrekk</span></li>
+        <li><span class="sk-num">SK&nbsp;12</span><span class="sk-desc">§ 9-1. Betalingsmåte</span></li>
+        <li><span class="sk-num">SK&nbsp;13</span><span class="sk-desc">Kapittel 10. Forfall  - § 10-4-4.Avrunding</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-arkiv">
+  <div class="tema-header" onclick="toggleTema('tema-arkiv')">
+    <div class="tema-dot" style="background:#795548"></div>
+    <div class="tema-title">Arkiv og dokumentasjon</div>
+    <span class="tema-count">8 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-ARKIV-130-2">
+      <div class="krav-title">
+        <span class="krav-id">K130.2</span>
+        <span class="krav-name">Dokumentasjonen og databasen er lagret i Norge</span>
+        <span class="krav-law" title="Arkivlova § 9">Arkivlova § 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Dokumentasjonens database er i Norge</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-230-2">
+      <div class="krav-title">
+        <span class="krav-id">K230.2</span>
+        <span class="krav-name">Dokumentasjonen skal kunne avleverast og slettast til rett tid</span>
+        <span class="krav-law" title="Arkivlova (ny) § 6 · Arkivlova (ny) § 13 · Arkivlova (ny) § 15 · Arkivforskrifta § 6">Arkivlova (ny) § 6 · Arkivlova (ny) § 13 · Arkivlova (ny) § 15 · Arkivforskrifta § 6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har avklart om dokumentasjon er bevaringsverdig for ettertida</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har fastsett lagringstid for dokumentasjonen vår</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Tilgang til historisk dokumentasjon skal begrensast</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi kan avlevere dokumentasjon som skal bevarast</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har rutinar og løysingar for kassasjon</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-269-1">
+      <div class="krav-title">
+        <span class="krav-id">K269.1</span>
+        <span class="krav-name">Team skal avklare korleis deira data og dokumentasjon skal forvaltast</span>
+        <span class="krav-law" title="Arkivlova (ny) §5 · Arkivforskrifta §1">Arkivlova (ny) §5 · Arkivforskrifta §1</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har avklart om våre data  og dokumentasjon skal forvaltast som arkiv</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-270-1">
+      <div class="krav-title">
+        <span class="krav-id">K270.1</span>
+        <span class="krav-name">Systemet  skal oppfylle grunnleggjande arkivkrav</span>
+        <span class="krav-law" title="Arkivlova (ny) § 5 · Arkivforskrifta § 5 · Arkivlova (ny) § 6 · Arkivforskrifta § 6">Arkivlova (ny) § 5 · Arkivforskrifta § 5 · Arkivlova (ny) § 6 · Arkivforskrifta § 6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Dokumentasjonen har informasjon om kor han kjem frå og kva han heng saman med</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi vernar dokumentasjonen mot ikkje-autoriserte endringar</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi sporar endringar</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Det er enkelt å finne og hente ut dokumentasjon</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi lagrar dokumentasjonen på ein måte som ikkje avgrensar framtidig nytte</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-271-1">
+      <div class="krav-title">
+        <span class="krav-id">K271.1</span>
+        <span class="krav-name">Systemet skal vere dokumentert</span>
+        <span class="krav-law" title="Arkivlova (ny) § 6 · Arkivforskrifta § 6">Arkivlova (ny) § 6 · Arkivforskrifta § 6</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har skildringar av dokumentasjonen i systemet vårt</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har skildringar av informasjonsstrukturen i systemet vårt</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-272-1">
+      <div class="krav-title">
+        <span class="krav-id">K272.1</span>
+        <span class="krav-name">Dokumentasjonen må kunne vedlikehaldast</span>
+        <span class="krav-law" title="Arkivlova (ny) § 6 · Arkivforskrifta § 7">Arkivlova (ny) § 6 · Arkivforskrifta § 7</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi sikrar at informasjon fortsett å vere leseleg etter vedlikehaldet</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi sikrar at metadata blir bevart</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi sikrar at eigenskapar for søk og samanstilling oppretthaldast</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-273-1">
+      <div class="krav-title">
+        <span class="krav-id">K273.1</span>
+        <span class="krav-name">Journalpliktig dokumentasjon skal journalførast</span>
+        <span class="krav-law" title="Arkivlova (ny) § 6 · Arkivforskrifta § 14 · Arkivforskrifta § 15 · Offentlegforskrifta § 9">Arkivlova (ny) § 6 · Arkivforskrifta § 14 · Arkivforskrifta § 15 · Offentlegforskrifta § 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi journalfører inngåande og utgåande dokument</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi journalfører organinterne dokument etter behov</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Journalen inneheld naudsynte metadata</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi utelet opplysningar med teieplikt</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi kan hente ut journal frå systemet</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-ARKIV-274-1">
+      <div class="krav-title">
+        <span class="krav-id">K274.1</span>
+        <span class="krav-name">Feil i dokumentasjonen må kunne rettast</span>
+        <span class="krav-law" title="Arkivlova (ny) § 6 · Arkivlova (ny) § 13 · Arkivforskrifta § 11 · Arkivforskrifta § 42">Arkivlova (ny) § 6 · Arkivlova (ny) § 13 · Arkivforskrifta § 11 · Arkivforskrifta § 42</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har funksjonalitet for å rette feil</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har fastsatt rutinar for retting</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi slettar ikkje dokumentasjon utan vedtak om kassasjon</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-inter_og_samh">
+  <div class="tema-header" onclick="toggleTema('tema-inter_og_samh')">
+    <div class="tema-dot" style="background:#6a1b9a"></div>
+    <div class="tema-title">Interoperabilitet og samhandling</div>
+    <span class="tema-count">4 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-INTER_OG_SAMH-263-1">
+      <div class="krav-title">
+        <span class="krav-id">K263.1</span>
+        <span class="krav-name">Nav skal legge til rette for viderebruk og gjenbruk av informasjon og data</span>
+        <span class="krav-law" title="Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.2">Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har registrert datasett i Felles datakatalog</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-INTER_OG_SAMH-264-1">
+      <div class="krav-title">
+        <span class="krav-id">K264.1</span>
+        <span class="krav-name">Nav skal bruke autoritative kilder for å hente informasjon og data</span>
+        <span class="krav-law" title="Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.2">Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.2</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har sjekket om informasjonen og dataene vi trenger er tilgjengelig i felles datakatalog på data.norge.no, og vurdert om vi har tilstrekkelig rettslig grunnlag til å ta de i bruk</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi skal skaffe tilstrekkelig rettslig grunnlag der vi mener det er riktig å bruke en autoritativ kilde som vi ikke har tilstrekkelig rettslig grunnlag til å bruke.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk Kontakt – og reservasjonsregisteret der vilkår for bruk er oppfylt. Eventuelle avvik er begrunnet.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk Folkeregisteret, Enhetsregisteret og matrikkelen der vilkår for bruk er oppfylt. Eventuelle avvik er begrunnet.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-INTER_OG_SAMH-265-1">
+      <div class="krav-title">
+        <span class="krav-id">K265.1</span>
+        <span class="krav-name">Nav skal bruke nasjonale felleskomponenter og fellesløsninger, eller begrunne avvik</span>
+        <span class="krav-law" title="Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.9">Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk ID-porten. Eventuelle avvik er begrunnet.</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk Altinn. Eventuelle avvik er begrunnet.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk Meldingsboksen. Eventuelle avvik er begrunnet.</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk Digital postkasse. Eventuelle avvik er begrunnet.</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi har vurdert om vi kan ta i bruk Oppgaveregisteret. Eventuelle avvik er begrunnet</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-INTER_OG_SAMH-266-1">
+      <div class="krav-title">
+        <span class="krav-id">K266.1</span>
+        <span class="krav-name">Nav skal legge til rette for interoperabilitet, både nasjonalt og innenfor EØS-området</span>
+        <span class="krav-law" title="Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.11">Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.11</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;0</span><span class="sk-desc">Vi har tatt i bruk de overordnede arkitekturprinsippene for digitalisering av offentlig sektor, eller begrunnet avvik</span></li>
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har tatt i bruk de obligatoriske standardene slik i de fremgår av forskrift om IT-standarder i offentlig forvaltning.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har tilpasset tjenesten til grenseoverskridende informasjonsutveksling</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-uu">
+  <div class="tema-header" onclick="toggleTema('tema-uu')">
+    <div class="tema-dot" style="background:#e65100"></div>
+    <div class="tema-title">Likestilling og ikke-diskriminering</div>
+    <span class="tema-count">4 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-UU-157-1">
+      <div class="krav-title">
+        <span class="krav-id">K157.1</span>
+        <span class="krav-name">Eksterne tjenester utenfor nav.no har en oppdatert tilgengelighetserklæring på uustatus.no inkludert en tilbakemeldingskanal for uu-feil</span>
+        <span class="krav-law" title="Forskrift om universell utforming (kommende oppdatering)">Forskrift om universell utforming (kommende oppdatering)</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Aktuelle brudd på WCAG ligger på uustatus.no (tilgjengelighetserklæring).</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Tilgjengelighetserklæringen inneholder en tilbakemeldingskanal der brukerne kan melde inn uu-feil.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-UU-195-1">
+      <div class="krav-title">
+        <span class="krav-id">K195.1</span>
+        <span class="krav-name">Dere følger eller bruker NAV sitt designsystem</span>
+        <span class="krav-law" title="Forskrift om universell utforming (hele regelverket) · Likestillings- og diskrimineringsloven kap. 3">Forskrift om universell utforming (hele regelverket) · Likestillings- og diskrimineringsloven kap. 3</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Løsningen følger designsystemets retningslinjer for design og brukeropplevelse (Aksel)</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Løsningen implementerer designsystemets frontend-komponenter</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-UU-196-6">
+      <div class="krav-title">
+        <span class="krav-id">K196.6</span>
+        <span class="krav-name">Løsningen oppfyller alle A- og AA-krav i WCAG 2.1</span>
+        <span class="krav-law" title="Forskrift om universell utforming §1 (hele forskriften) · Likestillings- og diskrimineringsloven kap 3">Forskrift om universell utforming §1 (hele forskriften) · Likestillings- og diskrimineringsloven kap 3</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Løsningen oppfyller WCAG 2.1 nivå A og AA.</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Anbefaling: Dere kjører automatiserte uu-tester som en del av løsningens byggeprosess</span></li>
+        <li><span class="sk-num">SK&nbsp;6</span><span class="sk-desc">Dere dokumenterer uu-feil på  https://a11y-statement.nav.no/</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-UU-197-1">
+      <div class="krav-title">
+        <span class="krav-id">K197.1</span>
+        <span class="krav-name">Dere tester om løsningen fungerer for flest mulig i praksis.</span>
+        <span class="krav-law" title="Likestillings- og diskrimineringsloven kap 3 · Forskrift om universell utforming §1 (MERK: Hele forskriften)">Likestillings- og diskrimineringsloven kap 3 · Forskrift om universell utforming §1 (MERK: Hele forskriften)</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Dere  tester med simulatorer og hjelpemidler.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Dere tester med reelle personer, blant annet med personer med nedsatt funksjonsevne.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-stat_styr">
+  <div class="tema-header" onclick="toggleTema('tema-stat_styr')">
+    <div class="tema-dot" style="background:#00695c"></div>
+    <div class="tema-title">Statistikk og styringsinformasjon</div>
+    <span class="tema-count">2 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-STAT_STYR-184-2">
+      <div class="krav-title">
+        <span class="krav-id">K184.2</span>
+        <span class="krav-name">Vedtaksløsninger skal lage et dataprodukt som fortløpende oppdateres med informasjon om saksbehandlingsprosessen</span>
+        <span class="krav-law" title="Økonomireglementet (styringsinformasjon) §4 · Økonomireglementet (styringsinformasjon) §9 · Økonomireglementet (styringsinformasjon) §16 · Økonomibestemmelsene (styringsinformasjon) kap 2 (Se 2.3 Styringsprosessen)">Økonomireglementet (styringsinformasjon) §4 · Økonomireglementet (styringsinformasjon) §9 · Økonomireglementet (styringsinformasjon) §16 · Økonomibestemmelsene (styringsinformasjon) kap 2 (Se 2.3 Styringsprosessen)</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Valide data – Data fra vedtaksløsningen skal være egnet til å dekke analysebehovene</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Fullstendige data – Dataproduktet inneholder data som gjør det mulig å sammenstille relevante hendelser underveis og analysere forløpet i saksbehandlingsprosessen</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Tilgjengelige data – Dataproduktet publiseres på egnet plattform, for asynkron konsumering</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Reliable data – Utviklingsteamet tar ansvar for integriteten til dataene i dataproduktet</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-STAT_STYR-219-1">
+      <div class="krav-title">
+        <span class="krav-id">K219.1</span>
+        <span class="krav-name">IT-løsninger skal avlevere data slik at det lages offisiell statistikk, sentral styringsinformasjon og analyser</span>
+        <span class="krav-law" title="Statistikkloven §1 · Statistikkloven §3 · Statistikkloven § 4 · Statistikkloven §5">Statistikkloven §1 · Statistikkloven §3 · Statistikkloven § 4 · Statistikkloven §5</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nødvendige data overleveres fra IT-løsningen til statistikkløsningen</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Data fra IT-løsningen  er publisert som offisiell statistikk er publisert på nav.no</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Data fra IT-løsningen  er publisert som sentral styringsinformasjon i NAV med tilgang for alle i NAV</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Data fra IT-løsningen er tilgjengelig for bruk i analyser og budsjettprosesser på forretningsområder</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Data fra IT-løsningen er tilgjengelig for uttrekk til SSB, forskningsinstitutter og andre</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-sprak">
+  <div class="tema-header" onclick="toggleTema('tema-sprak')">
+    <div class="tema-dot" style="background:#ad1457"></div>
+    <div class="tema-title">Språk</div>
+    <span class="tema-count">2 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-SPRAK-231-1">
+      <div class="krav-title">
+        <span class="krav-id">K231.1</span>
+        <span class="krav-name">Språket i løsningen er klart, korrekt og brukertilpasset</span>
+        <span class="krav-law" title="Språkloven § 9 · Språkloven § 10">Språkloven § 9 · Språkloven § 10</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi har vært bevisste på målgruppens behov og forutsetninger, og latt det være styrende for hvordan vi skriver</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har brukertestet løsningen, så vi vet at målgruppen forstår språket, finner fram i løsningen, og får løst oppgaven de kom for</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi har tatt kontakt med fagansvarlig for klarspråk i Nav hvis vi har konkrete språkspørsmål, eller hvis det er noe vi ønsker å diskutere nærmere</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-SPRAK-232-1">
+      <div class="krav-title">
+        <span class="krav-id">K232.1</span>
+        <span class="krav-name">Språket i løsningen følger kravene til bruk av bokmål og nynorsk</span>
+        <span class="krav-law" title="Språkloven § 13 · Språkloven § 14 · Språkloven § 15">Språkloven § 13 · Språkloven § 14 · Språkloven § 15</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi bruker minst 25 og maks 75 prosent av hvert norske skriftspråk i informasjon til allmenheten</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi har parallelle versjoner av skjemaer og selvbetjeningsløsninger på bokmål og nynorsk</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi svarer enkeltpersoner og private virksomheter på det norske skriftspråket de selv har brukt (både i dialog og dokumenter)</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi svarer kommuner og fylkeskommuner på det språket de har vedtatt å bruke</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="tema-section" id="tema-el_kom">
+  <div class="tema-header" onclick="toggleTema('tema-el_kom')">
+    <div class="tema-dot" style="background:#37474f"></div>
+    <div class="tema-title">Elektronisk kommunikasjon</div>
+    <span class="tema-count">11 krav</span>
+    <div class="tema-toggle">▾</div>
+  </div>
+  <div class="tema-body">
+    <div class="krav-block" id="krav-EL_KOM-193-1">
+      <div class="krav-title">
+        <span class="krav-id">K193.1</span>
+        <span class="krav-name">Nav skal kommunisere  med innbygger gjennom innbyggers prefererte kanal</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 3 · eForvaltningsforskriften § 9">eForvaltningsforskriften § 3 · eForvaltningsforskriften § 9</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Sjekke KRR om innbygger har reservert seg mot å motta meldinger elektronisk fra forvaltningen</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Alle elektroniske kommunikasjonstjenester må forholde til de valgene bruker har tatt i KRR</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-199-1">
+      <div class="krav-title">
+        <span class="krav-id">K199.1</span>
+        <span class="krav-name">Nav er pliktig til å tilby analoge alternativer til elektronisk kommunikasjon med innbygger</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 3">eForvaltningsforskriften § 3</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav må ta stilling til om hvorvidt kommunikasjonen med innbygger er lovregulert på annen måte.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Nav må også tilby tjenester hvor innbygger kan få personlig kontakt med NAV og mulighet til å sende og motta fysiske brev fra Nav</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-203-1">
+      <div class="krav-title">
+        <span class="krav-id">K203.1</span>
+        <span class="krav-name">Nav skal gjøre innhold i enkeltvedtak tilgjengelig for bruker i egnet informasjonssystem</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 8">eForvaltningsforskriften § 8</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav skal bruke digital postkasse for utsending av post til innbyggere som har valgt digital postkasse, og som ikke har reservert seg.</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Informasjonssystemet må registrere tidspunkt for når bruker har skaffet seg tilgang til enkeltvedtaket, og data som bekrefter at vedkommende har rett til å gjøre seg kjent med innholdet i vedtaket</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-204-1">
+      <div class="krav-title">
+        <span class="krav-id">K204.1</span>
+        <span class="krav-name">Nav skal varsle elektronisk til digitale brukere om enkeltvedtak</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 8">eForvaltningsforskriften § 8</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav sender varselet til den adressen som er registert i KRR eller i Enhetsregisteret</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i enkeltvedtaket</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Nav skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til enkeltvedtaket.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-205-2">
+      <div class="krav-title">
+        <span class="krav-id">K205.2</span>
+        <span class="krav-name">Nav må sikre at utenforstående ikke får uberettiget innsyn i enkeltvedtak, forhåndsvarsel og meldinger</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 8">eForvaltningsforskriften § 8</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav skal ha sikker og entydig elektronisk identifikasjon av den det gjelder</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Nav skal sikre tilgangsstyring for egne medarbeidere</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Nav må ha betryggende elektroniske løsninger som står i mot datainnbrudd fra eksterne</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-206-1">
+      <div class="krav-title">
+        <span class="krav-id">K206.1</span>
+        <span class="krav-name">Nav skal varsle elektronisk til digitale brukere om forhåndsvarsel etter forvaltningsloven § 16</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 8">eForvaltningsforskriften § 8</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav sender varselet til den adressen som er registrert i Kontakt- og reservasjonsregisteret (KRR) eller i Enhetsregisteret</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i forhåndsvarselet</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Nav skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til forhåndsvarselet.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-207-1">
+      <div class="krav-title">
+        <span class="krav-id">K207.1</span>
+        <span class="krav-name">Nav skal varsle elektronisk til digitale brukere om meldinger som har betydning for vedkommendes rettsstilling eller for behandlingen av saken</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 8">eForvaltningsforskriften § 8</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav sender varselet til den adressen som er registert i KRR eller i Enhetsregisteret</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i meldingen</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">NAV skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til melding som har betydning for vedkommendes rettsstilling eller for behandlingen av saken.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-208-1">
+      <div class="krav-title">
+        <span class="krav-id">K208.1</span>
+        <span class="krav-name">Nav skal varsle elektronisk til digitale brukere om meldinger som er av særlig betydning å sikre at vedkommende mottar</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 8">eForvaltningsforskriften § 8</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Nav sender varselet til den adressen som er registert i KRR eller i Enhetsregisteret</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i meldingen</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Nav skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til meldingen.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-210-1">
+      <div class="krav-title">
+        <span class="krav-id">K210.1</span>
+        <span class="krav-name">Innbygger skal kunne la seg representere av en fullmektig ved kommunikasjon med NAV</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 10">eForvaltningsforskriften § 10</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Det må fremgå av kommunikasjonen at innbygger er representert av fullmektig</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-211-1">
+      <div class="krav-title">
+        <span class="krav-id">K211.1</span>
+        <span class="krav-name">Når parten mottar enkeltvedtak elektronisk, skal Nav opplyse om det er mulig å klage elektronisk</span>
+        <span class="krav-law" title="eForvaltningsforskriften §11">eForvaltningsforskriften §11</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi må informere om riktig elektronisk adresse som klagen skal sendes til når vi underretter om vedtaket</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi må sende klageren en elektronisk bekreftelse på at klage er mottatt</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi må informere klager om at  hen må kontrollere at hen mottar bekreftelse på at klage er mottatt, og at klager må sende klage på nytt dersom hen ikke mottar bekreftelse på at klagen er mottatt.</span></li>
+      </ul>
+    </div>
+    <hr class="krav-divider"/>
+    <div class="krav-block" id="krav-EL_KOM-218-1">
+      <div class="krav-title">
+        <span class="krav-id">K218.1</span>
+        <span class="krav-name">Nav skal kunne dokumentere elektroniske aktiviteter og henvendelser, og hvem som har sendt eller utført dem</span>
+        <span class="krav-law" title="eForvaltningsforskriften § 4">eForvaltningsforskriften § 4</span>
+      </div>
+      <ul class="sk-list">
+        <li><span class="sk-num">SK&nbsp;1</span><span class="sk-desc">Vi må kjenne identiteten til alle personersom bruker våre innloggede tjenester (autentisering)</span></li>
+        <li><span class="sk-num">SK&nbsp;2</span><span class="sk-desc">Vi må kjenne identiteten til eksterne samhandlere som ønsker å kommunisere med oss elektronisk (autentisering)</span></li>
+        <li><span class="sk-num">SK&nbsp;3</span><span class="sk-desc">Vi må dokumentere at informasjonselementene i den elektroniske kommunikasjonen mellom partene er uendret (integritet)</span></li>
+        <li><span class="sk-num">SK&nbsp;4</span><span class="sk-desc">Vi dokumenterer at informasjonselement(ene) er uendret og at det/de kan knyttes til en bestemt identitet (Ikke-benekt)</span></li>
+        <li><span class="sk-num">SK&nbsp;5</span><span class="sk-desc">Vi sørger for at elektronisk signatur  benyttes der det er nødvendig (ikke benekt)</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleTema(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+function doSearch(q) {
+  const raw = q.trim().toLowerCase();
+  document.querySelectorAll('.tema-section').forEach(sec => {
+    let sectionVisible = false;
+    sec.querySelectorAll('.krav-block').forEach(block => {
+      if (!raw) {
+        block.classList.remove('hidden');
+        block.querySelectorAll('.sk-list li').forEach(li => li.classList.remove('hidden'));
+        sectionVisible = true;
+        return;
+      }
+      const text = block.textContent.toLowerCase();
+      if (text.includes(raw)) {
+        block.classList.remove('hidden');
+        block.querySelectorAll('.sk-list li').forEach(li => {
+          li.classList.toggle('hidden', !li.textContent.toLowerCase().includes(raw));
+        });
+        sectionVisible = true;
+      } else {
+        block.classList.add('hidden');
+      }
+    });
+    if (!raw) {
+      sec.classList.remove('all-hidden', 'collapsed');
+    } else {
+      sec.classList.toggle('all-hidden', !sectionVisible);
+      if (sectionVisible) sec.classList.remove('collapsed');
+    }
+  });
+}
+</script>
+</body>
+</html>
