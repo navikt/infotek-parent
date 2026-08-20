@@ -1,5 +1,6 @@
 # Klonede team-repos (forvaltes i sine egne repos)
 repos/
+eksempel-repos/
 
 # OS og editor
 .DS_Store

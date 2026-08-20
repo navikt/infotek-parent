@@ -1,0 +1,1892 @@
+[
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K101.2",
+  "navn": "Overføring av personopplysninger til utlandet må være lovlig",
+  "lov": "Personvernforordningen artikkel 44 · Personvernforordningen artikkel 45 · Personvernforordningen artikkel 46 · Personvernforordningen artikkel 47",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har brukt sjekklisten ved overføring for å vurdere om personopplysninger overføres til tredjeland."
+   },
+   {
+    "n": "4",
+    "d": "Vi har brukt sjekklisten ved overføring for å avklare om vi har lov til å overføre personopplysninger til tredjeland."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K102.3",
+  "navn": "Det må fastsettes et klart formål før innsamling og behandling av personopplysninger",
+  "lov": "Personvernforordningen artikkel 5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har identifisert et klart formål før vi samler inn personopplysninger, og vi har dokumentert dette i Behandlingskatalogen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har gjort en forenelighetsvurdering før vi gjenbruker personopplysninger til andre formål enn innsamlingsformålet, og vi har dokumentert behandlingsgrunnlaget for dette i Behandlingskatalogen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K103.2",
+  "navn": "Personopplysninger skal kunne rettes",
+  "lov": "Personvernforordningen artikkel 16 · Personvernforordningen artikkel 19 · Personvernforordningen artikkel 5",
+  "sks": [
+   {
+    "n": "3",
+    "d": "Vi har vurdert om det er behov for å etablere tiltak for å sikre at personopplysningene vi behandler er korrekte og oppdaterte."
+   },
+   {
+    "n": "1",
+    "d": "Vi har rutiner og funksjonalitet for å rette og supplere personopplysninger i løsningen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har varslet mottaker vi har utlevert personopplysningene til om rettingen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K104.1",
+  "navn": "Personopplysninger skal kunne slettes",
+  "lov": "Personvernforordningen artikkel 17 · Personvernforordningen artikkel 19 · Personvernforordningen Artikkel 5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har rutiner og funksjonalitet for å slette personopplysninger i løsningen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har varslet mottaker vi har utlevert personopplysningene til om slettingen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K105.1",
+  "navn": "Det må tilrettelegges for dataportabilitet av personopplysninger",
+  "lov": "Personvernforordningen artikkel 20",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert om dataportabilitet av personopplysninger er aktuelt."
+   },
+   {
+    "n": "2",
+    "d": "Vi har funksjonalitet for utlevering av personopplysninger hvis vilkårene for dataportabilitet er oppfylt."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K107.2",
+  "navn": "Behandling av personopplysninger må være lovlig",
+  "lov": "Personopplysningsloven § 11 · Personvernforordningen artikkel 6 · Personvernforordningen artikkel 8 · Personvernforordningen artikkel 9",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har besluttet hvilke(t) behandlingsgrunnlag som skal benyttes og dokumentert dette i Behandlingskatalogen."
+   },
+   {
+    "n": "3",
+    "d": "Vi har dokumentert vår vurdering for valg av behandlingsgrunnlag."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K108.2",
+  "navn": "Den registrerte skal informeres om hvordan Nav behandler personopplysninger",
+  "lov": "Personvernforordningen artikkel 12 · Personvernforordningen artikkel 13 · Personvernforordningen artikkel 14 · Personopplysningsloven §16",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert hvilken informasjon vi må gi om behandlingen av personopplysninger og når informasjon må gis til den registrerte"
+   },
+   {
+    "n": "2",
+    "d": "Vi har avklart hvilken informasjon vi skal gi til den registrerte når vi innhenter personopplysninger fra andre kilder enn den registrerte selv"
+   },
+   {
+    "n": "3",
+    "d": "Vi har avklart hvordan informasjonen skal gis til den registrerte"
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K109.1",
+  "navn": "Fødselsnummer og andre identifikasjonsmidler skal bare brukes der det er nødvendig for å oppnå sikker identifisering",
+  "lov": "Personopplysningsloven § 12 · Personvernforordningen artikkel 87",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har avklart at det er nødvendig og saklig å bruke fødselsnummer."
+   },
+   {
+    "n": "2",
+    "d": "Vi har gjennomført tiltak for å sikre at fødselsnummer bare er tilgjengelig for mottakeren hvis de sendes i usikrede kommunikasjonskanaler."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K111.1",
+  "navn": "Behandling av personopplysninger skal være nødvendig og proporsjonal",
+  "lov": "Menneskerettskonvensjonen (EMK) artikkel 8 · Personvernforordningen artikkel 5 · Personvernforordningen artikkel 6 · Personvernforordningen artikkel 9",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert og dokumentert at behandlingen er nødvendig for å oppnå formålet."
+   },
+   {
+    "n": "2",
+    "d": "Vi har vurdert og dokumentert hvilke fordeler og ulemper behandlingen vil kunne innebære for de registrerte."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K113.2",
+  "navn": "Den registrerte har krav på innsyn i hvilke personopplysninger Nav har registrert",
+  "lov": "Personopplysningsloven § 16 · Personopplysningsloven § 17 · Personvernforordningen artikkel 15 · Personvernforordningen artikkel 12",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har laget rutine for behandling av innsynsforespørsler, inkludert gjenfinning og uttrekk i løsningen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har avklart hvilke personopplysninger som kan gis ved elektronisk innsyn i løsningen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K115.1",
+  "navn": "Behandling som benytter automatisering oppfyller vilkårene for dette",
+  "lov": "Personvernforordningen art 22",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert om behandlingen er helautomatisk og dokument dette i Behandlingskatalogen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har vurdert om regelverket for selve behandlingen egner seg for automatisering."
+   },
+   {
+    "n": "3",
+    "d": "Løsningen sikrer at likt faktagrunnlag gir likt resultat uavhengig av om behandlingen skjer manuelt eller helautomatisk."
+   },
+   {
+    "n": "4",
+    "d": "Vi har vurdert om datakilden er god nok til at løsningen kan legge den til grunn for å vurdere om et vilkår er oppfylt eller ikke."
+   },
+   {
+    "n": "5",
+    "d": "Vi har gjort vurderinger/analyser for å sikre at den automatiserte behandlingen ikke vektlegger utenforliggende hensyn eller fører til diskriminering."
+   },
+   {
+    "n": "6",
+    "d": "Den automatiserte avgjørelsen kan overprøves manuelt."
+   },
+   {
+    "n": "7",
+    "d": "Vi har dokumentert den helautomatiske behandlingen i løsningen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K116.1",
+  "navn": "Behandling av personopplysninger må kunne begrenses",
+  "lov": "Personvernforordningen artikkel 18 · Personvernforordningen artikkel 19",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har rutiner og funksjonalitet i løsningen for å begrense bruken av personopplysninger."
+   },
+   {
+    "n": "2",
+    "d": "Vi har varslet mottaker vi har utlevert personopplysningene til om begrensningen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K187.1",
+  "navn": "Den registrerte skal ha tilstrekkelig informasjon om behandlingen når Nav fatter automatiske avgjørelser",
+  "lov": "Personvernforordningen artikkel 22",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har informert den registrerte om at vi treffer helautomatiske avgjørelser."
+   },
+   {
+    "n": "2",
+    "d": "Vi har informert den registrerte om den underliggende logikken i den automatiserte behandlingen."
+   },
+   {
+    "n": "3",
+    "d": "Vi har informert den registrerte om betydningen og de forventede konsekvensene av en slik automatisk behandling."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K188.1",
+  "navn": "Behandling som benytter profilering oppfyller vilkårene for dette",
+  "lov": "Personvernforordningen artikkel 22 · Personvernforordningen Artikkel 4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert om behandlingen innebærer en profilering av bruker og dokumentert dette i Behandlingskatalogen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har vurdert om det underliggende regelverket åpner for profilering."
+   },
+   {
+    "n": "3",
+    "d": "Vi har gjort vurderinger/analyser for å sikre at profileringen ikke vektlegger utenforliggende hensyn eller fører til diskriminering."
+   },
+   {
+    "n": "4",
+    "d": "Vi har vurdert om det er andre særskilte krav som særlige rettigheter til den enkelte som må ivaretas ved bruk av profilering."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K190.2",
+  "navn": "Behandlingsansvar og databehandlerrelasjon er avklart og dokumentert",
+  "lov": "Personvernforordningen artikkel 24 · Personvernforordningen artikkel 26 · Personvernforordningen artikkel 28",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har avklart og dokumentert alle tredjepartsrelasjoner i Behandlingskatalogen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har inngått en skriftlig databehandleravtale der det foreligger en databehandlerrelasjon."
+   },
+   {
+    "n": "3",
+    "d": "Vi har inngått en skriftlig avtale der det foreligger et felles behandlingsansvar."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K191.1",
+  "navn": "Lagringstid skal være avklart for alle personopplysninger Nav behandler",
+  "lov": "Personvernforordningen artikkel 17 · Personvernforordningen artikkel 5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har avklart hva som er lagringsbehovet for Navs egne formål og dokumentert lagringstid og begrunnelse i Behandlingskatalogen og i eget skjema på Confluence."
+   },
+   {
+    "n": "2",
+    "d": "Vi har avklart hva som skal skje med personopplysningene etter at lagringsbehovet for Navs formål er passert/opphørt og dokumentert dette i eget skjema på Confluence."
+   },
+   {
+    "n": "3",
+    "d": "Vi har etablert tekniske løsninger for rutinemessig sletting og andre nødvendige rutiner for oppfølging av fastsatt lagringstid."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K198.1",
+  "navn": "Bruk av samtykke må oppfylle særskilte krav",
+  "lov": "Personvernforordningen artikkel 6 · Personvernforordningen artikkel 7",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi oppfyller særskilte krav til bruk av samtykke der samtykke benyttes som behandlingsgrunnlag."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K229.1",
+  "navn": "Bruk av berettiget interesse må oppfylle særskilte krav",
+  "lov": "Personvernforordningen artikkel 6",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert om behandlingsgrunnlaget kan brukes, foretatt en interesseavveining og dokumentert denne vurderingen."
+   }
+  ]
+ },
+ {
+  "tema": "personvern",
+  "tema_navn": "Personvern",
+  "id": "K262.1",
+  "navn": "Det må tilrettelegges for at den registrerte kan protestere mot behandling av personopplysninger",
+  "lov": "Personvernforordningen Artikkel 21",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har vurdert om rettigheten er aktuell for vår behandling av personopplysninger."
+   },
+   {
+    "n": "1",
+    "d": "Vi har rutiner og funksjonalitet i løsningen for å stanse behandling av personopplysninger."
+   },
+   {
+    "n": "2",
+    "d": "Vi har informert den registrerte om retten til å protestere i tilfeller rettigheten er aktuell."
+   }
+  ]
+ },
+ {
+  "tema": "infosikkerhet",
+  "tema_navn": "Informasjonssikkerhet",
+  "id": "K245.1",
+  "navn": "Krav til risikovurdering for applikasjoner, systemer og plattformer",
+  "lov": "Sikkerhetsloven Hele loven · Personvernforordningen (sikkerhet) Artikkel 32 · Personvernforordningen (sikkerhet) 25 · Personvernforordningen (sikkerhet) 24",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har gjennomført verdivurdering av systemet, applikasjonen eller plattformen, og informert Seksjon for helhetlig sikkerhet og beredskap"
+   },
+   {
+    "n": "2",
+    "d": "Vi har gjennomført trusselmodellering"
+   },
+   {
+    "n": "3",
+    "d": "Vi har gjennomført sikkerhetsrisikovurdering* (Dette suksesskriteriet gjelder kun for systemer som verdivurderes som Svært Høy eller Høy. Ta kontakt og avstem med HSB)"
+   },
+   {
+    "n": "4",
+    "d": "Vi har rutiner for oppdatering av vurderinger"
+   },
+   {
+    "n": "5",
+    "d": "Vurderingene og andre systemdokumentasjoner er lagret på et trygt sted."
+   }
+  ]
+ },
+ {
+  "tema": "infosikkerhet",
+  "tema_navn": "Informasjonssikkerhet",
+  "id": "K253.1",
+  "navn": "Visning av personopplysninger skal skrives til oppslagslogg (Arcsight)",
+  "lov": "Personvernforordningen (sikkerhet) Artikkel 6",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Når en brukers personopplysninger vises i vårt fagsystem, blir dette logget til oppslagsloggen"
+   },
+   {
+    "n": "1",
+    "d": "Vi logger kun når vi vet at personopplysninger er vist frem"
+   },
+   {
+    "n": "3",
+    "d": "Vi logger ikke når en bruker \"dukker opp\" i et liste eller i en annen brukers sak"
+   },
+   {
+    "n": "6",
+    "d": "Vi logger ikke mer enn nødvendig"
+   },
+   {
+    "n": "4",
+    "d": "Vi har avklart med Team Auditlogging Arcsight hvorvidt fagsystemet skal inkluderes i innsynsrapportene til innbyggere og ledere"
+   },
+   {
+    "n": "5",
+    "d": "Team Auditlogging Arcsight har bekreftet at loggene er mottatt på rett format i produksjon"
+   }
+  ]
+ },
+ {
+  "tema": "infosikkerhet",
+  "tema_navn": "Informasjonssikkerhet",
+  "id": "K255.1",
+  "navn": "Nav skal beskytte brukere med adressebeskyttelse",
+  "lov": "Beskyttelsesinstruksen §4",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi sjekker at Nav-ansatte har riktig rolle for å få tilgang til brukere med adressebeskyttelse"
+   },
+   {
+    "n": "2",
+    "d": "Når Nav-ansatte slår opp en bruker med adressebeskyttelse, fremkommer det tydelig at brukeren har et særskilt beskyttelsesbehov"
+   },
+   {
+    "n": "10",
+    "d": "Nav skal beskytte brukerens opplysninger også når de lagres på andre brukeres saker"
+   },
+   {
+    "n": "5",
+    "d": "Vi beskytter brukernes opplysninger også når de fremkommer i sammenstilte oversikter"
+   },
+   {
+    "n": "3",
+    "d": "Vi deler ikke adressen til brukere med adressebeskyttelse med eksterne parter"
+   },
+   {
+    "n": "9",
+    "d": "Vi er varsomme ved deling av andre geolokaliserende opplysninger enn adresse"
+   },
+   {
+    "n": "7",
+    "d": "Vi beskytter brukere med adressebeskyttelse i selvbetjeningsløsningene på nav.no"
+   },
+   {
+    "n": "8",
+    "d": "Vi begrenser manuell håndtering av brukernes opplysninger der dette er mulig"
+   }
+  ]
+ },
+ {
+  "tema": "infosikkerhet",
+  "tema_navn": "Informasjonssikkerhet",
+  "id": "K267.1",
+  "navn": "Applikasjoner skal ha et forsvarlig sikkerhetsnivå",
+  "lov": "Sikkerhetsloven § 4-3. Plikt til å gjennomføre sikkerhetstiltak og øvelser",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi følger med på og håndterer våre sårbarheter"
+   },
+   {
+    "n": "1",
+    "d": "Vi holder våre applikasjoner og avhengigheter oppdatert"
+   },
+   {
+    "n": "2",
+    "d": "Vi validerer input og output"
+   },
+   {
+    "n": "3",
+    "d": "Vi beskytter og roterer hemmelighetene våre"
+   },
+   {
+    "n": "4",
+    "d": "Våre applikasjoner logger feil og sikkerhetshendelser"
+   },
+   {
+    "n": "5",
+    "d": "Vi har backup av data og kode"
+   },
+   {
+    "n": "6",
+    "d": "Vi har tilgangskontroll på alle endepunkter"
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K142.1",
+  "navn": "Søknader kan mottas og registreres med riktig dato",
+  "lov": "Folketrygdloven § 22-13",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert hva mottaksdatoen har å si for utbetalingen i løsningen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har funksjonalitet i løsningen for å motta søknad på papir."
+   },
+   {
+    "n": "3",
+    "d": "Vi har funksjonalitet i løsningen for å motta søknad digitalt."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K143.2",
+  "navn": "Nødvendig informasjon er innhentet og kvalitetssikret før vedtak fattes",
+  "lov": "Forvaltningsloven § 14 · Forvaltningsloven § 17 · Folketrygdloven §21-3 · Folketrygdloven §21-4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vurdert hvilken informasjon som er nødvendig for å behandle den enkelte sakstype."
+   },
+   {
+    "n": "3",
+    "d": "Vi har vurdert at kvaliteten er god nok for kildene vi innhenter informasjonen fra."
+   },
+   {
+    "n": "4",
+    "d": "Vi kan identifisere og innhente manglende informasjon."
+   },
+   {
+    "n": "5",
+    "d": "Vi kan identifisere om bruker gir uriktige opplysninger eller holder tilbake opplysninger."
+   },
+   {
+    "n": "6",
+    "d": "Vi har vurdert i hvilke tilfeller mottatte opplysninger skal forelegges brukeren og har funksjonalitet som støtter dette."
+   },
+   {
+    "n": "2",
+    "d": "Vi har vektet Navs utredningsplikt og brukers opplysningsplikt."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K144.2",
+  "navn": "Det rettslige innholdet i løsningen skal være beskrevet og dokumentert på en allment forståelig måte",
+  "lov": "Forvaltningsloven § 24 · Forvaltningsloven § 25 · Forvaltningsloven § 28",
+  "sks": [
+   {
+    "n": "2",
+    "d": "Vi har foretatt regelspesifisering av regelverk som skal implementeres i løsningen."
+   },
+   {
+    "n": "4",
+    "d": "Vi har koblet vilkår som fremgår av en bestemmelse, sammen med fakta som er vurdert."
+   },
+   {
+    "n": "5",
+    "d": "Vi har dokumentert våre vurderinger om hvordan tolkningstvil skal løses."
+   },
+   {
+    "n": "3",
+    "d": "Vi kan etterprøve rettsanvendelsen og at systemet er bygget på korrekt og fullstendig grunnlag."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K145.1",
+  "navn": "Melding om vedtak formidles til bruker i tråd med formkrav og gjeldende frister",
+  "lov": "Folketrygdloven § 21-6 · Folketrygdloven § 21-10 (2) · Forvaltningsloven § 6 · Forvaltningsloven § 23",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har lagt til rette for at melding om vedtak formidles samtidig som vedtaket fattes."
+   },
+   {
+    "n": "2",
+    "d": "Vi har lagt til rette for at melding om vedtak inneholder nødvendig informasjon ut fra hva slags type vedtak som fattes."
+   },
+   {
+    "n": "3",
+    "d": "Vi har lagt til rette for at melding om vedtak kan formidles ved endringsvedtak."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K146.1",
+  "navn": "Nav må gi tilstrekkelig veiledning på våre saksområder",
+  "lov": "Forvaltningsloven § 11 · Forvaltningslovforskriften §5 · Forvaltningslovforskriften kapittel 2",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har lagt til rette for at bruker får tilstrekkelig veiledning til å ivareta sine rettigheter på et gitt saksområde."
+   },
+   {
+    "n": "2",
+    "d": "Vi har dokumentert for ettertiden hvilken veiledning bruker har fått."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K147.3",
+  "navn": "Bruker kan klage eller anke på et vedtak",
+  "lov": "Folketrygdloven § 21-12 · Forvaltningsloven § 28 · Forvaltningsloven § 29 · Forvaltningsloven § 30",
+  "sks": [
+   {
+    "n": "2",
+    "d": "Vi har avklart hvem som er part i saken og hvem som har rettslig klageinteresse."
+   },
+   {
+    "n": "1",
+    "d": "Vi har lagt til rette for at det er enkelt å motta klage eller anke."
+   },
+   {
+    "n": "3",
+    "d": "Vi har lagt til rette for at klager og anker kan behandles."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K148.2",
+  "navn": "Bruker skal få saken avgjort uten ugrunnet opphold og gis informasjon når Nav ikke behandler saken innen oppgitt frist",
+  "lov": "Forvaltningsloven § 11 a · Forvaltningsloven § 11d",
+  "sks": [
+   {
+    "n": "2",
+    "d": "Vi har funksjonalitet for å kunne behandle sakene uten ugrunnet opphold"
+   },
+   {
+    "n": "1",
+    "d": "Vi kan identifisere de sakene som ikke vil bli ferdig behandlet innen fristen og informere bruker."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K149.2",
+  "navn": "Bruker skal kunne forhåndsvarsles før vedtak fattes",
+  "lov": "Forvaltningsloven § 16 · Folketrygdloven § 21-3",
+  "sks": [
+   {
+    "n": "2",
+    "d": "Vi har funksjonalitet i løsningen for å identifisere når bruker skal forhåndsvarsles"
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K150.2",
+  "navn": "Nav må kunne gi partene i saken innsyn i sakens opplysninger",
+  "lov": "Forvaltningsloven § 18 · Forvaltningsloven § 19 · Forvaltningsloven § 20 · Forvaltningsloven § 21",
+  "sks": [
+   {
+    "n": "2",
+    "d": "Vi har definert hva som ligger i «sakens dokumenter»."
+   },
+   {
+    "n": "3",
+    "d": "Vi har tilgjengeliggjort «sakens dokumenter» i så stor grad som mulig i selvbetjent flate for de som har innsynsrett."
+   },
+   {
+    "n": "4",
+    "d": "Vi har etablert rutiner for krav om innsyn i informasjon som ikke er tilgjengelige i selvbetjent flate for partene."
+   },
+   {
+    "n": "5",
+    "d": "Vi har funksjonalitet eller rutiner for å unnta dokumenter det ikke skal gis innsyn i."
+   },
+   {
+    "n": "6",
+    "d": "Vi har rutiner og funksjonalitet i løsningen for å håndtere og besvare innsynskrav innenfor fristen."
+   },
+   {
+    "n": "7",
+    "d": "Vi har rutiner for å håndtere barns rett til innsyn i egen sak"
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K151.3",
+  "navn": "Fullmektig eller verge skal kunne opptre på vegne av bruker",
+  "lov": "Forvaltningsloven § 12 · Vergemålsloven § 9",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi kan identifisere om bruker er representert ved advokat, fullmektig eller verge, og vi kan håndtere oppheving av fullmakt og vergemål."
+   },
+   {
+    "n": "3",
+    "d": "Vi har identifisert omfanget og varighet av fullmakten eller vergemålet."
+   },
+   {
+    "n": "5",
+    "d": "Vi har kontrollmekanismer i løsningen for å sjekke om bruker har rettslig handleevne, og funksjonalitet som sikrer at det ikke skal kommuniseres med brukere som er fratatt rettslig handleevne."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K152.1",
+  "navn": "Ytelser må kunne utbetales til andre enn bruker selv hvis bruker er under tvungen forvaltning",
+  "lov": "Folketrygdloven § 22-4 · Folketrygdloven § 22-6",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har sikret at aktuelle trekk er på plass i økonomiløsningen."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K153.1",
+  "navn": "Ansvarsfordeling må kunne endres og direktoratet skal kunne overprøve saker",
+  "lov": "Folketrygdloven § 21-11 · Forvaltningsloven § 35",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har fleksible løsninger for å endre hvem som er ansvarlig når ansvar flyttes eller oppgaver sentraliseres."
+   },
+   {
+    "n": "2",
+    "d": "Vi har tilrettelagt for at direktoratet kan overprøve vedtak fattet i løsningen."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K154.1",
+  "navn": "Nav må overholde taushetsplikten",
+  "lov": "Nav-loven § 7 · Forvaltningsloven § 13",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har gjort en konkret faglig vurdering av hvilke regler om taushetsplikt som gjelder i de konkrete tilfellene og overfor hvem taushetsplikten gjelder."
+   },
+   {
+    "n": "3",
+    "d": "Vi har definert hvilke roller som har tjenstlig behov for hvilken type informasjon før det lages nye systemer."
+   },
+   {
+    "n": "4",
+    "d": "Vi utleverer som hovedregel ikke taushetsbelagte opplysninger til andre enn den opplysningene gjelder."
+   },
+   {
+    "n": "5",
+    "d": "Vi har lagt til rette for at taushetsbelagte opplysninger kan utleveres til andre enn parten selv der vilkårene for dette er oppfylt."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K155.1",
+  "navn": "Ansatte kan erklære seg inhabil i hele eller deler av en sak",
+  "lov": "Forvaltningsloven § 6 · Forvaltningsloven § 9",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har lagt til rette for at den ansatte kan erklære seg inhabil til å behandle saken."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K183.1",
+  "navn": "Bruker får prøvd sin sak etter riktig regelverk",
+  "lov": "Grunnloven § 97",
+  "sks": [
+   {
+    "n": "2",
+    "d": "Det er til enhver tid gjeldende regelverk som er implementert i løsningen."
+   },
+   {
+    "n": "3",
+    "d": "Vi har definert tidspunkt for hvilken versjon av regelverket som skal gjelde for hvilke saker."
+   },
+   {
+    "n": "1",
+    "d": "Alle versjoner av regelverk må være tilgjengelig og det må være sporbart hvilken versjon av regelverket som er anvendt."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K186.3",
+  "navn": "Bruker må søke for å kunne få en ytelse fra Nav",
+  "lov": "Folketrygdloven § 22-13",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har gjort en vurdering av om bruker må søke for å få ytelsen."
+   },
+   {
+    "n": "2",
+    "d": "Vi har mekanismer i løsningen for å sikkert kunne identifisere bruker når søknad fremsettes."
+   },
+   {
+    "n": "3",
+    "d": "Vi kan dokumentere at bruker har bekreftet å ha mottatt nødvendig informasjon når søknad fremsettes."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K216.2",
+  "navn": "Nytt vedtak kan fattes når det skjer endringer og ved omgjøring",
+  "lov": "Folketrygdloven § 22-12 · Forvaltningsloven § 35",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har funksjonalitet i løsningen for å fatte vedtak om endring når vi mottar nye opplysninger"
+   },
+   {
+    "n": "2",
+    "d": "Vi har funksjonalitet i løsningen for at Nav etter begjæring fra bruker eller på eget initiativ kan vurdere omgjøring av tidligere vedtak"
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K238.1",
+  "navn": "Nav må gi tilstrekkelig informasjon om våre ytelser og tjenester",
+  "lov": "Nav-loven § 4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har lagt til rette for at enhver kan få tilstrekkelig informasjon om saksområdet."
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K251.1",
+  "navn": "Barnets beste skal være et grunnleggende hensyn i alle saker og avgjørelser som berører barn",
+  "lov": "Grunnloven § 104 · Menneskerettsloven § 3 · Barnekonvensjonen artikkel 3 · Barnekonvensjonen artikkel 12",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har vurdert om barn blir direkte eller indirekte berørt av systemet"
+   },
+   {
+    "n": "1",
+    "d": "Vi har gjort en vurdering av hva som er barnets beste og dokumentert vurderingen"
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K254.1",
+  "navn": "Nav må notere ned opplysninger som er gitt muntlig",
+  "lov": "Forvaltningsloven § 11 d",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har funksjonalitet for å notere ned det som har framkommet i muntlige samtaler"
+   }
+  ]
+ },
+ {
+  "tema": "saksbehandling",
+  "tema_navn": "Saksbehandling og forvaltningsrett",
+  "id": "K268.1",
+  "navn": "Nav følger reglene, standardene, føringene og prinsippene i EØS-avtalen",
+  "lov": "EØS-loven § 1 · Folketrygdloven § 1-3 · Folketrygdloven § 1-3a",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi kontrollerer at produktet eller tjenesten vi lager, følger EØS-regelverket og ikke forskjellsbehandler EØS-borgere – og dokumenterer vurderingene våre."
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K119.2",
+  "navn": "Totrinnskontroll",
+  "lov": "Økonomibestemmelsene 2.4, 2.5.2.1, 6.3.8.1 og 7.3.9.1",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Manuelle vedtak"
+   },
+   {
+    "n": "2",
+    "d": "Delautomatiske vedtak"
+   },
+   {
+    "n": "3",
+    "d": "Automatiske vedtak"
+   },
+   {
+    "n": "4",
+    "d": "Justering av kontrollnivået i fagsystemet"
+   },
+   {
+    "n": "5",
+    "d": "Budsjettdisponeringsmyndighet"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K120.1",
+  "navn": "Toveis sporing",
+  "lov": "Økonomireglementet 4.4.4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Sporingsnøkler"
+   },
+   {
+    "n": "2",
+    "d": "Oppsett av sak for å utnytte funksjonalitet i økonomisystemene"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K121.1",
+  "navn": "Avstemming mellom fag og økonomi",
+  "lov": "Økonomireglementet 2.5, 2.5.4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Sikre utbetaling til rett tid"
+   },
+   {
+    "n": "2",
+    "d": "Alle vedtak som skal gi utbetaling eller feilutbetaling faktisk er overført til økonomiløsningen"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K122.1",
+  "navn": "Fatte vedtak",
+  "lov": "Økonomireglementet 2.5.2.1 a · Økonomireglementet 2.5.5 · Økonomireglementet 4.2.d, f, g · Økonomireglementet 4.4.5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Fagsystemet skal eksplisitt inneholde og dokumentere grunnlaget som ligger som betingelse for vedtaket"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K123.1",
+  "navn": "Iverksette vedtak",
+  "lov": "Økonomireglementet 4.2",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Utbetaling til rett tid"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K124.1",
+  "navn": "Historikk",
+  "lov": "Økonomireglementet 4.3.6 og 4.4.7 · Økonomireglementet 4.4.10.2",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Lagring av oppsettsdata"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K125.2",
+  "navn": "Sikkerhet i økonomisystemet",
+  "lov": "Økonomireglementet 4.3.5 og 4.3.6 · Økonomireglementet 2.4 g · Økonomireglementet 4.4.10.2 h",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Tilgangskontroll og roller:"
+   },
+   {
+    "n": "2",
+    "d": "Logger (auditlogg)"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K126.1",
+  "navn": "Dokumentasjon",
+  "lov": "Økonomireglementet 4.3.5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har dokumentert løsningen etter NAVs retningslinjer og prinsipper"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K127.1",
+  "navn": "Migrering",
+  "lov": "Økonomireglementet 4.2",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har lagt til rette for automatisk behandling av saker tilbake i tid før innføring av ny saksbehandlingsløsning"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K233.1",
+  "navn": "Virksomhetens interne styring (Kap 2 ØR) (KUN FOR ØSA)",
+  "lov": "Økonomireglementet Kapittel 2",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Myndighet og ansvar (Kap 2.2 ØR)"
+   },
+   {
+    "n": "2",
+    "d": "Styringsprosessen (Kap 2.3 ØR)"
+   },
+   {
+    "n": "3",
+    "d": "Internkontroll (Kap 2.4 ØR)"
+   },
+   {
+    "n": "4",
+    "d": "Kontroll av utgifts og inntektstransaksjoner (Kap 2.5 ØR)"
+   },
+   {
+    "n": "5",
+    "d": "Organisering av økonomioppgaver (Kap 2.6 ØR)"
+   },
+   {
+    "n": "6",
+    "d": "Evalueringer (Kap 2.7 ØR)"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K234.1",
+  "navn": "Felles standarder og systemer for budsjettering, regnskapsføring og betalingsformidling (Kap 3 ØR) (KUN FOR ØSA)",
+  "lov": "Økonomireglementet Kapittel 3",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Statsbudsjettet og virksomhetens gjennomføring av vedtatt budsjett (Kap 3.2 ØR)"
+   },
+   {
+    "n": "2",
+    "d": "Statsregnskapet og virksomhetsregnskapet (Kap 3.3 ØR)"
+   },
+   {
+    "n": "3",
+    "d": "Virksomhetens årsregnskap (Kap 3.4 ØR)"
+   },
+   {
+    "n": "4",
+    "d": "Rapportering til statsregnskapet (Kap 3.5 ØR)"
+   },
+   {
+    "n": "5",
+    "d": "Forvaltning av finansielle eiendeler og midler (Kap 3.6 ØR)"
+   },
+   {
+    "n": "6",
+    "d": "Betalingsformidling (Kap 3.7 ØR)"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K235.1",
+  "navn": "Felles standarder for bokføring og økonomisystem (Kap 4 ØR) (KUN FOR ØSA)",
+  "lov": "Økonomireglementet Kapittel 4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Grunnleggende forutsetninger for bokføring (Kap. 4.2 ØR)"
+   },
+   {
+    "n": "2",
+    "d": "Funksjonalitet i økonomisystemet (Kap 4.3 i ØR)"
+   },
+   {
+    "n": "3",
+    "d": "Bokføring, spesifikasjon, dokumentasjon og oppbevaring (Kap 4.4 i ØR)."
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K236.1",
+  "navn": "Rutiner for behandling av lønn, anskaffelser og inntekter (Kap 5 ØR) (KUN FOR ØSA)",
+  "lov": "Økonomireglementet Kapittel 5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Lønn og lønnsopplysningspliktige ytelser (Kap 5.2 i ØR)"
+   },
+   {
+    "n": "2",
+    "d": "Anskaffelser (Kap 5.3 i ØR)"
+   },
+   {
+    "n": "3",
+    "d": "Inntekter (5.4 ØR)"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K240.1",
+  "navn": "Tilbakekrevingskomponenten (TBK)",
+  "lov": "Økonomireglementet 7.3.5 · Økonomireglementet 7.3.6 · Økonomireglementet 7.3.9.1 · Økonomireglementet 2.4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vedtaksløsningen har koblet seg opp mot tilbakekrevingskomponenten"
+   }
+  ]
+ },
+ {
+  "tema": "okonomi",
+  "tema_navn": "Økonomi",
+  "id": "K248.1",
+  "navn": "Skattebetalingsforskriften (KUN FOR ØSA)",
+  "lov": "Økonomireglementet 7.3.6",
+  "sks": [
+   {
+    "n": "1",
+    "d": "§ 5-1. Skattekort"
+   },
+   {
+    "n": "2",
+    "d": "§ 5-2. Fastsetting av forskuddstrekkets størrelse"
+   },
+   {
+    "n": "3",
+    "d": "§ 5-3. Fritak for forskuddstrekk og tilbakebetaling av innbetalt forskuddstrekk"
+   },
+   {
+    "n": "4",
+    "d": "§ 5-4. Plikt til å foreta forskuddstrekk"
+   },
+   {
+    "n": "5",
+    "d": "§ 5-5. Forskuddstrekkets størrelse"
+   },
+   {
+    "n": "6",
+    "d": "§ 5-6. Ytelser som det skal foretas forskuddstrekk i"
+   },
+   {
+    "n": "7",
+    "d": "§ 5-7. Ytelser som det ikke skal foretas forskuddstrekk i"
+   },
+   {
+    "n": "8",
+    "d": "§ 5-8. Nærmere om beregningsgrunnlaget for forskuddstrekk"
+   },
+   {
+    "n": "9",
+    "d": "§ 5-9. Fradrag i beregningsgrunnlaget for forskuddstrekk"
+   },
+   {
+    "n": "10",
+    "d": "§ 5-10. Gjennomføring av forskuddstrekk"
+   },
+   {
+    "n": "11",
+    "d": "§ 5-11. Opplysninger om forskuddstrekk"
+   },
+   {
+    "n": "12",
+    "d": "§ 9-1. Betalingsmåte"
+   },
+   {
+    "n": "13",
+    "d": "Kapittel 10. Forfall - § 10-4-4.Avrunding"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K130.2",
+  "navn": "Dokumentasjonen og databasen er lagret i Norge",
+  "lov": "Arkivlova § 9",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Dokumentasjonens database er i Norge"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K230.2",
+  "navn": "Dokumentasjonen skal kunne avleverast og slettast til rett tid",
+  "lov": "Arkivlova (ny) § 6 · Arkivlova (ny) § 13 · Arkivlova (ny) § 15 · Arkivforskrifta § 6",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har avklart om dokumentasjon er bevaringsverdig for ettertida"
+   },
+   {
+    "n": "2",
+    "d": "Vi har fastsett lagringstid for dokumentasjonen vår"
+   },
+   {
+    "n": "5",
+    "d": "Tilgang til historisk dokumentasjon skal begrensast"
+   },
+   {
+    "n": "4",
+    "d": "Vi kan avlevere dokumentasjon som skal bevarast"
+   },
+   {
+    "n": "3",
+    "d": "Vi har rutinar og løysingar for kassasjon"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K269.1",
+  "navn": "Team skal avklare korleis deira data og dokumentasjon skal forvaltast",
+  "lov": "Arkivlova (ny) §5 · Arkivforskrifta §1",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har avklart om våre data og dokumentasjon skal forvaltast som arkiv"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K270.1",
+  "navn": "Systemet skal oppfylle grunnleggjande arkivkrav",
+  "lov": "Arkivlova (ny) § 5 · Arkivforskrifta § 5 · Arkivlova (ny) § 6 · Arkivforskrifta § 6",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Dokumentasjonen har informasjon om kor han kjem frå og kva han heng saman med"
+   },
+   {
+    "n": "1",
+    "d": "Vi vernar dokumentasjonen mot ikkje-autoriserte endringar"
+   },
+   {
+    "n": "2",
+    "d": "Vi sporar endringar"
+   },
+   {
+    "n": "4",
+    "d": "Det er enkelt å finne og hente ut dokumentasjon"
+   },
+   {
+    "n": "5",
+    "d": "Vi lagrar dokumentasjonen på ein måte som ikkje avgrensar framtidig nytte"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K271.1",
+  "navn": "Systemet skal vere dokumentert",
+  "lov": "Arkivlova (ny) § 6 · Arkivforskrifta § 6",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har skildringar av dokumentasjonen i systemet vårt"
+   },
+   {
+    "n": "4",
+    "d": "Vi har skildringar av informasjonsstrukturen i systemet vårt"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K272.1",
+  "navn": "Dokumentasjonen må kunne vedlikehaldast",
+  "lov": "Arkivlova (ny) § 6 · Arkivforskrifta § 7",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi sikrar at informasjon fortsett å vere leseleg etter vedlikehaldet"
+   },
+   {
+    "n": "2",
+    "d": "Vi sikrar at metadata blir bevart"
+   },
+   {
+    "n": "3",
+    "d": "Vi sikrar at eigenskapar for søk og samanstilling oppretthaldast"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K273.1",
+  "navn": "Journalpliktig dokumentasjon skal journalførast",
+  "lov": "Arkivlova (ny) § 6 · Arkivforskrifta § 14 · Arkivforskrifta § 15 · Offentlegforskrifta § 9",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi journalfører inngåande og utgåande dokument"
+   },
+   {
+    "n": "1",
+    "d": "Vi journalfører organinterne dokument etter behov"
+   },
+   {
+    "n": "2",
+    "d": "Journalen inneheld naudsynte metadata"
+   },
+   {
+    "n": "3",
+    "d": "Vi utelet opplysningar med teieplikt"
+   },
+   {
+    "n": "4",
+    "d": "Vi kan hente ut journal frå systemet"
+   }
+  ]
+ },
+ {
+  "tema": "arkiv",
+  "tema_navn": "Arkiv og journalføring",
+  "id": "K274.1",
+  "navn": "Feil i dokumentasjonen må kunne rettast",
+  "lov": "Arkivlova (ny) § 6 · Arkivlova (ny) § 13 · Arkivforskrifta § 11 · Arkivforskrifta § 42",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har funksjonalitet for å rette feil"
+   },
+   {
+    "n": "1",
+    "d": "Vi har fastsatt rutinar for retting"
+   },
+   {
+    "n": "3",
+    "d": "Vi slettar ikkje dokumentasjon utan vedtak om kassasjon"
+   }
+  ]
+ },
+ {
+  "tema": "inter_og_samh",
+  "tema_navn": "Interoperabilitet og samhandling",
+  "id": "K263.1",
+  "navn": "Nav skal legge til rette for viderebruk og gjenbruk av informasjon og data",
+  "lov": "Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.2",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har registrert datasett i Felles datakatalog"
+   }
+  ]
+ },
+ {
+  "tema": "inter_og_samh",
+  "tema_navn": "Interoperabilitet og samhandling",
+  "id": "K264.1",
+  "navn": "Nav skal bruke autoritative kilder for å hente informasjon og data",
+  "lov": "Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.2",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har sjekket om informasjonen og dataene vi trenger er tilgjengelig i felles datakatalog på data.norge.no, og vurdert om vi har tilstrekkelig rettslig grunnlag til å ta de i bruk"
+   },
+   {
+    "n": "1",
+    "d": "Vi skal skaffe tilstrekkelig rettslig grunnlag der vi mener det er riktig å bruke en autoritativ kilde som vi ikke har tilstrekkelig rettslig grunnlag til å bruke."
+   },
+   {
+    "n": "2",
+    "d": "Vi har vurdert om vi kan ta i bruk Kontakt – og reservasjonsregisteret der vilkår for bruk er oppfylt. Eventuelle avvik er begrunnet."
+   },
+   {
+    "n": "3",
+    "d": "Vi har vurdert om vi kan ta i bruk Folkeregisteret, Enhetsregisteret og matrikkelen der vilkår for bruk er oppfylt. Eventuelle avvik er begrunnet."
+   }
+  ]
+ },
+ {
+  "tema": "inter_og_samh",
+  "tema_navn": "Interoperabilitet og samhandling",
+  "id": "K265.1",
+  "navn": "Nav skal bruke nasjonale felleskomponenter og fellesløsninger, eller begrunne avvik",
+  "lov": "Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.9",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har vurdert om vi kan ta i bruk ID-porten. Eventuelle avvik er begrunnet."
+   },
+   {
+    "n": "1",
+    "d": "Vi har vurdert om vi kan ta i bruk Altinn. Eventuelle avvik er begrunnet."
+   },
+   {
+    "n": "2",
+    "d": "Vi har vurdert om vi kan ta i bruk Meldingsboksen. Eventuelle avvik er begrunnet."
+   },
+   {
+    "n": "3",
+    "d": "Vi har vurdert om vi kan ta i bruk Digital postkasse. Eventuelle avvik er begrunnet."
+   },
+   {
+    "n": "4",
+    "d": "Vi har vurdert om vi kan ta i bruk Oppgaveregisteret. Eventuelle avvik er begrunnet"
+   }
+  ]
+ },
+ {
+  "tema": "inter_og_samh",
+  "tema_navn": "Interoperabilitet og samhandling",
+  "id": "K266.1",
+  "navn": "Nav skal legge til rette for interoperabilitet, både nasjonalt og innenfor EØS-området",
+  "lov": "Rundskriv fra Digitaliserings- og forvaltningsdepartementet D-2/25 punkt 1.11",
+  "sks": [
+   {
+    "n": "0",
+    "d": "Vi har tatt i bruk de overordnede arkitekturprinsippene for digitalisering av offentlig sektor, eller begrunnet avvik"
+   },
+   {
+    "n": "1",
+    "d": "Vi har tatt i bruk de obligatoriske standardene slik i de fremgår av forskrift om IT-standarder i offentlig forvaltning."
+   },
+   {
+    "n": "2",
+    "d": "Vi har tilpasset tjenesten til grenseoverskridende informasjonsutveksling"
+   }
+  ]
+ },
+ {
+  "tema": "uu",
+  "tema_navn": "Universell utforming",
+  "id": "K157.1",
+  "navn": "Eksterne tjenester utenfor nav.no har en oppdatert tilgengelighetserklæring på uustatus.no inkludert en tilbakemeldingskanal for uu-feil",
+  "lov": "Forskrift om universell utforming (kommende oppdatering)",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Aktuelle brudd på WCAG ligger på uustatus.no (tilgjengelighetserklæring)."
+   },
+   {
+    "n": "2",
+    "d": "Tilgjengelighetserklæringen inneholder en tilbakemeldingskanal der brukerne kan melde inn uu-feil."
+   }
+  ]
+ },
+ {
+  "tema": "uu",
+  "tema_navn": "Universell utforming",
+  "id": "K195.1",
+  "navn": "Dere følger eller bruker NAV sitt designsystem",
+  "lov": "Forskrift om universell utforming (hele regelverket) · Likestillings- og diskrimineringsloven kap. 3",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Løsningen følger designsystemets retningslinjer for design og brukeropplevelse (Aksel)"
+   },
+   {
+    "n": "2",
+    "d": "Løsningen implementerer designsystemets frontend-komponenter"
+   }
+  ]
+ },
+ {
+  "tema": "uu",
+  "tema_navn": "Universell utforming",
+  "id": "K196.6",
+  "navn": "Løsningen oppfyller alle A- og AA-krav i WCAG 2.1",
+  "lov": "Forskrift om universell utforming §1 (hele forskriften) · Likestillings- og diskrimineringsloven kap 3",
+  "sks": [
+   {
+    "n": "3",
+    "d": "Løsningen oppfyller WCAG 2.1 nivå A og AA."
+   },
+   {
+    "n": "5",
+    "d": "Anbefaling: Dere kjører automatiserte uu-tester som en del av løsningens byggeprosess"
+   },
+   {
+    "n": "6",
+    "d": "Dere dokumenterer uu-feil på https://a11y-statement.nav.no/"
+   }
+  ]
+ },
+ {
+  "tema": "uu",
+  "tema_navn": "Universell utforming",
+  "id": "K197.1",
+  "navn": "Dere tester om løsningen fungerer for flest mulig i praksis.",
+  "lov": "Likestillings- og diskrimineringsloven kap 3 · Forskrift om universell utforming §1 (MERK: Hele forskriften)",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Dere tester med simulatorer og hjelpemidler."
+   },
+   {
+    "n": "2",
+    "d": "Dere tester med reelle personer, blant annet med personer med nedsatt funksjonsevne."
+   }
+  ]
+ },
+ {
+  "tema": "stat_styr",
+  "tema_navn": "Statistikk og styringsinformasjon",
+  "id": "K184.2",
+  "navn": "Vedtaksløsninger skal lage et dataprodukt som fortløpende oppdateres med informasjon om saksbehandlingsprosessen",
+  "lov": "Økonomireglementet (styringsinformasjon) §4 · Økonomireglementet (styringsinformasjon) §9 · Økonomireglementet (styringsinformasjon) §16 · Økonomibestemmelsene (styringsinformasjon) kap 2 (Se 2.3 Styringsprosessen)",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Valide data – Data fra vedtaksløsningen skal være egnet til å dekke analysebehovene"
+   },
+   {
+    "n": "2",
+    "d": "Fullstendige data – Dataproduktet inneholder data som gjør det mulig å sammenstille relevante hendelser underveis og analysere forløpet i saksbehandlingsprosessen"
+   },
+   {
+    "n": "3",
+    "d": "Tilgjengelige data – Dataproduktet publiseres på egnet plattform, for asynkron konsumering"
+   },
+   {
+    "n": "4",
+    "d": "Reliable data – Utviklingsteamet tar ansvar for integriteten til dataene i dataproduktet"
+   }
+  ]
+ },
+ {
+  "tema": "stat_styr",
+  "tema_navn": "Statistikk og styringsinformasjon",
+  "id": "K219.1",
+  "navn": "IT-løsninger skal avlevere data slik at det lages offisiell statistikk, sentral styringsinformasjon og analyser",
+  "lov": "Statistikkloven §1 · Statistikkloven §3 · Statistikkloven § 4 · Statistikkloven §5",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nødvendige data overleveres fra IT-løsningen til statistikkløsningen"
+   },
+   {
+    "n": "2",
+    "d": "Data fra IT-løsningen er publisert som offisiell statistikk er publisert på nav.no"
+   },
+   {
+    "n": "3",
+    "d": "Data fra IT-løsningen er publisert som sentral styringsinformasjon i NAV med tilgang for alle i NAV"
+   },
+   {
+    "n": "4",
+    "d": "Data fra IT-løsningen er tilgjengelig for bruk i analyser og budsjettprosesser på forretningsområder"
+   },
+   {
+    "n": "5",
+    "d": "Data fra IT-løsningen er tilgjengelig for uttrekk til SSB, forskningsinstitutter og andre"
+   }
+  ]
+ },
+ {
+  "tema": "sprak",
+  "tema_navn": "Språk",
+  "id": "K231.1",
+  "navn": "Språket i løsningen er klart, korrekt og brukertilpasset",
+  "lov": "Språkloven § 9 · Språkloven § 10",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi har vært bevisste på målgruppens behov og forutsetninger, og latt det være styrende for hvordan vi skriver"
+   },
+   {
+    "n": "2",
+    "d": "Vi har brukertestet løsningen, så vi vet at målgruppen forstår språket, finner fram i løsningen, og får løst oppgaven de kom for"
+   },
+   {
+    "n": "3",
+    "d": "Vi har tatt kontakt med fagansvarlig for klarspråk i Nav hvis vi har konkrete språkspørsmål, eller hvis det er noe vi ønsker å diskutere nærmere"
+   }
+  ]
+ },
+ {
+  "tema": "sprak",
+  "tema_navn": "Språk",
+  "id": "K232.1",
+  "navn": "Språket i løsningen følger kravene til bruk av bokmål og nynorsk",
+  "lov": "Språkloven § 13 · Språkloven § 14 · Språkloven § 15",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi bruker minst 25 og maks 75 prosent av hvert norske skriftspråk i informasjon til allmenheten"
+   },
+   {
+    "n": "2",
+    "d": "Vi har parallelle versjoner av skjemaer og selvbetjeningsløsninger på bokmål og nynorsk"
+   },
+   {
+    "n": "3",
+    "d": "Vi svarer enkeltpersoner og private virksomheter på det norske skriftspråket de selv har brukt (både i dialog og dokumenter)"
+   },
+   {
+    "n": "4",
+    "d": "Vi svarer kommuner og fylkeskommuner på det språket de har vedtatt å bruke"
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K193.1",
+  "navn": "Nav skal kommunisere med innbygger gjennom innbyggers prefererte kanal",
+  "lov": "eForvaltningsforskriften § 3 · eForvaltningsforskriften § 9",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Sjekke KRR om innbygger har reservert seg mot å motta meldinger elektronisk fra forvaltningen"
+   },
+   {
+    "n": "2",
+    "d": "Alle elektroniske kommunikasjonstjenester må forholde til de valgene bruker har tatt i KRR"
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K199.1",
+  "navn": "Nav er pliktig til å tilby analoge alternativer til elektronisk kommunikasjon med innbygger",
+  "lov": "eForvaltningsforskriften § 3",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav må ta stilling til om hvorvidt kommunikasjonen med innbygger er lovregulert på annen måte."
+   },
+   {
+    "n": "2",
+    "d": "Nav må også tilby tjenester hvor innbygger kan få personlig kontakt med NAV og mulighet til å sende og motta fysiske brev fra Nav"
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K203.1",
+  "navn": "Nav skal gjøre innhold i enkeltvedtak tilgjengelig for bruker i egnet informasjonssystem",
+  "lov": "eForvaltningsforskriften § 8",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav skal bruke digital postkasse for utsending av post til innbyggere som har valgt digital postkasse, og som ikke har reservert seg."
+   },
+   {
+    "n": "2",
+    "d": "Informasjonssystemet må registrere tidspunkt for når bruker har skaffet seg tilgang til enkeltvedtaket, og data som bekrefter at vedkommende har rett til å gjøre seg kjent med innholdet i vedtaket"
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K204.1",
+  "navn": "Nav skal varsle elektronisk til digitale brukere om enkeltvedtak",
+  "lov": "eForvaltningsforskriften § 8",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav sender varselet til den adressen som er registert i KRR eller i Enhetsregisteret"
+   },
+   {
+    "n": "2",
+    "d": "Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i enkeltvedtaket"
+   },
+   {
+    "n": "3",
+    "d": "Nav skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til enkeltvedtaket."
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K205.2",
+  "navn": "Nav må sikre at utenforstående ikke får uberettiget innsyn i enkeltvedtak, forhåndsvarsel og meldinger",
+  "lov": "eForvaltningsforskriften § 8",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav skal ha sikker og entydig elektronisk identifikasjon av den det gjelder"
+   },
+   {
+    "n": "2",
+    "d": "Nav skal sikre tilgangsstyring for egne medarbeidere"
+   },
+   {
+    "n": "3",
+    "d": "Nav må ha betryggende elektroniske løsninger som står i mot datainnbrudd fra eksterne"
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K206.1",
+  "navn": "Nav skal varsle elektronisk til digitale brukere om forhåndsvarsel etter forvaltningsloven § 16",
+  "lov": "eForvaltningsforskriften § 8",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav sender varselet til den adressen som er registrert i Kontakt- og reservasjonsregisteret (KRR) eller i Enhetsregisteret"
+   },
+   {
+    "n": "2",
+    "d": "Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i forhåndsvarselet"
+   },
+   {
+    "n": "3",
+    "d": "Nav skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til forhåndsvarselet."
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K207.1",
+  "navn": "Nav skal varsle elektronisk til digitale brukere om meldinger som har betydning for vedkommendes rettsstilling eller for behandlingen av saken",
+  "lov": "eForvaltningsforskriften § 8",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav sender varselet til den adressen som er registert i KRR eller i Enhetsregisteret"
+   },
+   {
+    "n": "2",
+    "d": "Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i meldingen"
+   },
+   {
+    "n": "3",
+    "d": "NAV skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til melding som har betydning for vedkommendes rettsstilling eller for behandlingen av saken."
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K208.1",
+  "navn": "Nav skal varsle elektronisk til digitale brukere om meldinger som er av særlig betydning å sikre at vedkommende mottar",
+  "lov": "eForvaltningsforskriften § 8",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Nav sender varselet til den adressen som er registert i KRR eller i Enhetsregisteret"
+   },
+   {
+    "n": "2",
+    "d": "Varselet skal angi hvor og hvordan bruker/parten kan skaffe seg kunnskap om innholdet i meldingen"
+   },
+   {
+    "n": "3",
+    "d": "Nav skal varsle innbygger på nytt (re-varsle) innen en uke etter første varsel er sendt, dersom innbygger ikke har skaffet seg tilgang til meldingen."
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K210.1",
+  "navn": "Innbygger skal kunne la seg representere av en fullmektig ved kommunikasjon med NAV",
+  "lov": "eForvaltningsforskriften § 10",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Det må fremgå av kommunikasjonen at innbygger er representert av fullmektig"
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K211.1",
+  "navn": "Når parten mottar enkeltvedtak elektronisk, skal Nav opplyse om det er mulig å klage elektronisk",
+  "lov": "eForvaltningsforskriften §11",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi må informere om riktig elektronisk adresse som klagen skal sendes til når vi underretter om vedtaket"
+   },
+   {
+    "n": "2",
+    "d": "Vi må sende klageren en elektronisk bekreftelse på at klage er mottatt"
+   },
+   {
+    "n": "3",
+    "d": "Vi må informere klager om at hen må kontrollere at hen mottar bekreftelse på at klage er mottatt, og at klager må sende klage på nytt dersom hen ikke mottar bekreftelse på at klagen er mottatt."
+   }
+  ]
+ },
+ {
+  "tema": "el_kom",
+  "tema_navn": "Elektronisk kommunikasjon",
+  "id": "K218.1",
+  "navn": "Nav skal kunne dokumentere elektroniske aktiviteter og henvendelser, og hvem som har sendt eller utført dem",
+  "lov": "eForvaltningsforskriften § 4",
+  "sks": [
+   {
+    "n": "1",
+    "d": "Vi må kjenne identiteten til alle personersom bruker våre innloggede tjenester (autentisering)"
+   },
+   {
+    "n": "2",
+    "d": "Vi må kjenne identiteten til eksterne samhandlere som ønsker å kommunisere med oss elektronisk (autentisering)"
+   },
+   {
+    "n": "3",
+    "d": "Vi må dokumentere at informasjonselementene i den elektroniske kommunikasjonen mellom partene er uendret (integritet)"
+   },
+   {
+    "n": "4",
+    "d": "Vi dokumenterer at informasjonselement(ene) er uendret og at det/de kan knyttes til en bestemt identitet (Ikke-benekt)"
+   },
+   {
+    "n": "5",
+    "d": "Vi sørger for at elektronisk signatur benyttes der det er nødvendig (ikke benekt)"
+   }
+  ]
+ }
+]
