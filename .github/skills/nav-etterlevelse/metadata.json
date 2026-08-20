@@ -1,0 +1,23 @@
+{
+  "description": "Gjennomfør etterlevelsesanalyse av et NAV-system mot etterlevelseskatalogen og generer Markdown-rapport med kodebevis. Ber bruker opprette dokumentasjon på etterlevelse.ansatt.nav.no/dokumentasjoner og importere ferdig rapport dit. Spør etterpå om brukeren også vil ha HTML-versjon.",
+  "domain": "compliance",
+  "tags": ["etterlevelse", "personvern", "gdpr", "sikkerhet", "wcag", "nav", "audit"],
+  "examples": [
+    {
+      "prompt": "Etterlevelse for infotrygd-brukeroppslag",
+      "scenario": "Ethvert utsagn som nevner 'etterlevelse' + et repo-navn skal trigge denne skillen"
+    },
+    {
+      "prompt": "Start etterlevelsessjekk",
+      "scenario": "Ingen repo oppgitt — AI lister managed repos og lar bruker velge med piltaster via fzf"
+    },
+    {
+      "prompt": "Kjør etterlevelsesanalyse på repos/historisk-pensjon",
+      "scenario": "Analyse av et spesifikt repo"
+    },
+    {
+      "prompt": "Sjekk at historisk-regnskap oppfyller personvernkravene",
+      "scenario": "Personvern-fokusert etterlevelsessjekk"
+    }
+  ]
+}
