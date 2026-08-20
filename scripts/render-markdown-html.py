@@ -267,7 +267,7 @@ def build_html(title: str, body: str) -> str:
       text-align: left;
     }}
     th {{
-      background: #f3f4f6;
+      background: transparent;
     }}
     pre {{
       background: #111827;
@@ -281,7 +281,7 @@ def build_html(title: str, body: str) -> str:
       font-size: 0.95em;
     }}
     p code, li code, td code, th code {{
-      background: #eef2ff;
+      background: transparent;
       padding: 0.1rem 0.3rem;
       border-radius: 4px;
     }}
@@ -295,7 +295,7 @@ def build_html(title: str, body: str) -> str:
       border: 1px solid #d1d5db;
       border-radius: 12px;
       padding: 0.75rem 1rem;
-      background: #fafafa;
+      background: transparent;
     }}
     summary {{
       cursor: pointer;

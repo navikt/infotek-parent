@@ -11,9 +11,8 @@ metadata:
 
 Analyser et NAV-system mot kravene i etterlevelseskatalogen og produser en Markdown-rapport
 der hvert suksesskriterium er koblet til **konkret kodebevis** (fil, klasse, metode) eller
-eksplisitt merket som manglende. Spør alltid etterpå om brukeren også vil ha HTML-versjon
-av samme rapport, og generer den kun hvis brukeren ønsker det. Alle detaljblokker skal
-være lukket som standard i både Markdown og HTML.
+eksplisitt merket som manglende. Generer alltid både Markdown- og HTML-versjon av rapporten.
+Alle detaljblokker skal være lukket som standard i både Markdown og HTML.
 
 **Analysen kan ikke starte før repo er valgt og brukeren har bekreftet at
 dokumentasjon finnes i etterlevelseskatalogen** — se Steg 0.
@@ -22,9 +21,9 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
 (90 aktive krav, 270 suksesskriterier, 10 temaer).
 
 > **Navnekollisjon å være obs på:** `infotek-parent/etterlevelse/` er den delte
-> verktøymappa (skript + evt. delt kravkilde). `repos/<repo-navn>/etterlevelse/`
+> verktøymappa (skript + delt kravkilde). `repos/<repo-navn>/etterlevelse/`
 > er en *annen* mappe — den ligger inni det analyserte repoet og inneholder
-> rapporten og evt. repo-spesifikk kravkilde. Bruk alltid full sti
+> rapporten og repo-spesifikk `krav.json`. Bruk alltid full sti
 > (`repos/<repo-navn>/etterlevelse/...`) når du refererer til repo-mappa, for
 > å unngå forveksling med verktøymappa.
 
@@ -34,16 +33,15 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
 |------|-----|--------|
 | 0.1 | 🚧 **Sperre:** avklar hvilket repo — bruk oppgitt navn, ellers `fzf`-valg | Bekreftet `<repo-navn>` |
 | 0.2 | Opprett `etterlevelse/`-mappe i repoet og fastsett filnavn | `repos/<repo-navn>/etterlevelse/` |
-| 0.3 | 🚧 **Sperre:** be bruker opprette/bekrefte dokumentasjon i etterlevelseskatalogen, og legge/lime inn `suksesskriterier.html` | Bekreftelse før analysen starter |
+| 0.3 | 🚧 **Sperre:** be bruker opprette/bekrefte dokumentasjon i etterlevelseskatalogen, og bekrefte at delt kravkilde er oppdatert | Bekreftelse før analysen starter |
 | 1 | Systemprofil — hva gjør systemet, hvem bruker det, hvilke PII | Profiltabell |
 | 2 | Filtrer krav basert på profil — `ekstraher.py --vis` | Relevansliste |
 | 3 | Finn kodebevis per suksesskriterium | Bevistabell |
 | 4 | Generer Markdown-rapport inkrementelt | `repos/<repo-navn>/etterlevelse/ETTERLEVELSE.md` |
-| 5 | Spør om HTML-versjon også er ønsket | Ja/nei-avklaring |
-| 6 | Hvis ja: konverter Markdown til HTML | `repos/<repo-navn>/etterlevelse/etterlevelse-rapport.html` |
-| 7 | Handlingsplan med prioriterte funn | Tiltakstabell |
-| 8 | Verifiser fullstendighet — `verifiser.py` | Exit code 0 |
-| 9 | Be bruker importere/lime inn rapporten i dokumentasjonen | Bekreftelse fra bruker |
+| 5 | Konverter Markdown til HTML | `repos/<repo-navn>/etterlevelse/etterlevelse-rapport.html` |
+| 6 | Handlingsplan med prioriterte funn | Tiltakstabell |
+| 7 | Verifiser fullstendighet — `verifiser.py` | Exit code 0 |
+| 8 | Be bruker importere/lime inn rapporten i dokumentasjonen | Bekreftelse fra bruker |
 
 **Regler som ikke kan hoppes over:**
 
@@ -53,12 +51,11 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
 2. **Kjør `verifiser.py` før levering.** Uten dette blir suksesskriterier utelatt —
    det skjer hver gang kravene leses manuelt.
 
-3. **Spør før HTML.** HTML er et tillegg til Markdown, ikke en erstatning.
-   Når Markdown-rapporten er ferdig, spør eksplisitt om brukeren også vil ha
-   en lesbar HTML-versjon. Generer den med `scripts/render-markdown-html.py`
-   bare ved bekreftelse, med `repos/<repo-navn>/etterlevelse/ETTERLEVELSE.md`
-   som input og `repos/<repo-navn>/etterlevelse/etterlevelse-rapport.html`
-   som output.
+3. **Generer alltid HTML i tillegg til Markdown.** Når Markdown-rapporten er
+   ferdig, generer en lesbar HTML-versjon med
+   `scripts/render-markdown-html.py`, med
+   `repos/<repo-navn>/etterlevelse/ETTERLEVELSE.md` som input og
+   `repos/<repo-navn>/etterlevelse/etterlevelse-rapport.html` som output.
 
 4. **Lukk alt som standard.** Bruk `<details>` uten `open` i rapporten, slik at
    alle kravseksjoner starter lukket og leseren kan åpne det som er relevant.
@@ -85,7 +82,7 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
 6. **Steg 0.2 — fast filnavn og plassering, ingen variasjon.** Så snart repo er
    bekreftet (Steg 0.1), lag `etterlevelse/`-mappen i målrepoet hvis den ikke
    finnes — gjør dette **før** du spør om dokumentasjon i Steg 0.3, slik at
-   brukeren har et konkret sted å legge/lime inn `suksesskriterier.html`:
+   rapportfiler og repo-spesifikk `krav.json` har fast plassering:
 
    ```bash
    mkdir -p repos/<repo-navn>/etterlevelse
@@ -97,8 +94,7 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
    | Fil | Sti |
    |-----|-----|
    | Markdown-rapport | `repos/<repo-navn>/etterlevelse/ETTERLEVELSE.md` |
-   | HTML-versjon (valgfri, Steg 5–6) | `repos/<repo-navn>/etterlevelse/etterlevelse-rapport.html` |
-   | Repo-spesifikk kravkilde (Steg 0.3) | `repos/<repo-navn>/etterlevelse/suksesskriterier.html` |
+   | HTML-versjon (obligatorisk) | `repos/<repo-navn>/etterlevelse/etterlevelse-rapport.html` |
 
    Legg også inn en lenke til rapportfilene i repoets `README.md` (egen
    «Ressurser»-seksjon), slik at rapporten er lett å finne fra repoforsiden.
@@ -107,56 +103,31 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
    (`https://etterlevelse.ansatt.nav.no/dokumentasjoner`) krever Azure AD-innlogging
    og kan ikke nås eller fylles ut automatisk fra denne skillen. **Ikke start
    systemprofil eller kodeanalyse (Steg 1+) før brukeren har svart.** Spør alltid,
-   og vær eksplisitt på hvor eksporten skal havne (mappa finnes allerede fra
-   Steg 0.2):
+   og vær eksplisitt på at denne skillen bruker delt kravkilde:
 
    > Har dere allerede en dokumentasjon for `<repo-navn>` på
    > https://etterlevelse.ansatt.nav.no/dokumentasjoner? Hvis ikke, opprett en
    > ny dokumentasjon der først (velg riktig team/system).
    >
-   > Eksporter deretter suksesskriterie-siden fra dokumentasjonen som HTML.
-   > Du kan enten:
-   > 1. Legge filen i `repos/<repo-navn>/etterlevelse/suksesskriterier.html`
-   >    selv,
-   > 2. oppgi stien du lastet den ned til (f.eks.
-   >    `~/Downloads/suksesskriterier.html`), så flytter jeg den dit, eller
-   > 3. lime hele HTML-innholdet rett inn her i chatten, så oppretter jeg
-   >    filen på rett sted selv.
+   > Bekreft deretter at delt kravkilde `etterlevelse/suksesskriterier.html`
+   > er riktig og oppdatert for denne kjøringen.
 
    Vent på svar. Fortsett kun når brukeren bekrefter at dokumentasjonen finnes
-   eller er opprettet, **og** at HTML-eksporten enten allerede ligger i
-   `repos/<repo-navn>/etterlevelse/suksesskriterier.html`, er oppgitt et sted
-   du kan flytte den fra, eller limt inn direkte i chatten.
+   eller er opprettet, **og** at `etterlevelse/suksesskriterier.html` skal brukes
+   som kravkilde.
 
-   Når innholdet er levert, gjør du selv resten — ikke be brukeren kjøre
-   kommandoer:
-
-   - **Fil på disk (alt. 1/2):**
-
-     ```bash
-     mv <sti-brukeren-oppga> repos/<repo-navn>/etterlevelse/suksesskriterier.html
-     ```
-
-   - **Limt inn i chatten (alt. 3):** opprett
-     `repos/<repo-navn>/etterlevelse/suksesskriterier.html` selv med `create`
-     og lim inn nøyaktig det innholdet brukeren ga deg — ikke reformater eller
-     korriger HTML-en.
-
-   Kjør deretter ekstraksjonen uansett hvilket alternativ som ble brukt:
+   Kjør deretter ekstraksjonen:
 
    ```bash
+   # Delt kravkilde (obligatorisk)
    python3 etterlevelse/ekstraher.py \
-     repos/<repo-navn>/etterlevelse/suksesskriterier.html \
-     repos/<repo-navn>/etterlevelse/krav.json           # forventet: 90 krav, 270 SK
+     etterlevelse/suksesskriterier.html \
+     repos/<repo-navn>/etterlevelse/krav.json
    ```
 
-   Dette gir en **repo-spesifikk kravkilde** ved siden av rapporten, i stedet for
-   den delte `etterlevelse/suksesskriterier.html`. Bruk alltid
-   `repos/<repo-navn>/etterlevelse/suksesskriterier.html` og
-   `repos/<repo-navn>/etterlevelse/krav.json` som kilde for kravfiltrering og kodebevis
-   i Steg 2–3 når disse finnes — `verifiser.py` plukker dem automatisk opp fra
-   samme mappe som rapporten. Finnes ingen repo-spesifikk eksport ennå, bruk den
-   delte `etterlevelse/suksesskriterier.html` som før.
+   Dette gir en **repo-spesifikk kravfil** (`repos/<repo-navn>/etterlevelse/krav.json`)
+   basert på delt kilde. Bruk `repos/<repo-navn>/etterlevelse/krav.json` videre
+   i Steg 2–3 for kravfiltrering og kodebevis.
 
    Bekreft at tallene fra ekstraksjonen er 90 krav / 270 SK før du går videre —
    avviker de, er katalogen endret og forventningene i `SKILL.md` må oppdateres
@@ -164,7 +135,7 @@ Kravkilde og verktøy: `etterlevelse/` i `infotek-parent` — se `etterlevelse/R
    for registrert dokumentasjon i katalogen.
 
 8. **Be bruker importere den ferdige rapporten.** Når
-   `repos/<repo-navn>/etterlevelse/ETTERLEVELSE.md` er verifisert (Steg 8), er
+   `repos/<repo-navn>/etterlevelse/ETTERLEVELSE.md` er verifisert (Steg 7), er
    den kun lagret i git — den er ikke synlig i etterlevelseskatalogen. Avslutt
    derfor alltid med å be brukeren lime inn eller importere rapportens innhold
    i dokumentasjonen på `https://etterlevelse.ansatt.nav.no/dokumentasjoner`,
@@ -292,6 +263,71 @@ Bruk profilen til å avgjøre. Typisk er 35–40 av 90 krav relevante for et opp
 
 **Regel:** Marker aldri et krav som «ikke relevant» uten begrunnelse i rapporten.
 Revisor må kunne se hvorfor kravet er utelatt.
+
+### Full dekning av alle kriterier (obligatorisk)
+
+Rapporten skal alltid ha **full dekning av alle 90 krav** i kravkilden, og hvert
+krav skal vurderes i egen `<details>`-blokk med **alle suksesskriterier (SK) listet**.
+
+1. Alle krav skal detaljvurderes (ingen krav kun i samleoversikt).
+2. Alle SK for hvert krav skal ha status og begrunnelse, også ved `➖ Ikke aktuelt`.
+3. Ikke bruk en separat «Full kravoversikt (90/90)»-seksjon som erstatning for
+   detaljvurdering.
+4. **Alle 270 suksesskriterier skal alltid besvares** i hver seksjon under de
+   90 kravene (én rad per SK med status + begrunnelse).
+
+### SK-numre er ikke sekvensielle — bind alltid til faktisk `n` (obligatorisk)
+
+**Den vanligste feilen ved automatisert/skriptet generering:** å anta at SK-numrene
+for et krav går 0, 1, 2, 3 … i rekkefølge. De gjør de **ikke** — `n`-verdiene i
+`krav.json` er ofte hull i sekvensen og i vilkårlig rekkefølge. Eksempler fra faktiske
+krav:
+
+```
+K255.1: SK 0, 2, 10, 5, 3, 9, 7, 8   (8 SK, ikke 0-7)
+K253.1: SK 0, 1, 3, 6, 4, 5          (6 SK, ikke 0-5)
+K264.1: SK 0, 1, 2, 3                (starter på 0, ikke 1)
+K271.1: SK 0, 4                      (kun 2 SK, med hull)
+```
+
+Hvis du (eller et script) bygger SK-rader ved å anta sekvensiell rekkefølge, ender
+begrunnelsen opp koblet til **feil SK-tekst**, eller reell SK-tekst blir aldri lest og
+faller tilbake til en generisk frase som `Ikke aktuelt gitt systemprofilen.` uten
+noen tilknytning til hva kriteriet faktisk sier — se f.eks. `SK 9 — Vi er varsomme
+ved deling av andre geolokaliserende opplysninger enn adresse` under K255.1, som er
+lett å overse fordi det ikke er SK 4 slik sekvensiell numrering ville tilsi.
+
+**Regel:** Hent alltid de faktiske `n`-verdiene og SK-tekstene direkte fra
+`krav.json` (`k[kid]['sks']`) for kravet du vurderer, og skriv begrunnelsen med
+eksplisitt referanse til hva **den konkrete SK-teksten** ber om — ikke en
+tema-generisk frase. Kjør gjerne:
+
+```bash
+python3 -c "
+import json
+k = {x['id']: x for x in json.load(open('etterlevelse/krav.json'))}
+for s in k['K255.1']['sks']:
+    print('SK', s['n'], '-', s['d'])
+"
+```
+
+før du skriver rader for et krav, slik at hver rad er koblet til riktig `n` og
+begrunnelsen er utfyllende nok til å vise at du har lest selve kriteriet — også
+for `➖ Ikke aktuelt`-rader (forklar *hvorfor akkurat dette kriteriet* ikke gjelder,
+ikke bare at temaet generelt er uaktuelt).
+
+### Relevanskontroll før «ikke aktuelt» (obligatorisk)
+
+Før du markerer et tema eller krav som `➖ Ikke aktuelt`, gjør alltid denne sjekken:
+
+1. Er kravet egentlig dekket av et **nærliggende tema** (f.eks. dokumentasjon/sporbarhet under elektronisk kommunikasjon eller auditlogg), selv om hovedtemaet virker uaktuelt?
+2. Finnes det tekniske spor i kode/konfig som likevel gjør kravet relevant (auth, audit, logger, hendelsesspor, feilhåndtering)?
+3. Er «ikke aktuelt» begrunnet med **hva systemet faktisk gjør**, ikke bare systemtype?
+
+Typisk fallgruve: å markere «Arkiv og journalføring» som ikke aktuelt og samtidig
+glemme at **dokumentasjon av elektroniske aktiviteter** fortsatt kan være relevant
+og skal vurderes under f.eks. `K218.1` (elektronisk kommunikasjon) og `K253.1`
+(oppslagslogg/auditlogg).
 
 ### Krav som ALLTID skal vurderes
 
@@ -650,3 +686,8 @@ fra kodebasen og må verifiseres manuelt:
 - Brukertesting med reelle brukere og hjelpemidler
 
 Marker disse som «⚠️ Mangler bevis» — ikke som avvik.
+
+## Svarformat (obligatorisk)
+
+Svar alltid **punkt for punkt** i nummerert liste (`1. 2. 3.`), slik at hvert funn,
+hver vurdering og hvert tiltak kan gjennomgås manuelt.
