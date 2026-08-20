@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-prune-merged git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -125,7 +125,7 @@ git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til 
 	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
 	  dir=$(PARENT_DIR)/$$name; \
 	  [ -d "$$dir/.git" ] || { echo -e "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
-	  git -C $$dir fetch --prune --quiet; \
+	  git -C $$dir fetch --prune --quiet >/dev/null 2>&1 || echo -e "  ⚠️  $$name — fetch feilet, bruker lokal branch-info"; \
 	  merged=$$(git -C $$dir branch --merged $$branch 2>/dev/null | grep -v "^\*\|^  $$branch$$" | sed 's/^[[:space:]]*//' | grep -v "^$$"); \
 	  if [ -z "$$merged" ]; then \
 	    echo -e "  $(GREEN)✓$(RESET) $$name — ingen branches å slette"; \
@@ -153,15 +153,127 @@ git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til 
 	  rm -f $$tmpfile; \
 	fi
 
-git-status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-versjon
+git-prune-merged: _require-yq ## Switch til default branch og slett merged branches som ikke er foran upstream (bruk DRY_RUN=1 for preview)
+	@echo -e "$(BOLD)Forhåndsvisning — git prune-merged$(RESET)$(if $(filter 1,$(DRY_RUN)), $(CYAN)[DRY RUN]$(RESET),)\n"
+	@tmpfile=$$(mktemp); \
+	has_gh=0; \
+	if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then has_gh=1; fi; \
+	yq e '.repos[] | select(.managed == true) | .org + " " + .name + " " + .default_branch' $(REPOS_FILE) | while read org name branch; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir/.git" ] || { echo -e "  ⚠️  $$name ikke klonet — kjør 'make git-clone'"; continue; }; \
+	  if ! git -C $$dir diff --quiet || ! git -C $$dir diff --cached --quiet; then \
+	    echo -e "  ⚠️  $$name — har uncommitted endringer, skipper"; \
+	    continue; \
+	  fi; \
+	  git -C $$dir fetch --prune --quiet >/dev/null 2>&1 || echo -e "  ⚠️  $$name — fetch feilet, bruker lokal branch-info"; \
+	  current=$$(git -C $$dir branch --show-current 2>/dev/null || echo "detached"); \
+	  before_count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  git -C $$dir for-each-ref --format='%(refname:short)' refs/heads/ | while read b; do \
+	    [ -z "$$b" ] && continue; \
+	    [ "$$b" = "$$branch" ] && continue; \
+	    upstream=$$(git -C $$dir for-each-ref --format='%(upstream:short)' refs/heads/$$b); \
+	    if [ -z "$$upstream" ]; then \
+	      ahead=0; \
+	    else \
+	      ahead=$$(git -C $$dir rev-list --count "$$upstream..$$b" 2>/dev/null); \
+	      [ -z "$$ahead" ] && ahead=0; \
+	    fi; \
+	    if [ "$$ahead" != "0" ]; then \
+	      echo -e "  ⏭  $$name — beholder $$b (status: foran upstream med $$ahead commit(s))"; \
+	      continue; \
+	    fi; \
+	    worktree_path=$$(git -C $$dir worktree list --porcelain | awk -v ref="refs/heads/$$b" 'BEGIN{p=""} /^worktree /{p=substr($$0,10)} /^branch /{if ($$2==ref){print p; exit}}'); \
+	    if [ -n "$$worktree_path" ] && [ "$$worktree_path" != "$$dir" ]; then \
+	      echo -e "  ⏭  $$name — beholder $$b (status: i bruk av worktree, slett i: $$worktree_path)"; \
+	      continue; \
+	    fi; \
+	    delete_mode=""; \
+	    if [ "$$b" = "$$current" ]; then \
+	      if git -C $$dir merge-base --is-ancestor "$$b" "$$branch" >/dev/null 2>&1; then \
+	        delete_mode="-d"; \
+	        echo -e "  $(CYAN)→$(RESET) $$name — vil slette $$b (status: merged lokalt, etter checkout $$branch)"; \
+	      fi; \
+	    elif git -C $$dir branch -d "$$b" --dry-run >/dev/null 2>&1; then \
+	      delete_mode="-d"; \
+	      echo -e "  $(CYAN)→$(RESET) $$name — vil slette $$b (status: merged lokalt)"; \
+	    fi; \
+	    if [ -z "$$delete_mode" ] && [ "$$has_gh" = "1" ]; then \
+	      has_unmerged=$$(git -C $$dir cherry "$$branch" "$$b" 2>/dev/null | grep -c '^+' || true); \
+	      [ -z "$$has_unmerged" ] && has_unmerged=0; \
+	      if [ "$$has_unmerged" = "0" ]; then \
+	        pr_state=$$(gh pr list --repo "$$org/$$name" --head "$$b" --state all --limit 1 --json state,mergedAt --jq 'if length == 0 then "NONE" elif .[0].mergedAt != null then "MERGED" else .[0].state end' 2>/dev/null); \
+	        if [ "$$pr_state" = "MERGED" ]; then \
+	          delete_mode="-D"; \
+	          if [ "$$b" = "$$current" ]; then \
+	            echo -e "  $(CYAN)→$(RESET) $$name — vil force-slette $$b (status: PR merget + ingen unike commits, etter checkout $$branch)"; \
+	          else \
+	            echo -e "  $(CYAN)→$(RESET) $$name — vil force-slette $$b (status: PR merget + ingen unike commits)"; \
+	          fi; \
+	        fi; \
+	      else \
+	        echo -e "  ⏭  $$name — beholder $$b (status: har unike commits mot $$branch)"; \
+	      fi; \
+	    fi; \
+	    if [ -n "$$delete_mode" ]; then \
+	      echo "$$name $$branch $$b $$delete_mode" >> $$tmpfile; \
+	    fi; \
+	  done; \
+	  after_count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  if [ "$$before_count" = "$$after_count" ]; then \
+	    echo -e "  $(GREEN)✓$(RESET) $$name — ingen slettbare branches"; \
+	  elif [ "$$current" != "$$branch" ]; then \
+	    echo -e "  $(CYAN)→$(RESET) $$name — vil checkout $$branch før sletting"; \
+	  fi; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å slette."; rm -f $$tmpfile; \
+	elif [ "$(DRY_RUN)" = "1" ]; then \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -e "  DRY RUN: ville slettet $$count branch(es)."; \
+	  rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Bytt til default branch og slett $$count branch(es)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name branch b delete_mode; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        worktree_path=$$(git -C $$dir worktree list --porcelain | awk -v ref="refs/heads/$$b" 'BEGIN{p=""} /^worktree /{p=substr($$0,10)} /^branch /{if ($$2==ref){print p; exit}}'); \
+	        if [ -n "$$worktree_path" ] && [ "$$worktree_path" != "$$dir" ]; then \
+	          echo -e "  ⏭  $$name — hopper over $$b (status: i bruk av worktree, slett i: $$worktree_path)"; \
+	          continue; \
+	        fi; \
+	        if [ "$$delete_mode" = "-D" ]; then \
+	          echo -n "  Force-slette $$name/$$b (-D, status: PR merget)? [j/N] " && read force_ans && case "$$force_ans" in \
+	            [jJ]*) ;; \
+	            *) echo -e "  ⏭  Hopper over $$name/$$b (status: krever force)"; continue;; \
+	          esac; \
+	        fi; \
+	        current=$$(git -C $$dir branch --show-current 2>/dev/null || echo "detached"); \
+	        if [ "$$current" != "$$branch" ]; then \
+	          git -C $$dir checkout $$branch --quiet || { echo -e "  ❌ $$name — klarte ikke checkout $$branch"; continue; }; \
+	        fi; \
+	        git -C $$dir branch $$delete_mode "$$b" --quiet && \
+	          echo -e "  $(GREEN)-$(RESET) $$name  $$b" || \
+	          echo -e "  ❌ $$name  $$b feilet"; \
+	      done < $$tmpfile;; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
+
+git-status: _require-yq ## Vis branch, dirty, bak default, foran/bak upstream, merget-status, PR-status og parent POM-versjon
 	@echo -e "$(BOLD)Status for alle repos$(RESET)"
 	@{ \
-	  printf "REPO\tBRANCH\tDIRTY\tBEHIND\tPARENT POM\n"; \
-	  printf "%s\t%s\t%s\t%s\t%s\n" "----" "------" "-----" "------" "----------"; \
-	  yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name branch; do \
+	  has_gh=0; \
+	  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then has_gh=1; fi; \
+	  printf "REPO\tBRANCH\tDIRTY\tMAIN\tCURRENT\tMERGET\tPR\tPARENT POM\n"; \
+	  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "----" "------" "-----" "------" "------------" "------" "--" "----------"; \
+	  yq e '.repos[] | select(.managed == true) | .org + " " + .name + " " + .default_branch' $(REPOS_FILE) | while read org name branch; do \
 	    dir=$(PARENT_DIR)/$$name; \
 	    [ -d "$$dir" ] || continue; \
-	    current=$$(git -C $$dir branch --show-current 2>/dev/null || echo "detached"); \
+	    current=$$(git -C $$dir branch --show-current 2>/dev/null); \
+	    [ -z "$$current" ] && current="detached"; \
 	    if git -C $$dir diff --quiet && git -C $$dir diff --cached --quiet; then \
 	      dirty="✅"; \
 	    else \
@@ -171,13 +283,71 @@ git-status: _require-yq ## Vis branch, dirty, commits bak remote og parent POM-v
 	    if [ -z "$$behind" ]; then behind_str="?"; \
 	    elif [ "$$behind" = "0" ]; then behind_str="✅"; \
 	    else behind_str="$$behind ↓"; fi; \
+	    upstream=$$(git -C $$dir rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null); \
+	    if [ "$$current" = "detached" ]; then \
+	      upstream_str="⬜"; \
+	    elif [ -z "$$upstream" ]; then \
+	      upstream_str="⬜"; \
+	    else \
+	      ahead_behind=$$(git -C $$dir rev-list --left-right --count "$$upstream...HEAD" 2>/dev/null); \
+	      behind_up=$$(echo "$$ahead_behind" | awk '{print $$1}'); \
+	      ahead_up=$$(echo "$$ahead_behind" | awk '{print $$2}'); \
+	      [ -z "$$behind_up" ] && behind_up=0; \
+	      [ -z "$$ahead_up" ] && ahead_up=0; \
+	      if [ "$$ahead_up" = "0" ] && [ "$$behind_up" = "0" ]; then \
+	        upstream_str="✅"; \
+	      elif [ "$$ahead_up" = "0" ]; then \
+	        upstream_str="$$behind_up ↓"; \
+	      elif [ "$$behind_up" = "0" ]; then \
+	        upstream_str="$$ahead_up ↑"; \
+	      else \
+	        upstream_str="$$ahead_up ↑ $$behind_up ↓"; \
+	      fi; \
+	    fi; \
 	    if [ -f "$$dir/pom.xml" ]; then \
 	      parent_ver=$$(grep -A3 '<parent>' $$dir/pom.xml | grep '<version>' | head -1 | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | tr -d ' '); \
 	      [ -z "$$parent_ver" ] && parent_ver="—"; \
 	    else \
 	      parent_ver="—"; \
 	    fi; \
-	    printf "%s\t%s\t%s\t%s\t%s\n" "$$name" "$$current" "$$dirty" "$$behind_str" "$$parent_ver"; \
+	    pr_state=""; \
+	    if [ "$$current" = "$$branch" ] || [ "$$current" = "detached" ]; then \
+	      pr_state="NA"; \
+	    elif [ "$$has_gh" = "0" ]; then \
+	      pr_state="UNKNOWN"; \
+	    else \
+	      pr_state=$$(gh pr list --repo "$$org/$$name" --head "$$current" --state all --limit 1 --json state,mergedAt --jq 'if length == 0 then "NONE" elif .[0].mergedAt != null then "MERGED" else .[0].state end' 2>/dev/null); \
+	      if [ -z "$$pr_state" ]; then \
+	        pr_state="UNKNOWN"; \
+	      fi; \
+	    fi; \
+	    if [ "$$pr_state" = "NA" ] || [ "$$pr_state" = "NONE" ]; then \
+	      pr_str="⬜"; \
+	    elif [ "$$pr_state" = "OPEN" ]; then \
+	      pr_str="🟢"; \
+	    elif [ "$$pr_state" = "MERGED" ]; then \
+	      pr_str="✅"; \
+	    elif [ "$$pr_state" = "CLOSED" ]; then \
+	      pr_str="🟠"; \
+	    else \
+	      pr_str="?"; \
+	    fi; \
+	    if [ "$$current" = "$$branch" ]; then \
+	      merged_str="⬜"; \
+	    elif [ "$$current" = "detached" ]; then \
+	      merged_str="?"; \
+	    elif [ "$$pr_state" = "MERGED" ]; then \
+	      merged_str="✅"; \
+	    elif git -C $$dir show-ref --verify --quiet refs/remotes/origin/$$branch; then \
+	      if git -C $$dir merge-base --is-ancestor "$$current" "origin/$$branch" >/dev/null 2>&1; then \
+	        merged_str="✅"; \
+	      else \
+	        merged_str="❌"; \
+	      fi; \
+	    else \
+	      merged_str="?"; \
+	    fi; \
+	    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$$name" "$$current" "$$dirty" "$$behind_str" "$$upstream_str" "$$merged_str" "$$pr_str" "$$parent_ver"; \
 	  done; \
 	} | python3 scripts/fmt-table.py
 
@@ -252,7 +422,7 @@ endif
 	existing=$$(gh api repos/navikt/$(REPO)/rulesets --jq 'length' 2>/dev/null); \
 	expr "$$existing" + 0 >/dev/null 2>&1 || existing=0; \
 	echo; \
-	echo -e "$(BOLD)📋 Plan for navikt/$(REPO) (branch: $$DEFAULT_BRANCH)$(RESET)$(if $(DRY_RUN), $(CYAN)[DRY RUN — ingen endringer gjøres]$(RESET),)"; \
+	echo -e "$(BOLD)📋 Plan for navikt/$(REPO) (branch: $$DEFAULT_BRANCH)$(RESET)$(if $(filter 1,$(DRY_RUN)), $(CYAN)[DRY RUN - ingen endringer gjores]$(RESET),)"; \
 	if [ "$$GH_REPO_EXISTS" -eq 0 ]; then \
 	  echo -e "   ├─ gh repo create navikt/$(REPO) --description \"$$DESC\" --public"; \
 	else \
