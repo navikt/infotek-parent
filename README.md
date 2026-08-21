@@ -45,7 +45,8 @@ make help
 | `make git-fetch` | `git fetch` på alle repos |
 | `make git-pull` | `git pull` på alle repos |
 | `make git-default` | Switch til default branch + pull alle repos |
-| `make git-status` | Vis branch, status og parent POM-versjon for alle repos |
+| `make git-status` | Vis branch, status, merget/PR-ikoner og parent POM-versjon for alle repos |
+| `make git-prune-merged [DRY_RUN=1]` | Bytt til default branch og slett lokale merged branches som ikke er foran upstream (skipper dirty repos) |
 | `make mvn-versions` | Vis Maven-versjoner (Java, Kotlin, parent POM…) på tvers |
 | `make pnpm-versions` | Vis frontend-versjoner (Node, pnpm, Aksel) på tvers |
 | `make gh-add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |

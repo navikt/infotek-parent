@@ -119,7 +119,8 @@ make gh-pr-all
 | `make git-fetch` | Fetch fra alle repos |
 | `make git-pull` | Pull på alle repos |
 | `make git-default` | Switch til main/master + pull alle |
-| `make git-status` | Oversikt over alle repos |
+| `make git-status` | Oversikt over alle repos med branch-, merget- og PR-status |
+| `make git-prune-merged DRY_RUN=1` | Preview: bytt til default branch og slett lokale merged branches som ikke er foran upstream |
 | `make mvn-versions` | Maven-versjoner på tvers |
 | `make pnpm-versions` | Frontend-versjoner på tvers |
 | `make gh-add-repo ORG=navikt REPO=navn` | Legg til nytt repo |
