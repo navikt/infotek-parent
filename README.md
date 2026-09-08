@@ -50,6 +50,9 @@ make help
 | `make mvn-versions` | Vis Maven-versjoner (Java, Kotlin, parent POM…) på tvers |
 | `make pnpm-versions` | Vis frontend-versjoner (Node, pnpm, Aksel) på tvers |
 | `make gh-add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |
+| `make idea-sync-maven` | Synk `.idea/misc.xml` slik at IntelliJ ser alle Maven-repos i `repos/` som moduler (kjøres automatisk av `make git-clone`) |
+
+> **IntelliJ:** Maven-modullisten i `.idea/misc.xml` synkes automatisk hver gang du kjører `make git-clone`. Kun `managed: true`-repos i `repos.yaml` med en `pom.xml` tas med. Åpne prosjektet i IntelliJ og trigg «Reload All Maven Projects» (Maven-panelet) om modulene ikke dukker opp automatisk.
 
 ### Masseoppdateringer
 

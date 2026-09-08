@@ -2,9 +2,14 @@
 """
 Interaktiv PR-oppretter for alle repos.
 
+Håndterer to typer repos i samme velger:
+  - repos som allerede står på en feature-branch (klare for push+PR)
+  - repos som har lokale endringer på default-branch (trenger branch+commit+push+PR)
+
 Bruk:
-  python3 scripts/pr-all.py              # vis alle repos på feature-branch
-  python3 scripts/pr-all.py BRANCH=navn  # filtrer på branch-navn
+  python3 scripts/pr-all.py                              # vis alle kandidater
+  python3 scripts/pr-all.py BRANCH=navn                  # filtrer eksisterende branch / navn på nye branches
+  python3 scripts/pr-all.py BRANCH=navn MSG="chore: ..." # unngå commit-melding-prompt
 """
 
 import subprocess
@@ -19,6 +24,8 @@ GREEN = "\033[32m"
 CYAN = "\033[36m"
 YELLOW = "\033[33m"
 RESET = "\033[0m"
+
+NEW_BRANCH_GROUP_LABEL = "lokale endringer på default-branch (trenger branch+commit)"
 
 
 def run(cmd, cwd=None, check=False):
@@ -57,6 +64,11 @@ def get_current_branch(repo_dir):
     return r.stdout.strip()
 
 
+def get_local_changes(repo_dir):
+    r = run(["git", "status", "--porcelain"], cwd=repo_dir)
+    return [l for l in r.stdout.strip().splitlines() if l]
+
+
 def get_first_commit_title(repo_dir, default_branch, branch):
     # Prøv lokal ref, fall tilbake på origin
     for base in [default_branch, f"origin/{default_branch}"]:
@@ -75,25 +87,34 @@ def get_existing_pr(slug, branch):
     return url if url and url != "null" else None
 
 
-
-def prompt(label, default=None):
-    if default:
-        val = input(f"  {label} [{default}]: ").strip()
-        return val if val else default
-    else:
-        return input(f"  {label}: ").strip()
+def prompt(label, default=None, required=False):
+    while True:
+        if default:
+            val = input(f"  {label} [{default}]: ").strip()
+            val = val if val else default
+        else:
+            val = input(f"  {label}: ").strip()
+        if val or not required:
+            return val
+        print("  Kan ikke være tom.")
 
 
 def main():
     branch_filter = None
+    msg_arg = None
     for arg in sys.argv[1:]:
         if arg.startswith("BRANCH="):
             branch_filter = arg.split("=", 1)[1]
+        elif arg.startswith("MSG="):
+            msg_arg = arg.split("=", 1)[1]
 
     repos = parse_repos()
 
-    # Finn alle repos på feature-branch
-    candidates = []
+    # Kandidater: allerede på feature-branch (klare for push+PR)
+    branch_candidates = []
+    # Kandidater: på default-branch med lokale endringer (trenger branch+commit)
+    needs_branch_candidates = []
+
     for repo in repos:
         name = repo["name"]
         default_branch = repo.get("default_branch", "main")
@@ -101,33 +122,50 @@ def main():
         if not repo_dir.is_dir():
             continue
         branch = get_current_branch(repo_dir)
-        if not branch or branch == default_branch:
+        if not branch:
             continue
-        if branch_filter and branch != branch_filter:
-            continue
-        candidates.append({
-            "name": name,
-            "dir": repo_dir,
-            "branch": branch,
-            "default_branch": default_branch,
-            "slug": get_repo_slug(repo_dir),
-        })
+        if branch == default_branch:
+            changes = get_local_changes(repo_dir)
+            if not changes:
+                continue
+            needs_branch_candidates.append({
+                "name": name,
+                "dir": repo_dir,
+                "branch": None,
+                "default_branch": default_branch,
+                "slug": get_repo_slug(repo_dir),
+                "change_count": len(changes),
+                "needs_branch": True,
+            })
+        else:
+            if branch_filter and branch != branch_filter:
+                continue
+            branch_candidates.append({
+                "name": name,
+                "dir": repo_dir,
+                "branch": branch,
+                "default_branch": default_branch,
+                "slug": get_repo_slug(repo_dir),
+                "needs_branch": False,
+            })
 
-    if not candidates:
-        print("Ingen repos på feature-branch" + (f" '{branch_filter}'" if branch_filter else ""))
+    if not branch_candidates and not needs_branch_candidates:
+        print("Ingen repos klare (verken på feature-branch eller med lokale endringer)"
+              + (f" for branch '{branch_filter}'" if branch_filter else ""))
         return
 
-    # Grupper etter branch-navn
+    # Grupper eksisterende feature-branches
     by_branch = {}
-    for c in candidates:
+    for c in branch_candidates:
         by_branch.setdefault(c["branch"], []).append(c)
 
-    # Vis og la bruker velge
     print(f"\n{BOLD}Repos klare for PR:{RESET}\n")
     flat = []
     group_map = {}  # letter -> list of indices
-    for i, (branch_name, items) in enumerate(sorted(by_branch.items())):
-        letter = chr(ord("a") + i)
+    letter_ord = 0
+    for branch_name, items in sorted(by_branch.items()):
+        letter = chr(ord("a") + letter_ord)
+        letter_ord += 1
         group_indices = []
         print(f"  [{letter}] {CYAN}{branch_name}{RESET} ({len(items)} repo{'s' if len(items) > 1 else ''})")
         for item in items:
@@ -140,6 +178,19 @@ def main():
             else:
                 print(f"    [{idx}] {item['name']}")
             flat.append({**item, "existing_pr": existing if existing != "?" else None})
+            group_indices.append(idx)
+        group_map[letter] = group_indices
+        print()
+
+    if needs_branch_candidates:
+        letter = chr(ord("a") + letter_ord)
+        letter_ord += 1
+        group_indices = []
+        print(f"  [{letter}] {CYAN}{NEW_BRANCH_GROUP_LABEL}{RESET} ({len(needs_branch_candidates)} repo{'s' if len(needs_branch_candidates) > 1 else ''})")
+        for item in needs_branch_candidates:
+            idx = len(flat) + 1
+            print(f"    [{idx}] {item['name']}  [{item['default_branch']}]  {item['change_count']} fil(er) endret")
+            flat.append({**item, "existing_pr": None})
             group_indices.append(idx)
         group_map[letter] = group_indices
         print()
@@ -173,6 +224,44 @@ def main():
 
     if not selected:
         print("Ingen valgt")
+        return
+
+    needs_branch_selected = [s for s in selected if s["needs_branch"]]
+    branch_selected = [s for s in selected if not s["needs_branch"]]
+
+    # Steg 1: opprett branch + commit for repos som trenger det
+    if needs_branch_selected:
+        print()
+        new_branch_name = branch_filter or prompt(
+            "Branch-navn for nye branches (brukes i alle valgte repos uten branch)",
+            required=True,
+        )
+        commit_msg = msg_arg or prompt("Commit-melding (for branch+commit)", required=True)
+        print()
+        still_ok = []
+        for item in needs_branch_selected:
+            dir_ = item["dir"]
+            co = run(["git", "checkout", "-b", new_branch_name], cwd=dir_)
+            if co.returncode != 0:
+                print(f"  ❌ {item['name']} — checkout -b feilet: {co.stderr.strip()}")
+                continue
+            add = run(["git", "add", "-A"], cwd=dir_)
+            if add.returncode != 0:
+                print(f"  ❌ {item['name']} — git add feilet: {add.stderr.strip()}")
+                continue
+            commit = run(["git", "commit", "-m", commit_msg], cwd=dir_)
+            if commit.returncode != 0:
+                print(f"  ❌ {item['name']} — commit feilet: {commit.stderr.strip()}")
+                continue
+            print(f"  {GREEN}✓{RESET} {item['name']} — branch '{new_branch_name}' opprettet og committet")
+            item["branch"] = new_branch_name
+            still_ok.append(item)
+        needs_branch_selected = still_ok
+        print()
+
+    selected = branch_selected + needs_branch_selected
+    if not selected:
+        print("Ingen repos gjensto etter branch/commit-steget.")
         return
 
     # Hent standardtittel fra første commit i første repo uten eksisterende PR
