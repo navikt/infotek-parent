@@ -10,3 +10,6 @@ eksempel-repos/
 .idea/
 *.iml
 .vscode/
+
+# Python
+__pycache__/
