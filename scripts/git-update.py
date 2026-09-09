@@ -124,6 +124,27 @@ def inspect(repository: Repository, actions: list[Repository]) -> int:
         return 1
 
     if current_branch != default_branch:
+        upstream = run_git(repository, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
+        if upstream.returncode != 0:
+            print(f"  ⚠️  {label} — aktiv gren {current_branch} mangler upstream (håndter manuelt)")
+            return 1
+        upstream_ref = upstream.stdout.strip()
+        current_counts = run_git(repository, "rev-list", "--left-right", "--count", f"{upstream_ref}...HEAD")
+        if current_counts.returncode != 0:
+            print(f"  ⚠️  {label} — kunne ikke fastslå status for aktiv gren {current_branch}")
+            return 1
+        values = current_counts.stdout.split()
+        if len(values) != 2:
+            print(f"  ⚠️  {label} — kunne ikke fastslå status for aktiv gren {current_branch}")
+            return 1
+        current_behind, current_ahead = int(values[0]), int(values[1])
+        if current_ahead and current_behind:
+            print(f"  ⚠️  {label} — aktiv gren {current_branch} divergerer fra upstream (håndter manuelt)")
+            return 1
+        if current_ahead:
+            print(f"  ⚠️  {label} — aktiv gren {current_branch} er foran upstream (ikke push automatisk)")
+            return 1
+
         counts = remote_counts(repository, default_branch, f"refs/heads/{default_branch}")
         if counts is None:
             print(f"  ⚠️  {label} — kunne ikke fastslå status for lokal {default_branch}")
