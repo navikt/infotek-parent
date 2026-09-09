@@ -2,8 +2,14 @@
 repos/
 eksempel-repos/
 
+# Agent session-state (midlertidige artefakter fra Copilot/nav-pilot-økter)
+.copilot/session-state/
+
 # OS og editor
 .DS_Store
 .idea/
 *.iml
 .vscode/
+
+# Python
+__pycache__/

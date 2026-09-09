@@ -15,9 +15,69 @@ cd infotek
 make setup
 ```
 
-Dette installerer: Homebrew, `yq`, `git`, `gh` (GitHub CLI), `nais-cli`, Java (Temurin), `cplt` og `nav-pilot`.
+Dette installerer: Homebrew, `yq`, `git`, `gh` (GitHub CLI), Maven, pnpm,
+`nais-cli`, Java (Temurin), GitHub Copilot CLI, `cplt` og `nav-pilot`.
 
 > **Merk:** Første gang kjøres `gh auth login` interaktivt — følg instruksjonene.
+
+Setup spør også om cplt skal konfigureres for Maven, pnpm og Playwright.
+Steget gir lesetilgang til `~/.m2/settings.xml` og `~/.npmrc`, tillater
+kjøring fra Playwright- og pnpm-dlx-cachene, og installerer shell-integrasjonen
+slik at `copilot` kjører gjennom cplt. Scriptet viser også forslagene i
+`.cplt.toml` og spør separat før hver tillatelse godkjennes. Det bruker aldri
+`cplt trust accept --all`. Kjør steget senere med:
+
+```bash
+python3 scripts/setup-cplt.py
+```
+
+Prosjektets `.cplt.toml` foreslår Docker, JVM attach og tilgang til lokale
+porter for Testcontainers, Docker Compose og utviklingstjenester. Den
+interaktive trust-gjennomgangen er del av setup-scriptet. Tillatelser kan også
+godkjennes manuelt:
+
+```bash
+cplt trust
+cplt trust accept allow_docker
+cplt trust accept allow_jvm_attach
+cplt trust accept allow_localhost_any
+```
+
+> **Linux og Docker:** `allow_docker` gir agenten tilgang til Docker- eller
+> Podman-daemonen. På en vanlig Linux-maskin er dette i praksis root-tilgang
+> til verten: agenten kan starte en privilegert container eller montere
+> vertens filsystem og lese eller endre filer utenfor cplt-sandboxen. Dette
+> gjelder selv om kommandoen ikke bruker `sudo`. Godkjenn bare tillatelsen på
+> en maskin der du aksepterer denne risikoen. Bruk rootless Docker/Podman,
+> en dedikert VM eller container dersom verten ikke skal eksponeres.
+>
+> Installer og bruk Bubblewrap på Linux. På kjerner før 7.1 er maskering via
+> Bubblewrap den sentrale beskyttelsen mot container-daemonens Unix-socket når
+> `allow_docker` ikke er godkjent. Kjør `cplt doctor` og rett advarsler før du
+> starter agenten.
+>
+> **Linux og localhost:** `allow_localhost_any` kan ikke begrenses til
+> localhost av Landlock. cplt deaktiverer derfor TCP connect-filtreringen på
+> Linux når denne tillatelsen er aktiv. Den er nødvendig for enkelte
+> dynamiske test- og byggeverktøy, men åpner også direkte TCP-forbindelser til
+> eksterne verter. Foretrekk konkrete `allow.localhost`-porter når
+> arbeidsflyten tillater det.
+>
+> Rotens `.cplt.toml` brukes når cplt startes fra `infotek-parent`. Den arves
+> ikke automatisk når cplt startes direkte inne i et repo under `repos/`.
+
+> **Utklippstavle (macOS):** cplt blokkerer utklippstavlen som standard, så
+> `pbcopy`/`pbpaste` feiler inne i en agent-økt. Dette er en bevisst
+> sikkerhetsdefault — en agent med tilgang kan lese alt du nylig har kopiert
+> (passord, tokens) og skrive vilkårlig innhold til utklippstavlen din. Godkjenn
+> derfor bare på egen maskin, aldri i `infotek-parent`s felles `.cplt.toml`.
+> Legg dette i din personlige `~/.config/cplt/config.toml`
+> (opprett filen med `cplt --init-config` om den ikke finnes):
+>
+> ```toml
+> [sandbox]
+> deny_clipboard = false
+> ```
 
 ## 3. Klon alle team-repos
 
