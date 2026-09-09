@@ -192,6 +192,7 @@ def main() -> int:
             blockers += failed
         else:
             print("  Avbrutt.")
+            blockers += len(actions)
 
     if blockers:
         print("\n⚠️  Noen repos er ikke oppdatert. Se forslagene over og håndter avvik manuelt ved behov.")
