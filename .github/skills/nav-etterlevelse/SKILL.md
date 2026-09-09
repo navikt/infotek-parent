@@ -391,8 +391,26 @@ grep -rn "@RestController" $BASE --include="*.kt" -l
 ```
 
 **SK6 er der man oftest finner reelle avvik.** For hver `@RestController`: verifiser
-at den har `@Protected` eller tilsvarende. `@Unprotected` på annet enn health/metrics
-er et kritisk funn.
+at den har `@Protected` eller tilsvarende. `@Unprotected` på endepunkter som
+returnerer personopplysninger, forretningsdata, hemmeligheter eller muliggjør
+tilstandsendringer er et kritisk funn.
+
+Ikke klassifiser tekniske metadataendepunkter som `/tables` automatisk som
+kritiske. Vurder alltid:
+
+1. Hvilke data endepunktet faktisk returnerer — Hibernate-mappede tabell- og
+   kolonnenavn er metadata, ikke databaseinnhold.
+2. Om Nais `accessPolicy.inbound` begrenser trafikken til navngitte applikasjoner.
+3. Om endepunktet har applikasjonsautentisering og eventuell admin-sjekk.
+4. Om det finnes et dokumentert operativt behov for metadataoppslaget.
+5. Om alternativet er direkte produksjonsdatabasetilgang med bredere
+   rettigheter og høyere risiko.
+
+Et metadataendepunkt med begrenset inbound-policy og legitimt operativt behov er
+normalt et forsvar-i-dybden-funn, ikke et kritisk avvik. Anbefal som hovedregel
+`@Protected` kombinert med eksisterende admin-autorisasjon, mens Nais-policyen
+beholdes som ytre lag. Fjerning i produksjon er aktuelt bare når endepunktet ikke
+har et reelt behov. Dokumenter og begrunn eventuell akseptert restrisiko.
 
 ### K109.1 — FNR-bruk og PII i logger
 
@@ -548,7 +566,7 @@ Avslutt rapporten med prioriterte tiltak. Kun funn med konkret filreferanse.
 
 | Prioritet | Krav | Funn | Fil | Tiltak |
 |-----------|------|------|-----|--------|
-| 🔴 Kritisk | K267.1 SK6 | `/tables` er `@Unprotected` og eksponerer databaseskjema | `backend/.../TableController.kt` | Legg til `@Protected` eller `@Profile("!prod")` |
+| ⚠️ Viktig | K267.1 SK6 | `/tables` er `@Unprotected` og viser Hibernate-mappet tabellstruktur; inbound-policy begrenser trafikken | `backend/.../TableController.kt` | Avklar operativt behov. Behold helst endepunktet med `@Protected` og admin-sjekk dersom alternativet er bredere DB-tilgang; fjern i produksjon hvis behov mangler |
 | ⚠️ Viktig | K267.1 SK2 | Mangler modulo-11-validering av FNR | `backend/.../validerIdentifikator.kt` | Implementer modulo-11-sjekk |
 | ⚠️ Bør gjøres | K196.6 SK5 | Ingen automatiserte UU-tester i pipeline | `frontend/playwright.config.ts` | Legg til `axe-playwright` |
 ```
@@ -649,7 +667,7 @@ Basert på analyse av `infotrygd-brukeroppslag`:
 
 | Funn | Krav | Hvor det typisk sitter |
 |------|------|------------------------|
-| `@Unprotected` på debug/skjema-endepunkt | K267.1 SK6 | `TableController`, `DebugController` |
+| `@Unprotected` på debug/skjema-endepunkt | K267.1 SK6 | `TableController`, `DebugController` — risikovurder data, inbound-policy, admin-sjekk, operativt behov og alternativ DB-tilgang før prioritering |
 | Manglende modulo-11-validering av FNR | K267.1 SK2 | `validerIdentifikator.kt` |
 | CPU limits satt i nais.yaml | Plattformavvik | `nais/app/*.yaml` |
 | Ingen axe/a11y i byggepipeline | K196.6 SK5 | `playwright.config.ts` |

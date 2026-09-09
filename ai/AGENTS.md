@@ -33,6 +33,26 @@ Infotek-teamet jobber med historiske pensjonsdata og ytelser. Teamet har repos f
 
 ---
 
+## Preflight før AI-arbeid på tvers
+
+AI kan bruke git til å undersøke og oppdatere arbeidskopiene: `git status`, `git branch`, `git log`, `git diff`, `git fetch` og `make git-update`. Før branch-bytte eller henting av endringer skal AI forklare handlingen og spørre brukeren.
+
+Før AI gjør endringer skal AI først sjekke git-status og spørre brukeren om `make git-update` skal kjøres, særlig når arbeidet berører parent-repoet eller flere underrepos. Kommandoen omfatter alltid `infotek-parent` og alle repos med `managed: true` i `repos.yaml`, men aldri `managed: false`.
+
+AI skal vente på brukerens svar før kommandoen kjøres. Kommandoen viser om repoene står på riktig default branch, har ren working tree (også ingen utrackede filer) og er oppdatert mot remote. Den spør deretter om brukeren vil utføre checkout til default branch og `git pull --ff-only` når det er trygt. Den skal aldri committe, pushe, merge, rebase eller overskrive lokale endringer.
+
+Dirty repos, divergerte branches, lokale commits foran remote, detached HEAD, fetch-feil og manglende kloner skal vises med forslag til manuell håndtering. Brukeren kan avslå oppdateringen og fortsette; ikke omgå avvikene automatisk.
+
+AI skal ikke lage git-commits eller kjøre `git push`. Etter at endringer er gjort skal AI vise anbefalt commit-melding og la utvikleren stage, committe og pushe selv.
+
+## Session-state for agent-artefakter
+
+AI-agenter kan bruke `.copilot/session-state/` til midlertidige artefakter som
+ikke skal committes — planer, notater og annet arbeidsmateriale for én økt.
+Mappen er lagt til i `.gitignore` og skal ikke inneholde policy- eller
+konfigurasjonsfiler som er ment å forvaltes i repoet (f.eks. `.cplt.toml`).
+Rydd opp egne artefakter når økten er ferdig hvis de ikke lenger trengs.
+
 <!-- AUTO-GENERATED:REPOS START -->
 
 ## Teamets repos

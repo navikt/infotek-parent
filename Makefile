@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-status git-clean-branches git-prune-merged git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -37,6 +37,7 @@ git-clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
 	      echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk at 'gh auth login' er kjørt"; \
 	  fi \
 	done
+	@$(MAKE) --no-print-directory idea-sync-maven
 
 git-fetch: _require-yq ## Kjør git fetch --all på alle repos
 	@echo -e "$(BOLD)Fetcher alle repos$(RESET)"
@@ -118,6 +119,9 @@ git-default: _require-yq ## Switch til default branch + pull på alle repos
 	  esac; \
 	  rm -f $$tmpfile; \
 	fi
+
+git-update: _require-yq ## Bytt til default branch og oppdater parent og managed repos
+	@python3 scripts/git-update.py
 
 git-clean-branches: _require-yq ## Slett alle lokale branches som er merget til default branch
 	@echo -e "$(BOLD)Forhåndsvisning — git clean-branches$(RESET)\n"
@@ -557,13 +561,56 @@ endif
 pr: ## Behandle PRer interaktivt — velg modus ved oppstart — bruk: make pr [DRY_RUN=1]
 	@python3 scripts/pr-behandle.py $(if $(DRY_RUN),--dry-run,)
 
-pr-lag: ## Lag PRer interaktivt — velg repos, tittel og body — bruk: make pr-lag [BRANCH=navn]
-	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),)
+pr-lag: ## Lag PRer interaktivt — velg repos (feature-branch ELLER lokale endringer på default), branch+commit+push+PR — bruk: make pr-lag [BRANCH=navn] [MSG="commit-melding"]
+	@python3 scripts/pr-all.py $(if $(BRANCH),BRANCH=$(BRANCH),) $(if $(MSG),MSG="$(MSG)",)
 
 pr-rerun: ## Rerun feilede CI-sjekker på åpne PRer — bruk: make pr-rerun [DRY_RUN=1]
 	@python3 scripts/dependabot-rerun-failed.py $(if $(DRY_RUN),--dry-run,)
 
 ##@ git — Masseoperasjoner
+
+git-branch-all: _require-yq ## Opprett og checkout ny branch i alle repos med lokale endringer (skipper default-branch) — bruk: make git-branch-all BRANCH=navn
+ifndef BRANCH
+	$(error BRANCH mangler. Bruk: make git-branch-all BRANCH=chore/min-endring)
+endif
+	@echo -e "$(BOLD)Sjekker repos med lokale endringer$(RESET)\n"
+	@tmpfile=$$(mktemp); \
+	yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REPOS_FILE) | while read name default_branch; do \
+	  dir=$(PARENT_DIR)/$$name; \
+	  [ -d "$$dir" ] || continue; \
+	  changes=$$(git -C $$dir status --porcelain 2>/dev/null); \
+	  [ -z "$$changes" ] && continue; \
+	  branch=$$(git -C $$dir branch --show-current 2>/dev/null); \
+	  if [ "$$branch" = "$(BRANCH)" ]; then \
+	    echo -e "  ⏭  $$name — allerede på $(BRANCH), skipper"; \
+	    continue; \
+	  fi; \
+	  if [ "$$branch" != "$$default_branch" ]; then \
+	    echo -e "  ⚠️  $$name — på $$branch (ikke $$default_branch), skipper (bytt manuelt om nødvendig)"; \
+	    continue; \
+	  fi; \
+	  echo -e "  $(CYAN)→$(RESET) $$name  [$$default_branch] → [$(BRANCH)]"; \
+	  echo "$$name" >> $$tmpfile; \
+	done; \
+	echo ""; \
+	if [ ! -s "$$tmpfile" ]; then \
+	  echo -e "  Ingenting å gjøre."; \
+	  rm -f $$tmpfile; \
+	else \
+	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
+	  echo -n "  Opprett branch '$(BRANCH)' i $$count repo(s)? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) \
+	      while read name; do \
+	        dir=$(PARENT_DIR)/$$name; \
+	        git -C $$dir checkout -b $(BRANCH) --quiet && \
+	          echo -e "  $(GREEN)✓$(RESET) $$name → $(BRANCH)" || \
+	          echo -e "  ❌ $$name feilet"; \
+	      done < $$tmpfile; \
+	      echo -e "\n$(CYAN)Tips:$(RESET) Kjør 'make git-stage-all' videre";; \
+	    *) echo -e "  Avbrutt.";; \
+	  esac; \
+	  rm -f $$tmpfile; \
+	fi
 
 git-stage-all: _require-yq ## Stage alle lokale endringer i alle repos (skipper default-branch) — bruk: make git-stage-all [ALLOW_DEFAULT=1]
 	@echo -e "$(BOLD)Sjekker repos med lokale endringer$(RESET)\n"
@@ -702,6 +749,10 @@ git-merge-main: ## Merger default-branch inn i alle feature-branches på tvers a
 	fi
 
 ##@ mvn — Maven
+
+idea-sync-maven: _require-yq ## Synk .idea/misc.xml med Maven-moduler (managed repos med pom.xml)
+	@python3 scripts/gen-idea-maven-modules.py $(REPOS_FILE) .idea/misc.xml
+	@echo -e "  ℹ️  Åpne IntelliJ og reload Maven-prosjekter om modullisten ikke oppdateres automatisk"
 
 mvn-release: ## Publiser ny versjon av Maven parent POM  — bruk: make mvn-release VERSION=1.0.0
 ifndef VERSION
@@ -909,13 +960,20 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@echo -e "$(BOLD)Setter opp ny maskin$(RESET)"
 	@command -v brew >/dev/null || { echo "Installerer Homebrew..."; /bin/bash -c "$$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; }
 	@echo -e "  $(CYAN)→$(RESET) Installerer verktøy via Homebrew..."
-	@brew install yq git gh nais/tap/nais 2>/dev/null || true
-	@brew install --cask temurin 2>/dev/null || true
+	@brew install yq git gh maven pnpm nais/tap/nais 2>/dev/null || true
+	@brew install --cask temurin copilot-cli 2>/dev/null || true
 	@brew install navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
 	@echo -e "  $(CYAN)→$(RESET) Oppgraderer verktøy..."
-	@brew upgrade yq git gh nais navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
-	@brew upgrade --cask temurin 2>/dev/null || true
+	@brew upgrade yq git gh maven pnpm nais navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
+	@brew upgrade --cask temurin copilot-cli 2>/dev/null || true
+	@command -v copilot >/dev/null || { echo "❌ GitHub Copilot CLI mangler — kjør 'brew install --cask copilot-cli'"; exit 1; }
 	@echo -e "  $(GREEN)✓$(RESET) Verktøy installert"
+	@echo -e "  $(CYAN)→$(RESET) cplt for Maven/Testcontainers og pnpm/Playwright..."
+	@echo -e "  Vil du konfigurere cplt, installere shell-integrasjonen og gjennomgå repo-tillatelser?"
+	@echo -n "  [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) python3 scripts/setup-cplt.py;; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: python3 scripts/setup-cplt.py";; \
+	esac
 	@echo -e "  $(CYAN)→$(RESET) Sikkerhetsinnstillinger for npm/pnpm..."
 	@echo -e "  Vil du legge til teamstandard i ~/.npmrc? (ignore-scripts, min-release-age=7, engine-strict)"
 	@echo -n "  [j/N] " && read ans && case "$$ans" in \

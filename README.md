@@ -25,13 +25,19 @@ make git-clone  # klon alle team-repos til ./repos/
 > Alternativt hvis SSH er satt opp: `git clone git@github.com:navikt/infotek-parent.git`
 
 `make setup` installerer:
-- `yq`, `git`, `gh` — grunnverktøy
+- `yq`, `git`, `gh`, `maven`, `pnpm` — grunnverktøy
 - `nais/tap/nais` — Nais CLI
 - `temurin` — Java JDK
-- `navikt/tap/cplt` — GitHub Copilot CLI
+- `copilot-cli` — GitHub Copilot CLI
+- `navikt/tap/cplt` — sandbox for GitHub Copilot CLI
 - `navikt/tap/nav-pilot` — Nav Pilot AI-assistent
 
-
+Setup kan også konfigurere cplt for Maven/Testcontainers, Docker Compose,
+pnpm/Playwright og lokale utviklingstjenester. Maskinspesifikke tillatelser
+legges i `~/.config/cplt/config.toml`, mens prosjektets `.cplt.toml` må
+godkjennes med `cplt trust`. Les Linux-advarslene i
+[`docs/onboarding.md`](docs/onboarding.md) før du godkjenner Docker eller
+ubegrenset localhost.
 
 ```
 make help
@@ -45,11 +51,15 @@ make help
 | `make git-fetch` | `git fetch` på alle repos |
 | `make git-pull` | `git pull` på alle repos |
 | `make git-default` | Switch til default branch + pull alle repos |
+| `make git-update` | Vis status og spør om trygg checkout til default branch og `pull --ff-only` for parent og managed repos |
 | `make git-status` | Vis branch, status, merget/PR-ikoner og parent POM-versjon for alle repos |
 | `make git-prune-merged [DRY_RUN=1]` | Bytt til default branch og slett lokale merged branches som ikke er foran upstream (skipper dirty repos) |
 | `make mvn-versions` | Vis Maven-versjoner (Java, Kotlin, parent POM…) på tvers |
 | `make pnpm-versions` | Vis frontend-versjoner (Node, pnpm, Aksel) på tvers |
 | `make gh-add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |
+| `make idea-sync-maven` | Synk `.idea/misc.xml` slik at IntelliJ ser alle Maven-repos i `repos/` som moduler (kjøres automatisk av `make git-clone`) |
+
+> **IntelliJ:** Maven-modullisten i `.idea/misc.xml` synkes automatisk hver gang du kjører `make git-clone`. Kun `managed: true`-repos i `repos.yaml` med en `pom.xml` tas med. Åpne prosjektet i IntelliJ og trigg «Reload All Maven Projects» (Maven-panelet) om modulene ikke dukker opp automatisk.
 
 ### Masseoppdateringer
 
@@ -84,19 +94,26 @@ Konfig i `config.json`: `diff_max_lines`, `merge_strategy`, `skip_repos`, `depen
 ### Typisk arbeidsflyt for endringer på tvers
 
 ```bash
-# 1. Gjør endringen i berørte repos
-# 2. Stage filene
+# 1. Sørg for kjent starttilstand
+make git-update
+
+# 2. Gjør endringen i berørte repos
+# 3. Stage filene
 git -C repos/mitt-repo add .github/dependabot.yml
 
-# 3. Commit på tvers
+# 4. Commit på tvers
 make git-multi-commit MSG="chore: legg til dependabot.yml"
 
-# 4. Push
+# 5. Push
 make git-push-all
 
-# 5. Lag PRer
+# 6. Lag PRer
 make pr-lag
 ```
+
+`make git-update` inkluderer parent-repoet og alle `managed: true`-repos. Den fetcher remote og viser lokale/utrackede endringer, divergens, lokale commits foran remote, detached HEAD eller manglende kloner med forslag til manuell håndtering. Den spør om brukeren vil bytte repoer til default branch og oppdatere med `pull --ff-only` når det er trygt. Den gjør aldri commit, push, merge, rebase eller overskriver lokale endringer, og er ikke en sperre for videre arbeid.
+
+Før AI gjør endringer skal den sjekke status og spørre brukeren om `make git-update` skal kjøres. Brukeren kan avslå og fortsette med eksisterende branch- og repo-status.
 
 ## Struktur
 

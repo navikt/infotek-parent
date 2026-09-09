@@ -30,6 +30,7 @@ make git-status             # branch + status for alle repos
 make mvn-versions           # maven-versjoner på tvers
 make pnpm-versions          # frontend-versjoner på tvers
 make git-fetch / git-pull / git-default
+make git-update           # bytt til default branch og oppdater parent + managed repos
 
 make git-multi-commit MSG="chore: ..."   # commit på tvers (blokkerer på default-branch)
 make git-push-all                        # push alle feature-branches
@@ -45,6 +46,48 @@ make pnpm-release VERSION=1.x.x         # publiser frontend-config
 make setup                               # ny maskin — installer alle verktøy
 ```
 
+### Manglende lokalt oppsett
+
+Hvis en kommando feiler fordi et verktøy mangler, eller cplt blokkerer Maven,
+Testcontainers, Docker Compose, pnpm eller Playwright, skal Copilot si tydelig
+at brukeren bør kjøre:
+
+```bash
+make setup
+```
+
+Hvis verktøyene allerede er installert og bare cplt-oppsettet mangler, bruk:
+
+```bash
+python3 scripts/setup-cplt.py
+```
+
+Scriptet skal la brukeren gjennomgå og godkjenne navngitte tillatelser fra
+`.cplt.toml` enkeltvis. Copilot skal aldri anbefale eller kjøre
+`cplt trust accept --all`.
+
+Copilot skal ikke forsøke å lese `~/.config/cplt/config.toml`, `~/.npmrc`,
+`~/.m2/settings.xml` eller andre filer i brukerens hjemmekatalog for å
+kontrollere om setup er kjørt. Setup-behovet skal utledes fra den konkrete
+feilmeldingen eller et manglende verktøy.
+
+### Hold deg innenfor repoet
+
+På det lokale filsystemet skal Copilot bare lese, søke og endre filer i
+`infotek-parent` og underkatalogene. Copilot kan bruke nettet og GitHub til å
+finne dokumentasjon, informasjon om biblioteker og innhold i andre repos når
+det er relevant for oppgaven. Hvis cplt, GitHub scope guard, organisasjonens
+innholdsekskludering eller filrettigheter blokkerer tilgang, skal Copilot
+stoppe den aktuelle handlingen og forklare begrensningen.
+
+Copilot skal aldri forsøke å omgå en blokkering ved å bruke alternative
+verktøy, andre protokoller, symbolske lenker, kopiering til midlertidige filer
+eller lokale stier utenfor repoet. Filer i brukerens hjemmekatalog,
+systemkonfigurasjon, credentials og lokale arbeidskopier utenfor
+`infotek-parent` skal ikke undersøkes uten at brukeren uttrykkelig ber om det
+og tilgangen er tillatt. Dette begrenser ikke ordinær research mot offentlige
+nettkilder eller GitHub.
+
 ### Kun managed repos i Makefile-scripts
 
 Alle Makefile-targets og scripts som itererer over repos **skal kun gjelde managed repos**. Bruk alltid `select(.managed == true)` i yq-spørringer:
@@ -54,6 +97,18 @@ yq e '.repos[] | select(.managed == true) | .name + " " + .default_branch' $(REP
 ```
 
 Aldri bruk `.repos[]` uten `select(.managed == true)` i targets som gjør endringer eller sjekker branches. Umanagede repos skal ikke røres.
+
+### Preflight før AI-arbeid på tvers
+
+AI kan bruke git til å undersøke og oppdatere arbeidskopiene: `git status`, `git branch`, `git log`, `git diff`, `git fetch` og `make git-update`. Dette er tillatt når det er nødvendig for oppgaven. AI skal forklare hva som skal gjøres og spørre brukeren før kommandoer som kan bytte branch eller hente endringer kjøres.
+
+Før AI gjør endringer skal AI først sjekke git-status og spørre brukeren om `make git-update` skal kjøres. Dette gjelder særlig endringer i parent-repoet eller flere underrepos. Kommandoen inkluderer parent-repoet og alle `managed: true`-repos, fetcher remote og kontrollerer at hvert repo:
+
+- står på registrert default branch
+- har ren working tree, inkludert ingen utrackede filer
+- er oppdatert mot `origin/<default_branch>`
+
+AI skal for eksempel spørre: «Jeg ser at arbeidet berører parent/underrepos. Vil du at jeg kjører `make git-update` først? Dette kan bytte til default branch og oppdatere med `pull --ff-only` etter egen bekreftelse.» AI skal vente på svaret før den kjører kommandoen. Kommandoen spør deretter eksplisitt om brukeren vil bytte repoer som står på feil branch til registrert default branch og oppdatere med `git pull --ff-only`. Den skal aldri committe, pushe, merge, rebase eller overskrive lokale endringer. Dirty repos, divergerte branches, lokale commits foran remote, detached HEAD og manglende repos skal rapporteres med anbefalt manuell handling. Dette er en brukerbekreftelse, ikke en automatisk sperre; brukeren kan avslå og fortsette med eksisterende status.
 
 ### Bruk Makefile først ved masseoperasjoner
 
@@ -96,10 +151,9 @@ Regel:
 
 Alle repos har beskyttet `main`/`master`. **Aldri commit direkte til default-branch.**
 
-### Copilot gjør IKKE commits eller push
+### Git-kommandoer med brukerbekreftelse
 
-**Copilot lager aldri git-commits eller kjører `git push`.**
-Etter at Copilot har gjort filendringer, presenter commit-meldingen og la utvikleren kjøre:
+AI kan bruke git til lesing, status, fetch, branch-kontroll og den bekreftede `make git-update`-flyten. AI skal ikke lage commits eller kjøre `git push`; utvikleren kjører dette selv etter at filendringene er gjennomgått:
 
 ```bash
 git add -A

@@ -1,0 +1,19 @@
+# Felles cplt-policy for arbeid som startes fra infotek-parent.
+# Kontroller forslagene med `cplt trust` før de godkjennes.
+
+[propose]
+# Kreves av Docker Compose og Testcontainers.
+# ADVARSEL: Docker-socketen er i praksis root-tilgang til vertsmaskinen,
+# særlig på Linux. Containere kan omgå filsandboxen via volummonteringer.
+allow_docker = true
+
+# Kreves av JVM Attach API, blant annet Mockito/MockK.
+allow_jvm_attach = true
+
+# Kreves av Testcontainers og verktøy som bruker dynamiske localhost-porter.
+# ADVARSEL: På Linux kan Landlock ikke skille localhost fra eksterne verter.
+# cplt deaktiverer derfor TCP connect-filtreringen når denne er godkjent.
+allow_localhost_any = true
+
+# Maskinspesifikke tillatelser konfigureres med `make setup`
+# eller `python3 scripts/setup-cplt.py`.
