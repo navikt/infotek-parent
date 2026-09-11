@@ -75,6 +75,6 @@ Rydd opp egne artefakter når økten er ferdig hvis de ikke lenger trengs.
 | [historisk-riddler](https://github.com/navikt/historisk-riddler) | `navikt` | `historisk` | dev-gcp | ✅ |
 | [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | `navikt` | `historisk` | dev-gcp | ✅ |
 | [historisk-avgiftssystem](https://github.com/navikt/historisk-avgiftssystem) | `navikt` | `historisk` | dev-gcp, prod-gcp | ❌ |
-| [infotek-personkort](https://github.com/navikt/infotek-personkort) | `navikt` | `infotek` | — | ✅ |
+| [infotek-personkort](https://github.com/navikt/infotek-personkort) | `navikt` | `infotek` | dev-gcp, prod-gcp | ✅ |
 
 <!-- AUTO-GENERATED:REPOS END -->

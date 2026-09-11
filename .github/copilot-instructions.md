@@ -134,8 +134,10 @@ gh repo create navikt/<repo-navn> --private --description "<beskrivelse>" --conf
 make gh-add-repo ORG=navikt REPO=<repo-navn> DESC="<beskrivelse>"
 
 # 3) Sett metadata eksplisitt
+# Standard er managed=true for team-repoer som inngår i masseoperasjoner.
+# Bruk managed=false kun for eksplisitte eksempel-/pilotrepoer.
 yq -i '(.repos[] | select(.name == "<repo-navn>") | .namespace) = "<namespace>"' repos.yaml
-yq -i '(.repos[] | select(.name == "<repo-navn>") | .managed) = false' repos.yaml
+yq -i '(.repos[] | select(.name == "<repo-navn>") | .managed) = true' repos.yaml
 yq -i '(.repos[] | select(.name == "<repo-navn>") | .environments) = ["dev-gcp","prod-gcp"]' repos.yaml
 
 # 4) Regenerer AI- og README-oversikter i parent
@@ -144,8 +146,8 @@ make update-readme
 ```
 
 Regel:
-- `managed: true` kun når repoet faktisk skal inngå i alle Makefile-masseoperasjoner.
-- Bruk `managed: false` for eksempel-/pilotrepoer.
+- `managed: true` er standard for team-repoer som skal være med i Makefile-masseoperasjoner.
+- Bruk `managed: false` kun for eksempel-/pilotrepoer.
 
 ### Protected branches — viktig
 
