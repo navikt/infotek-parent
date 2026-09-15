@@ -1,12 +1,9 @@
 team: infotek
-
 # Kilde til sannhet for alle team-repos.
 # Legg til nye repos med: make add-repo ORG=<org> REPO=<navn> DESC="<beskrivelse>"
 #
 # Gyldige orger: navikt | historisk | infotryg | infotek
-
 repos:
-
   # ── Namespace: infotek ─────────────────────────────────────────────────────
   - name: infotek-databaseuttrekk
     org: navikt
@@ -18,7 +15,6 @@ repos:
     dependabot_skip: true  # buggy app, kandidat for sletting
     pr_skip: true
     environments: [dev-gcp]
-
   - name: infotek-statistikk
     org: navikt
     namespace: infotek
@@ -39,7 +35,6 @@ repos:
     managed: true
     playwright: true
     environments: [dev-fss, prod-fss, dev-gcp, prod-gcp]
-
   - name: infotrygd-feed-proxy-v2
     org: navikt
     namespace: infotrygd
@@ -48,7 +43,6 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-fss, prod-fss]
-
   - name: infotrygd-hentsaksliste
     org: navikt
     namespace: infotrygd
@@ -57,7 +51,6 @@ repos:
     default_branch: main
     managed: true
     environments: [dev-fss, prod-fss]
-
   - name: infotrygd-replikering
     org: navikt
     namespace: infotrygd
@@ -66,7 +59,6 @@ repos:
     default_branch: master
     managed: true
     environments: [dev-fss, prod-fss]
-
   - name: infotrygd-facade
     org: navikt
     namespace: infotrygd
@@ -75,7 +67,6 @@ repos:
     default_branch: main
     managed: false
     environments: []
-
   # ── Namespace: historisk — aktivt forvaltet ────────────────────────────────
   - name: historisk-avstandskalkulator
     org: navikt
@@ -105,7 +96,6 @@ repos:
     default_branch: master
     managed: true
     environments: [dev-fss, prod-fss]
-
   - name: historisk-pensjon
     org: navikt
     namespace: historisk
@@ -163,4 +153,12 @@ repos:
     stack: []
     default_branch: master
     managed: false
+    environments: [dev-gcp, prod-gcp]
+  - name: infotek-personkort
+    org: navikt
+    namespace: infotek
+    description: Oppslagsløsning for IP_90 personkort
+    stack: []
+    default_branch: main
+    managed: true
     environments: [dev-gcp, prod-gcp]
