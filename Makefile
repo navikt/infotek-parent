@@ -558,6 +558,15 @@ endif
 
 ##@ pr — Pull requests
 
+sheriff: ## Prioritert behandling av bot-PRer — bruk: make sheriff [DRY_RUN=1] [REPORT=fil] [STATUS=1] [WATCH=1]
+	@python3 scripts/sheriff-interactive.py $(if $(DRY_RUN),--dry-run,) $(if $(REPORT),--report $(REPORT),) $(if $(STATUS),--status,) $(if $(WATCH),--watch,)
+
+sheriff-status: ## Vis lagret sheriff-status uten GitHub-kall
+	@python3 scripts/sheriff-interactive.py --status
+
+review: ## Ny interaktiv PR-behandler med filtre og manuelle valg — bruk: make review [DRY_RUN=1]
+	@python3 scripts/pr-behandle.py --review $(if $(DRY_RUN),--dry-run,)
+
 pr: ## Behandle PRer interaktivt — velg modus ved oppstart — bruk: make pr [DRY_RUN=1]
 	@python3 scripts/pr-behandle.py $(if $(DRY_RUN),--dry-run,)
 

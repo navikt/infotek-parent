@@ -33,7 +33,6 @@ Ikoner:
   ⬆️  trenger update   🔒 blokkert    ⏸ venter   ⚙ auto-merge
 """
 
-import atexit
 import json
 import os
 import re
@@ -42,16 +41,29 @@ import signal
 import subprocess
 import sys
 import webbrowser
+from datetime import datetime
 from pathlib import Path
+
+from terminal_ui import choose, choose_cached_report, clear_screen, enter_alt_screen, exit_alt_screen, fit_table, github_alert_counts, nais_alert_counts, print_table, choose_table
 
 REPOS_FILE  = Path(__file__).parent.parent / "repos.yaml"
 CONFIG_FILE = Path(__file__).parent.parent / "config.json"
+REVIEW_REPORT_FILE = Path(__file__).parent.parent / "tmp" / "sheriff-report.json"
+SHERIFF_REPORT_SCRIPT = Path(__file__).parent / "nais-vulnerability-report.py"
+REPORT_SCHEMA_VERSION = 7
 
 DEPENDABOT_MODE = "--dependabot" in sys.argv
 ONLY_MINE       = "--mine" in sys.argv
-ALL_MODE        = "--alle" in sys.argv or not any(a in sys.argv for a in ("--dependabot", "--mine"))
+ALL_MODE        = "--alle" in sys.argv or (
+    "--review" not in sys.argv and not any(a in sys.argv for a in ("--dependabot", "--mine"))
+)
 OTHERS_MODE     = False
 DRY_RUN         = "--dry-run" in sys.argv
+REVIEW_MODE      = "--review" in sys.argv
+REVIEW_AUTHOR_FILTER = "uten_bot"
+REVIEW_SELECTED_KEYS: set[str] = set()
+REVIEW_GROUPING = "vanlig"
+REVIEW_TITLE_FILTER: str | None = None
 def _load_config() -> dict:
     try:
         return json.loads(CONFIG_FILE.read_text())
@@ -83,31 +95,6 @@ MAGENTA = "\033[35m"
 DIM     = "\033[2m"
 RESET   = "\033[0m"
 
-# --- skjermhåndtering ---------------------------------------------------
-_ALT_SCREEN_ACTIVE = False
-
-def _supports_alt_screen() -> bool:
-    return os.environ.get("TERM", "") not in ("dumb", "") and sys.stdout.isatty()
-
-def enter_alt_screen() -> None:
-    global _ALT_SCREEN_ACTIVE
-    if _supports_alt_screen():
-        sys.stdout.write("\033[?1049h\033[H")
-        sys.stdout.flush()
-        _ALT_SCREEN_ACTIVE = True
-
-def exit_alt_screen() -> None:
-    global _ALT_SCREEN_ACTIVE
-    if _ALT_SCREEN_ACTIVE:
-        sys.stdout.write("\033[?1049l")
-        sys.stdout.flush()
-        _ALT_SCREEN_ACTIVE = False
-
-def clear_screen() -> None:
-    if _ALT_SCREEN_ACTIVE:
-        sys.stdout.write("\033[2J\033[H")
-        sys.stdout.flush()
-
 def _term_rows() -> int:
     try:
         return os.get_terminal_size().lines
@@ -121,15 +108,6 @@ def show_paged(content: str) -> None:
     else:
         sys.stdout.write(content)
         sys.stdout.flush()
-
-atexit.register(exit_alt_screen)
-
-def _exit_handler(sig, frame):
-    exit_alt_screen()
-    sys.exit(0)
-
-signal.signal(signal.SIGTERM, _exit_handler)
-# -----------------------------------------------------------------------
 
 def supports_osc8() -> bool:
     term = os.environ.get("TERM_PROGRAM", "")
@@ -210,6 +188,20 @@ def prompt_cs(msg: str) -> str:
         return "n"
 
 
+def choose_pr_action(options: list[str]) -> str:
+    if not REVIEW_MODE:
+        return prompt_cs(f"     {'  '.join(options)}  > ")
+
+    menu_options = []
+    for option in options:
+        match = re.search(r"\[([a-z])\]\s*([^[]+)", option, re.IGNORECASE)
+        if match:
+            menu_options.append((match.group(1).lower(), match.group(2).rstrip(" )"), match.group(1).lower()))
+    if not menu_options:
+        return prompt_cs("     Velg handling > ")
+    return choose("Velg handling", menu_options)
+
+
 _current_user: str | None = None
 
 def get_current_user() -> str:
@@ -221,6 +213,24 @@ def get_current_user() -> str:
 
 
 def get_filter_info() -> str:
+    if REVIEW_MODE:
+        author_filter = {
+            "alle": " (alle)",
+            "uten_bot": " (uten bot)",
+            "mine": " (mine)",
+            "andres": " (andres)",
+        }.get(REVIEW_AUTHOR_FILTER, f" ({REVIEW_AUTHOR_FILTER})")
+        if REVIEW_TITLE_FILTER is not None:
+            author_filter = f" (tittel: {REVIEW_TITLE_FILTER})"
+        sorting = {
+            "vanlig": "",
+            "repo": ", sortert på repo",
+            "repo_forfatter": ", sortert på repo og forfatter",
+            "forfatter": ", sortert på forfatter",
+            "tittel": ", sortert på tittel",
+            "branch": ", sortert på branch",
+        }[REVIEW_GROUPING]
+        return author_filter.rstrip(")") + sorting + ")" if sorting else author_filter
     if ONLY_MINE:       return " (kun mine)"
     if DEPENDABOT_MODE: return " (kun dependabot)"
     if OTHERS_MODE:     return " (kun andres)"
@@ -422,6 +432,25 @@ def pick_rerun_interactive(org: str, name: str, branch: str) -> list[str]:
 
 def apply_filter(prs: list) -> list:
     """Filtrer PRer basert på nåværende globale filtervariable."""
+    if REVIEW_MODE:
+        me = get_current_user()
+        def matches_author(pr: dict) -> bool:
+            author = pr.get("author", {}).get("login", "")
+            if REVIEW_AUTHOR_FILTER == "alle":
+                return True
+            if REVIEW_AUTHOR_FILTER == "uten_bot":
+                return not author.endswith("[bot]") and author != "app/dependabot"
+            if REVIEW_AUTHOR_FILTER == "mine":
+                return author == me
+            if REVIEW_AUTHOR_FILTER == "andres":
+                return author != me
+            return author == REVIEW_AUTHOR_FILTER
+
+        result = [pr for pr in prs if matches_author(pr)]
+        return [
+            pr for pr in result
+            if not REVIEW_SELECTED_KEYS or review_key(pr) in REVIEW_SELECTED_KEYS
+        ]
     if DEPENDABOT_MODE:
         return [p for p in prs if p.get("author", {}).get("login", "") == "app/dependabot"]
     result = prs
@@ -436,6 +465,87 @@ def apply_filter(prs: list) -> list:
         if me:
             result = [p for p in result if p.get("author", {}).get("login", "") != me]
     return result
+
+
+def review_key(pr: dict) -> str:
+    return f"{pr.get('url', '')}#{pr.get('number', '')}"
+
+
+def pick_review_filter(repo_groups: list) -> str:
+    global REVIEW_AUTHOR_FILTER, REVIEW_SELECTED_KEYS, REVIEW_TITLE_FILTER
+    raw_prs = [pr for group in repo_groups for pr in group["raw_prs"]]
+    authors = sorted({pr.get("author", {}).get("login", "") for pr in raw_prs if pr.get("author", {}).get("login")})
+    title_counts: dict[str, int] = {}
+    for pr in raw_prs:
+        title = pr.get("title", "-")
+        title_counts[title] = title_counts.get(title, 0) + 1
+    repeated_titles = sorted((title for title, count in title_counts.items() if count > 1), key=str.casefold)
+    me = get_current_user()
+    choices = [
+        ("uten_bot", f"Uten bot ({sum(not (pr.get('author', {}).get('login', '').endswith('[bot]') or pr.get('author', {}).get('login', '') == 'app/dependabot') for pr in raw_prs)})"),
+        ("alle", f"Alle ({len(raw_prs)})"),
+        ("mine", f"Mine: {me or 'ukjent'} ({sum(pr.get('author', {}).get('login', '') == me for pr in raw_prs)})"),
+        ("andres", f"Andres ({sum(pr.get('author', {}).get('login', '') != me for pr in raw_prs)})"),
+    ]
+    choices.extend(
+        (author, f"Forfatter: {author} ({sum(pr.get('author', {}).get('login', '') == author for pr in raw_prs)})")
+        for author in authors
+        if author not in {me}
+    )
+    filter_choices = [
+        (key, label, str(index + 1))
+        for index, (key, label) in enumerate(choices)
+    ]
+    title_choices = [
+        (
+            f"title_{index}",
+            f"Tittel: {title} ({title_counts[title]})",
+            str(len(filter_choices) + index + 1),
+        )
+        for index, title in enumerate(repeated_titles)
+    ]
+    filter_choices.extend(title_choices)
+    filter_choices.extend((
+        ("back", "Tilbake", "b"),
+        ("quit", "Avslutt review", "q"),
+    ))
+    choice = choose("Filter", filter_choices, clear=True)
+    if choice == "quit":
+        return "quit"
+    if choice == "back":
+        return "back"
+    if choice.startswith("title_"):
+        title = repeated_titles[int(choice.removeprefix("title_"))]
+        REVIEW_AUTHOR_FILTER = "alle"
+        REVIEW_TITLE_FILTER = title
+        REVIEW_SELECTED_KEYS = {review_key(pr) for pr in raw_prs if pr.get("title", "-") == title}
+        return "ok"
+    REVIEW_AUTHOR_FILTER = choice
+    REVIEW_TITLE_FILTER = None
+    REVIEW_SELECTED_KEYS = set()
+    return "ok"
+
+
+def pick_review_sorting() -> str:
+    global REVIEW_GROUPING
+    sorting = choose(
+        "Sorter tabellen",
+        [
+            ("vanlig", "Behold vanlig rekkefølge", "v"),
+            ("repo", "Etter repo", "r"),
+            ("repo_forfatter", "Etter repo og forfatter", "rf"),
+            ("forfatter", "Etter forfatter", "f"),
+            ("tittel", "Etter tittel", "t"),
+            ("branch", "Etter branch", "br"),
+            ("back", "Tilbake", "b"),
+            ("quit", "Avslutt review", "q"),
+        ],
+        clear=True,
+    )
+    if sorting in ("back", "quit"):
+        return sorting
+    REVIEW_GROUPING = sorting
+    return "ok"
 
 
 def fetch_prs(org: str, name: str) -> tuple[list, bool]:
@@ -535,7 +645,7 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
             options += ["Diff( [l] less", "[w] nettleser", "[t] avkortet )"]
         options += ["[v] Åpne", "[b] Tilbake til repo", "[n] Neste repo", "[q] Avslutt"]
         while True:
-            choice = prompt_cs(f"     {'  '.join(options)}  > ")
+            choice = choose_pr_action(options)
             if choice.lower() == "q":
                 print_summary(counts); exit_alt_screen(); sys.exit(0)
             if choice.lower() == "l" and full_diff:
@@ -607,7 +717,7 @@ def handle_pr(org: str, name: str, pr: dict, state: str, counts: dict, bump: str
     options += ["[v] Åpne", "[b] Tilbake til repo", "[n] Neste repo", "[q] Avslutt"]
 
     while True:
-        choice = prompt_cs(f"     {'  '.join(options)}  > ")
+        choice = choose_pr_action(options)
 
         if choice.lower() == "q":
             print_summary(counts); exit_alt_screen(); sys.exit(0)
@@ -744,6 +854,112 @@ def fetch_all(repos: list):
     print(f"\r{' ' * 60}\r", end="", flush=True)
     active_groups = [g for g in repo_groups if g["entries"]]
     return repo_groups, active_groups
+
+
+def is_bot_author(author: str) -> bool:
+    return author.endswith("[bot]") or author == "app/dependabot"
+
+
+def apply_review_filter_to_groups(repo_groups: list) -> None:
+    for group in repo_groups:
+        group["entries"] = [
+            {
+                "org": group["org"],
+                "name": group["name"],
+                "pr": pr,
+                "state": pr_state(pr),
+                "github_critical": group.get("github_critical", 0),
+                "github_high": group.get("github_high", 0),
+                "nais_critical": group.get("nais_critical"),
+                "nais_high": group.get("nais_high"),
+            }
+            for pr in apply_filter(group["raw_prs"])
+        ]
+
+
+def load_review_report() -> list[dict]:
+    try:
+        report = json.loads(REVIEW_REPORT_FILE.read_text())
+        if report.get("schema_version") != REPORT_SCHEMA_VERSION:
+            raise RuntimeError("feil rapportversjon")
+        scope = report["scope"]["repositories"]
+        repositories = report["repositories"]
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, RuntimeError) as error:
+        raise RuntimeError(
+            f"Kunne ikke lese gyldig felles PR-rapport {REVIEW_REPORT_FILE}: {error}. "
+            "Velg ny rapport."
+        ) from error
+    repo_groups = [
+        {
+            "org": group.get("org", "navikt"),
+            "name": group["name"],
+            "raw_prs": repositories[group["name"]].get("open_prs", {}).get("items", []),
+            "entries": [],
+            "truncated": False,
+            "github_critical": github_alert_counts(repositories[group["name"]])[0],
+            "github_high": github_alert_counts(repositories[group["name"]])[1],
+            "nais_critical": nais_alert_counts(repositories[group["name"]])[0],
+            "nais_high": nais_alert_counts(repositories[group["name"]])[1],
+        }
+        for group in scope
+        if group.get("managed", True)
+        and repositories.get(group["name"], {}).get("open_prs", {}).get("status") == "ok"
+    ]
+    apply_review_filter_to_groups(repo_groups)
+    return repo_groups
+
+
+def print_review_report_progress(repo_groups: list, total: int, current: str = "") -> None:
+    clear_screen()
+    rows = []
+    for group in repo_groups:
+        prs = group["raw_prs"]
+        bots = sum(is_bot_author(pr.get("author", {}).get("login", "")) for pr in prs)
+        rows.append((group["name"], str(len(prs)), str(len(prs) - bots), str(bots)))
+    print_table(
+        f"Review-rapport ({len(rows)}/{total} repoer ferdig)",
+        ("Repo", "PR-er", "Menneske", "Bot"),
+        rows,
+        f"Henter: {current}" if current else "",
+    )
+
+
+def build_review_report(repos: list) -> list[dict]:
+    print("Kjører fersk felles PR-rapport.")
+    result = subprocess.run([sys.executable, str(SHERIFF_REPORT_SCRIPT), "--output", str(REVIEW_REPORT_FILE)])
+    if result.returncode != 0 and not REVIEW_REPORT_FILE.exists():
+        raise RuntimeError("Kunne ikke generere felles PR-rapport.")
+    return load_review_report()
+
+
+def show_review_report_summary() -> bool:
+    subprocess.run(
+        [sys.executable, str(SHERIFF_REPORT_SCRIPT), "--show", "--output", str(REVIEW_REPORT_FILE)],
+        check=False,
+    )
+    return choose(
+        "Sammendragsrapport",
+        [("back", "Tilbake til review", "b"), ("quit", "Avslutt review", "q")],
+    ) != "quit"
+
+
+def choose_review_report(repos: list) -> list[dict]:
+    if REVIEW_REPORT_FILE.exists():
+        try:
+            load_review_report()
+        except RuntimeError as error:
+            print(f"⚠️  {error}")
+            return build_review_report(repos)
+    report_choice = choose_cached_report(
+        REVIEW_REPORT_FILE,
+        "Review-rapport",
+        lambda: f"{sum(len(group['raw_prs']) for group in load_review_report())} PR-er",
+    )
+    if report_choice == "quit":
+        raise KeyboardInterrupt
+    if report_choice == "fortsett":
+        return load_review_report()
+    return build_review_report(repos)
 
 
 def print_overview_dependabot(repo_groups: list, total_prs: int, prefix: str):
@@ -893,6 +1109,130 @@ def print_overview_standard(repo_groups: list, active_groups: list, total_prs: i
         sys.stdout.flush()
     else:
         print_overview_compact(repo_groups, total_prs, filter_info)
+
+
+def review_entries(repo_groups: list) -> list[dict]:
+    entries = [
+        entry
+        for group in repo_groups
+        for entry in group["entries"]
+    ]
+    if REVIEW_GROUPING == "vanlig":
+        return entries
+    def value(entry: dict, key: str) -> str:
+        if key == "repo":
+            return f"{entry.get('org', '')}/{entry['name']}".casefold()
+        if key == "author":
+            return entry["pr"].get("author", {}).get("login", "-").casefold()
+        return entry["pr"].get(key, "-").casefold()
+
+    sort_keys = {
+        "repo": ("repo",),
+        "repo_forfatter": ("repo", "author"),
+        "forfatter": ("author",),
+        "tittel": ("title",),
+        "branch": ("headRefName",),
+    }[REVIEW_GROUPING]
+    return sorted(
+        entries,
+        key=lambda entry: (
+            *(value(entry, key) for key in sort_keys),
+            entry["name"].casefold(),
+            entry["pr"].get("number", 0),
+        ),
+    )
+
+
+def review_pr_shortcut(index: int) -> str:
+    return str(index + 1)
+
+
+def print_review_table(entries: list[dict]) -> None:
+    headers = ("Tast", "Repo", "Branch", "Tittel", "Forfatter", "Status", "GH C/H", "Nais C/H")
+    rows = []
+    for index, entry in enumerate(entries, 1):
+        pr = entry["pr"]
+        rows.append((
+            f"[{review_pr_shortcut(index - 1)}]",
+            entry["name"],
+            pr.get("headRefName", "-"),
+            pr.get("title", "-"),
+            pr.get("author", {}).get("login", "-"),
+            STATE_HINT.get(entry["state"], entry["state"]),
+            f"{entry.get('github_critical', 0)}/{entry.get('github_high', 0)}",
+            f"{entry.get('nais_critical') if entry.get('nais_critical') is not None else '-'}/{entry.get('nais_high') if entry.get('nais_high') is not None else '-'}",
+        ))
+    headers, rows, widths = fit_table(headers, rows)
+    print(f"\n{BOLD}Review{get_filter_info()}{RESET}\n")
+    print("  ".join(header.ljust(width) for header, width in zip(headers, widths)))
+    print("  ".join("-" * width for width in widths))
+    for row in rows:
+        print("  ".join(value.ljust(width) for value, width in zip(row, widths)))
+    print(f"\n{len(rows)} PR-er.")
+
+
+def main_review(repos: list) -> None:
+    repo_groups = choose_review_report(repos)
+    counts = {"merget": 0, "oppdatert": 0, "rerun": 0, "skippet": 0}
+
+    def refresh() -> None:
+        nonlocal repo_groups
+        repo_groups = build_review_report(repos)
+
+    while True:
+        entries = review_entries(repo_groups)
+        try:
+            rows = [
+                (
+                    f"[{review_pr_shortcut(index)}]",
+                    entry["name"],
+                    entry["pr"].get("headRefName", "-"),
+                    entry["pr"].get("title", "-"),
+                    entry["pr"].get("author", {}).get("login", "-"),
+                    STATE_HINT.get(entry["state"], entry["state"]),
+                    f"{entry.get('github_critical', 0)}/{entry.get('github_high', 0)}",
+                    f"{entry.get('nais_critical') if entry.get('nais_critical') is not None else '-'}/{entry.get('nais_high') if entry.get('nais_high') is not None else '-'}",
+                )
+                for index, entry in enumerate(entries)
+            ]
+            choice = choose_table(
+                f"Review{get_filter_info()}",
+                ("Tast", "Repo", "Branch", "Tittel", "Forfatter", "Status", "GH C/H", "Nais C/H"),
+                rows,
+                (
+                    ("filter", "Filter", "f"),
+                    ("sortering", "Sorter tabellen", "s"),
+                    ("summary", "Vis sammendragsrapport", "o"),
+                    ("refresh", "Hent ny rapport", "r"),
+                    ("quit", "Avslutt review", "q"),
+                ),
+            )
+        except (EOFError, KeyboardInterrupt):
+            break
+        if choice == "quit":
+            break
+        if choice == "filter":
+            if pick_review_filter(repo_groups) == "quit":
+                break
+            apply_review_filter_to_groups(repo_groups)
+            continue
+        if choice == "sortering":
+            if pick_review_sorting() == "quit":
+                break
+            continue
+        if choice == "summary":
+            if not show_review_report_summary():
+                break
+            continue
+        if choice == "refresh":
+            refresh()
+            continue
+        if not choice.startswith("row-"):
+            continue
+        entry = entries[int(choice.removeprefix("row-"))]
+        handle_pr(entry["org"], entry["name"], entry["pr"], entry["state"], counts)
+        refresh()
+    print_summary(counts)
 
 
 def print_summary(counts: dict):
@@ -1176,6 +1516,8 @@ def main():
         return
     if DEPENDABOT_MODE:
         main_dependabot(repos)
+    elif REVIEW_MODE:
+        main_review(repos)
     else:
         main_standard(repos)
 

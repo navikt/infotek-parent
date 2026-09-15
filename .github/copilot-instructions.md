@@ -37,6 +37,8 @@ make git-push-all                        # push alle feature-branches
 make pr-lag                              # interaktiv PR-oppretter
 
 make pr                                  # behandle PRer interaktivt (velg modus ved oppstart)
+make review                              # lagret/fersk PR-rapport og tabell; automatisk standardvalg etter 10 sekunder
+make sheriff                             # prioritert bot-PR-behandling med rapportvalg ved oppstart og automatisk standardvalg etter 10 sekunder
 make pr-rerun                            # rerun feilede CI-sjekker på tvers av repos
 
 make mvn-update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR

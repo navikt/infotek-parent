@@ -77,10 +77,42 @@ make help
 | Kommando | Beskrivelse |
 |----------|-------------|
 | `make pr` | Behandle PRer interaktivt — velg modus ved oppstart (alle, dependabot, mine, andres…) |
+| `make review` | PR-behandler med felles lagret/fersk PR-rapport, sheriff-lignende tabell, uten bot som standard og direkte filtre for forfatter eller titler med flere PR-er, samt eget sorteringsvalg for repo, forfatter, tittel eller branch |
+| `make sheriff` | Prioritert, tilstandsbasert behandling av bot-PRer; bruker samme PR-rapport som review |
 | `make pr-lag` | Lag PRer interaktivt — velg repos, tittel og body |
 | `make pr-rerun` | Rerun feilede CI-sjekker på åpne PRer |
 
 Valg per PR: `[a]` Godkjenn · `[b]` Godkjenn+auto-merge (Dependabot) · `[m]` Merge · `[u]` Update-branch · `[r]` Rerun CI · `[p]` Artifakter · `[v]` Åpne · `[s]` Skip · `[n]` Neste repo
+
+Ved oppstart av `make review` og `make sheriff` velges standard rapportvalg
+automatisk etter 10 sekunder: lagret tabell når rapporten er yngre enn 15
+minutter, ellers ny rapport.
+
+Review- og sheriff-tabellene viser samme antall åpne GitHub-varsler med
+kritisk og høy alvorlighetsgrad per repository som `GH C/H`, og Nais sin
+workload-oppsummering som `Nais C/H`. Nais-sårbarheter er en separat kilde og
+blandes ikke inn i GitHub-tallene. `-/-` betyr at Nais-data ikke var
+tilgjengelige for repoet.
+
+Hvis Nais krever innlogging, velg `[l] Logg inn i Nais nå`. Dette kjører
+`nais login --nais` og prøver Nais-oppslagene igjen. Alternativt velger du
+`[s] Fortsett uten Nais-oppslag`; da fortsetter rapporten med GitHub-data.
+Hvis Nais CLI mangler, tilbys bare å fortsette uten Nais eller avslutte.
+
+Sheriff viser først en kandidatabell med prioritert rekkefølge og antall åpne
+kritiske og høye sikkerhetsvarsler per repository, før behandlingsrunden
+starter. Tabellen avkorter titler for å holde én rad per kandidat i smale
+terminaler.
+
+Når en ny fellesrapport hentes, viser rapportvinduet ferdige repoer i en
+tabell og alle kommandoer for aktivt repo. Kommandoene merkes med fremdrift,
+for eksempel `Kommando 1/5`, og visningen tømmes når neste repo starter.
+Etterpå viser `make sheriff` kandidatabellen og valget
+`[s] Start review i prioritert rekkefølge`.
+
+Begge PR-tabellene har `[o] Vis sammendragsrapport`. Den viser den lagrede
+Nais-, GitHub- og repositoryoppsummeringen fra samme rapport og har
+`[b] Tilbake` til gjeldende tabell.
 
 Konfig i `config.json`: `diff_max_lines`, `merge_strategy`, `skip_repos`, `dependabot_skip_repos`, artifact-mønstre.
 
