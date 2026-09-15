@@ -33,8 +33,8 @@ git-clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
 	    echo -e "  $(GREEN)↓$(RESET) $$name — finnes allerede, skipper"; \
 	  else \
 	    echo -e "  $(GREEN)+$(RESET) Kloner $$repo → $$dest"; \
-	    gh repo clone $$repo $$dest 2>&1 | grep -v "^remote:" | grep -v "^Receiving\|^Resolving\|^Compressing" || \
-	      echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk at 'gh auth login' er kjørt"; \
+	    git clone git@github.com:$$repo.git $$dest 2>&1 | grep -v "^remote:" | grep -v "^Receiving\|^Resolving\|^Compressing" || \
+	      echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk SSH-nøkkel og GitHub-tilgang (SSO for navikt)"; \
 	  fi \
 	done
 	@$(MAKE) --no-print-directory idea-sync-maven
@@ -467,7 +467,7 @@ endif
 	if [ -d "$(PARENT_DIR)/$(REPO)/.git" ]; then \
 	  echo -e "   └─ ⏭  git clone: $(PARENT_DIR)/$(REPO) finnes allerede — hopper over"; \
 	else \
-	  echo -e "   └─ gh repo clone navikt/$(REPO) $(PARENT_DIR)/$(REPO)"; \
+	  echo -e "   └─ git clone git@github.com:navikt/$(REPO).git $(PARENT_DIR)/$(REPO)"; \
 	fi; \
 	echo; \
 	$(if $(DRY_RUN),exit 0;) \
@@ -521,7 +521,7 @@ endif
 	  echo -e "  ⏭  $(PARENT_DIR)/$(REPO) finnes allerede — hopper over"; \
 	else \
 	  mkdir -p $(PARENT_DIR); \
-	  gh repo clone navikt/$(REPO) $(PARENT_DIR)/$(REPO) && \
+	  git clone git@github.com:navikt/$(REPO).git $(PARENT_DIR)/$(REPO) && \
 	    echo -e "  $(GREEN)✓$(RESET) Klonet til $(PARENT_DIR)/$(REPO)" || \
 	    echo -e "  ⚠️  Kloning feilet"; \
 	fi; \
@@ -968,6 +968,19 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@brew upgrade --cask temurin copilot-cli 2>/dev/null || true
 	@command -v copilot >/dev/null || { echo "❌ GitHub Copilot CLI mangler — kjør 'brew install --cask copilot-cli'"; exit 1; }
 	@echo -e "  $(GREEN)✓$(RESET) Verktøy installert"
+	@echo -e "  $(CYAN)→$(RESET) Git-identitet..."
+	@current_name=$$(git config --global user.name 2>/dev/null || true); \
+	current_email=$$(git config --global user.email 2>/dev/null || true); \
+	printf "  Navn [$${current_name}]: "; read name; \
+	printf "  E-post [$${current_email}]: "; read email; \
+	name=$${name:-$$current_name}; email=$${email:-$$current_email}; \
+	if [ -z "$$name" ] || [ -z "$$email" ]; then \
+	  echo "  ⚠️  Git-navn og e-post må oppgis — hopper over"; \
+	else \
+	  git config --global user.name "$$name" && \
+	  git config --global user.email "$$email" && \
+	  echo -e "  $(GREEN)✓$(RESET) Git global name og email oppdatert"; \
+	fi
 	@echo -e "  $(CYAN)→$(RESET) cplt for Maven/Testcontainers og pnpm/Playwright..."
 	@echo -e "  Vil du konfigurere cplt, installere shell-integrasjonen og gjennomgå repo-tillatelser?"
 	@echo -n "  [j/N] " && read ans && case "$$ans" in \
