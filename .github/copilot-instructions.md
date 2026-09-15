@@ -122,6 +122,33 @@ Når vi gjør samme operasjon i mange repoer, skal Copilot foreslå Makefile-kom
 
 Bruk manuelle `git add/commit/push/gh pr create` når endringen gjelder ett repo, eller når du trenger kontroll per repo.
 
+### Skill: Opprett nytt repo
+
+Når noen ber om nytt team-repo, bruk denne faste flyten:
+
+```bash
+# 1) Opprett repo i GitHub (utvikler kjører)
+gh repo create navikt/<repo-navn> --private --description "<beskrivelse>" --confirm
+
+# 2) Legg repoet i repos.yaml via make-target
+make gh-add-repo ORG=navikt REPO=<repo-navn> DESC="<beskrivelse>"
+
+# 3) Sett metadata eksplisitt
+# Standard er managed=true for team-repoer som inngår i masseoperasjoner.
+# Bruk managed=false kun for eksplisitte eksempel-/pilotrepoer.
+yq -i '(.repos[] | select(.name == "<repo-navn>") | .namespace) = "<namespace>"' repos.yaml
+yq -i '(.repos[] | select(.name == "<repo-navn>") | .managed) = true' repos.yaml
+yq -i '(.repos[] | select(.name == "<repo-navn>") | .environments) = ["dev-gcp","prod-gcp"]' repos.yaml
+
+# 4) Regenerer AI- og README-oversikter i parent
+make docs
+make update-readme
+```
+
+Regel:
+- `managed: true` er standard for team-repoer som skal være med i Makefile-masseoperasjoner.
+- Bruk `managed: false` kun for eksempel-/pilotrepoer.
+
 ### Protected branches — viktig
 
 Alle repos har beskyttet `main`/`master`. **Aldri commit direkte til default-branch.**
