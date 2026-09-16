@@ -23,9 +23,19 @@ help: ## Vis alle tilgjengelige kommandoer
 ##@ git — Grunnoperasjoner
 
 git-clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
-	@echo -e "$(BOLD)Kloner alle repos til $(PARENT_DIR)/$(RESET)"
-	@mkdir -p $(PARENT_DIR)
-	@yq e '.repos[] | select(.managed == true) | .org + "/" + .name' $(REPOS_FILE) | while read repo; do \
+	@echo -e "$(BOLD)Velg kloningsmetode:$(RESET)"
+	@echo "  1) SSH (git@github.com)"
+	@echo "  2) GitHub CLI (gh repo clone)"
+	@printf "Velg [1/2]: " && read -r clone_method && \
+	  case "$$clone_method" in \
+	    1) clone_method=ssh ;; \
+	    2) clone_method=gh ;; \
+	    *) echo "❌ Ugyldig valg — bruk 1 eller 2."; exit 1 ;; \
+	  esac; \
+	  echo; \
+	  echo -e "$(BOLD)Kloner alle repos til $(PARENT_DIR)/$(RESET)"; \
+	  mkdir -p "$(PARENT_DIR)"; \
+	  yq e '.repos[] | select(.managed == true) | .org + "/" + .name' $(REPOS_FILE) | while read repo; do \
 	  name=$$(echo $$repo | cut -d/ -f2); \
 	  dest=$(PARENT_DIR)/$$name; \
 	  [ "$$dest" = "$(CURDIR)" ] && { echo -e "  ⏭  $$name — dette repoet, skipper"; continue; }; \
@@ -33,11 +43,16 @@ git-clone: _require-yq ## Klon alle repos fra repos.yaml til ./repos/
 	    echo -e "  $(GREEN)↓$(RESET) $$name — finnes allerede, skipper"; \
 	  else \
 	    echo -e "  $(GREEN)+$(RESET) Kloner $$repo → $$dest"; \
-	    git clone git@github.com:$$repo.git $$dest 2>&1 | grep -v "^remote:" | grep -v "^Receiving\|^Resolving\|^Compressing" || \
-	      echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk SSH-nøkkel og GitHub-tilgang (SSO for navikt)"; \
+	    if [ "$$clone_method" = "ssh" ]; then \
+	      git clone git@github.com:$$repo.git "$$dest" || \
+	        echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk SSH-nøkkel og GitHub-tilgang (SSO for navikt)"; \
+	    else \
+	      gh repo clone "$$repo" "$$dest" || \
+	        echo -e "    ⚠️  Kunne ikke klone $$repo — sjekk at gh er installert og innlogget"; \
+	    fi; \
 	  fi \
-	done
-	@$(MAKE) --no-print-directory idea-sync-maven
+	  done; \
+	  $(MAKE) --no-print-directory idea-sync-maven
 
 git-fetch: _require-yq ## Kjør git fetch --all på alle repos
 	@echo -e "$(BOLD)Fetcher alle repos$(RESET)"
