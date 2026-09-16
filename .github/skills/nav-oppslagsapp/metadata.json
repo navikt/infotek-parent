@@ -1,0 +1,34 @@
+{
+  "description": "Planlegg og bygg interne Nav-oppslagsapper med React-frontend, Spring Boot BFF/backend, Nais, Azure AD/Wonderwall, Azure OBO, lokal mock OIDC og CI.",
+  "domain": "architecture",
+  "tags": [
+    "oppslagsapp",
+    "react",
+    "spring-boot",
+    "bff",
+    "nais",
+    "azure-ad",
+    "wonderwall",
+    "obo",
+    "mock-oidc",
+    "ci"
+  ],
+  "examples": [
+    {
+      "prompt": "Bygg en intern oppslagsapp med React og Spring Boot",
+      "scenario": "Ny Nav-løsning der frontend, auth og backend må designes fra start."
+    },
+    {
+      "prompt": "Vurder om denne oppslagsappen skal ha BFF",
+      "scenario": "Arkitekturvalg for en intern saksbehandlerapp med Azure AD og OBO."
+    },
+    {
+      "prompt": "Sett opp lokal utvikling med Wonderwall og mock-oidc",
+      "scenario": "Appen skal kunne kjøres lokalt med innlogging og E2E."
+    },
+    {
+      "prompt": "Lag Nais-oppsett for frontend, BFF og fag-backend",
+      "scenario": "Separate deployer med eksplisitt accessPolicy og probes."
+    }
+  ]
+}

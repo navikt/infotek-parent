@@ -6,6 +6,10 @@ Ved code review, sjekk alltid:
 - Logges det PII (fnr, navn, adresse)? → Avvis, bruk sakId i stedet
 - Er nye endepunkter beskyttet med riktig auth (TokenX/Azure AD)?
 - Har nais.yaml `accessPolicy.inbound` for alle nye apper?
+- Har produksjonskonfig fallback for secrets, credentials, auth,
+  tilgangskontroll, audit, database, schema eller eksterne endepunkter?
+  Slike verdier skal være obligatoriske og feile ved oppstart. Lokale defaults
+  skal ligge i en eksplisitt lokal/testprofil som ikke kan aktiveres i prod.
 
 ## Kotlin/Java
 - Brukes versjoner fra infotek parent POM, eller overskrives de lokalt?

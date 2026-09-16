@@ -24,10 +24,10 @@ ikke at repoet automatisk skal skjules fra øvrig sikkerhetsanalyse.
 ## Sikkerhetsgrenser
 
 - Start alltid med `git status --short --branch`.
-- Før du kjører `make git-update`, spør brukeren eksplisitt. Forklar at
-  kommandoen kan bytte branch og hente endringer, selv om den ikke committer,
-  pusher, merger eller overskriver lokale endringer.
-- Ikke kjør `git checkout`, `git switch`, `git pull`, `git fetch`, `make
+- Be brukeren kjøre `make git-update` og bekrefte resultatet før fiksing. Ikke
+  kjør kommandoen selv, heller ikke etter uttrykkelig bekreftelse.
+- Lokale `git checkout`- og `git switch`-operasjoner er tillatt når status er
+  kontrollert og målet er forklart. Ikke kjør `git pull`, `git fetch`, `make
   git-update`, `gh pr merge`, `gh pr close`, `gh pr edit`, `gh pr create`,
   `gh run rerun`, filendringer eller andre muterende kommandoer uten å vise
   mål, kommando og forventet effekt og få et tydelig ja.
@@ -51,7 +51,8 @@ ikke at repoet automatisk skal skjules fra øvrig sikkerhetsanalyse.
 - `gh` kan brukes til read-only kontroll av remote GitHub-status, PR-er,
   workflows og security-alerts, men erstatter ikke `git fetch` for å oppdatere
   lokale clones, remote-tracking branches eller arbeidskopier. Bruk derfor
-  `gh` i rapportfasen og `make git-update`/`git fetch` for lokal synkronisering.
+  `gh` i rapportfasen, og be brukeren kjøre `make git-update` eller `git fetch`
+  for lokal synkronisering.
 - Ved fiksing på tvers av repoer skal brukeren først kjøre `make git-update`
   utenfor cplt og bekrefte at repoene er oppdatert. Sheriffen skal ikke starte
   dependency- eller kodefiks på grunnlag av en rapport med utdatert remote-
@@ -74,18 +75,16 @@ Les `repos.yaml` og bygg listen over `managed: true`. Ikke bruk en hardkodet
 repo-liste. For lesende undersøkelser kan uavhengige repoforespørsler kjøres
 parallelt, men muterende handlinger skal alltid kjøres sekvensielt.
 
-Hvis brukeren ber om oppdatering av arbeidskopier, foreslå `make git-update` og
-vent på bekreftelse. Når kommandoen er bekreftet, kan sheriffen forsøke den,
-men hvis cplt blokkerer fetch eller autentisering skal brukeren kjøre:
+Hvis brukeren ber om oppdatering av arbeidskopier, be brukeren kjøre:
 
 ```bash
 make git-update
 ```
 
-utenfor cplt. For en ren rapport skal du ikke kjøre `make git-update`
-automatisk. Før fiksing må rapporten oppdateres etter at brukeren har kjørt
-kommandoen, og dirty, divergerte eller manglende repoer skal håndteres
-manuelt.
+i sin egen terminal og vente på bekreftelse. Sheriffen skal aldri kjøre
+`make git-update`. For en ren rapport er kommandoen ikke påkrevd. Før fiksing
+må rapporten oppdateres etter at brukeren har kjørt kommandoen, og dirty,
+divergerte eller manglende repoer skal håndteres manuelt.
 
 Når brukeren sier at `make sheriff-report` er kjørt utenfor cplt, skal
 sheriffen ikke kjøre kommandoen på nytt først. Les `tmp/sheriff-report.json` og

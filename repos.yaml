@@ -12,9 +12,7 @@ repos:
     stack: []
     default_branch: main
     managed: true
-    dependabot_skip: true  # buggy app, kandidat for sletting
-    pr_skip: true
-    environments: [dev-gcp]
+    environments: [prod-fss]
   - name: infotek-statistikk
     org: navikt
     namespace: infotek

@@ -844,16 +844,20 @@ endif
 
 ##@ pnpm — Frontend
 
-pnpm-migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make pnpm-migrate-frontend-config [DRY_RUN=1]
-	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
+pnpm-migrate-frontend-config: ## Skriv eksplisitt frontend-konfig i ett managed repo — bruk: make pnpm-migrate-frontend-config REPO=navn [DRY_RUN=1]
+	@echo -e "$(BOLD)Migrerer til eksplisitt lokal TypeScript- og Biome-konfig$(RESET)"
+	@if [ -z "$(REPO)" ]; then \
+	  echo -e "  $(RED)REPO mangler.$(RESET) Bruk: make pnpm-migrate-frontend-config REPO=<repo-navn> [DRY_RUN=1]"; \
+	  exit 1; \
+	fi
 	@if [ -n "$(DRY_RUN)" ]; then \
-	  python3 scripts/migrate-frontend-config.py --dry-run; \
+	  python3 scripts/migrate-frontend-config.py --dry-run --repo "$(REPO)"; \
 	else \
 	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
-	  python3 scripts/migrate-frontend-config.py --dry-run; \
+	  python3 scripts/migrate-frontend-config.py --dry-run --repo "$(REPO)"; \
 	  echo ""; \
-	  echo -n "  Kjør migrering nå? [j/N] " && read ans && case "$$ans" in \
-	    [jJ]*) python3 scripts/migrate-frontend-config.py;; \
+	  echo -n "  Skriv lokale endringer nå? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) python3 scripts/migrate-frontend-config.py --repo "$(REPO)";; \
 	    *) echo -e "  Avbrutt.";; \
 	  esac; \
 	fi
