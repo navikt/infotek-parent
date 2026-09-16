@@ -7,7 +7,7 @@ repos:
   # ── Namespace: infotek ─────────────────────────────────────────────────────
   - name: infotek-databaseuttrekk
     org: navikt
-    namespace: infotek
+    namespace: infotrygd
     description: ""
     stack: []
     default_branch: main
