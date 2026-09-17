@@ -109,7 +109,24 @@ Du skal se alle repos med riktig branch og status `✅ ren`.
 
 Teamet bruker GitHub Packages for Maven (Java/Kotlin) og npm (frontend).
 
-### Maven — `~/.m2/settings.xml`
+### Anbefalt: automatisk oppsett via gh
+
+```bash
+make setup-npm-maven-token
+```
+
+Kommandoen henter et token dynamisk via `gh auth token` og kobler det til
+`~/.zshrc` (`export NPM_TOKEN="$(gh auth token)"`), og oppdaterer
+`~/.npmrc` og `~/.m2/settings.xml` til å referere `${NPM_TOKEN}` /
+`${env.NPM_TOKEN}` — selve tokenverdien lagres aldri i disse filene. Den er
+også del av det interaktive `make setup`-steget.
+
+> **Krav:** gh-innloggingen må ha scope `read:packages`. Mangler den, sier
+> scriptet ifra og viser fix-kommandoen: `gh auth refresh -h github.com -s read:packages`.
+
+### Manuelt fallback (uten gh, f.eks. CI eller maskiner uten gh-innlogging)
+
+Maven — `~/.m2/settings.xml`:
 
 ```xml
 <settings>
@@ -123,7 +140,7 @@ Teamet bruker GitHub Packages for Maven (Java/Kotlin) og npm (frontend).
 </settings>
 ```
 
-### npm/pnpm — `~/.npmrc`
+npm/pnpm — `~/.npmrc`:
 
 ```
 //npm.pkg.github.com/:_authToken=DITT_PAT
@@ -137,8 +154,7 @@ engine-strict=true
 > `make setup` legger dette til automatisk.
 
 > **PAT-krav:** `read:packages` (og `write:packages` om du skal publisere).  
-> Opprett på: GitHub → Settings → Developer settings → Personal access tokens.  
-> Eller kjør `nais login` som oppdaterer credentials automatisk.
+> Opprett på: GitHub → Settings → Developer settings → Personal access tokens.
 
 ## 6. AI-verktøy
 

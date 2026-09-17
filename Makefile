@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup setup-npm-maven-token
 
 ##@ Hjelp
 
@@ -985,6 +985,7 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@brew upgrade yq git gh maven pnpm nais navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
 	@brew upgrade --cask temurin copilot-cli 2>/dev/null || true
 	@command -v copilot >/dev/null || { echo "❌ GitHub Copilot CLI mangler — kjør 'brew install --cask copilot-cli'"; exit 1; }
+	@command -v pnpm >/dev/null || { echo "  ⚠️  pnpm mangler etter installasjon — prøver på nytt..."; brew install pnpm || { echo "❌ Klarte ikke installere pnpm — kjør 'brew install pnpm' manuelt"; exit 1; }; }
 	@echo -e "  $(GREEN)✓$(RESET) Verktøy installert"
 	@echo -e "  $(CYAN)→$(RESET) Git-identitet..."
 	@current_name=$$(git config --global user.name 2>/dev/null || true); \
@@ -1018,17 +1019,31 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@echo -e "  (minimumReleaseAge=1440, ignore-scripts, engine-strict)"
 	@echo -n "  [j/N] " && read ans && case "$$ans" in \
 	  [jJ]*) \
-	    pnpm config set minimumReleaseAge 1440 --location=user 2>/dev/null && \
-	    pnpm config set ignore-scripts true --location=user 2>/dev/null && \
-	    pnpm config set engine-strict true --location=user 2>/dev/null && \
-	    echo -e "  $(GREEN)✓$(RESET) pnpm brukerkonfig oppdatert" || \
-	    echo -e "  ⚠️  pnpm ikke funnet — installer med: brew install pnpm";; \
-	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: pnpm config set minimumReleaseAge 1440 --location=user";; \
+	    command -v pnpm >/dev/null || { echo "  $(CYAN)→$(RESET) pnpm mangler — installerer..."; brew install pnpm; }; \
+	    if command -v pnpm >/dev/null; then \
+	      pnpm config set minimumReleaseAge 1440 --location=global && \
+	      pnpm config set ignore-scripts true --location=global && \
+	      pnpm config set engine-strict true --location=global && \
+	      echo -e "  $(GREEN)✓$(RESET) pnpm brukerkonfig oppdatert" || \
+	      echo -e "  ⚠️  Klarte ikke sette pnpm-konfig — sjekk pnpm-installasjonen"; \
+	    else \
+	      echo -e "  ❌ Klarte ikke installere pnpm — kjør 'brew install pnpm' manuelt"; \
+	    fi;; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: pnpm config set minimumReleaseAge 1440 --location=global";; \
 	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
+	@echo -e "  $(CYAN)→$(RESET) NPM_TOKEN for GitHub Packages (Maven + npm/pnpm)..."
+	@echo -e "  Vil du hente token fra gh og koble det til ~/.zshrc, ~/.npmrc og ~/.m2/settings.xml?"
+	@echo -n "  [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) python3 scripts/setup-npm-maven-token.py;; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: python3 scripts/setup-npm-maven-token.py";; \
+	esac
 	@echo -e ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
+
+setup-npm-maven-token: ## Hent NPM_TOKEN fra gh og koble det til ~/.zshrc, ~/.npmrc og ~/.m2/settings.xml
+	@python3 scripts/setup-npm-maven-token.py
 
 ##@ Internalt
 
