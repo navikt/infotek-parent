@@ -1592,7 +1592,7 @@ def main() -> int:
         )
 
     if not candidates:
-        print("Ingen kandidater i rapporten: ingen åpne, mergeable bot-/Dependabot-PR-er med grønn CI funnet.")
+        print("Ingen kandidater i rapporten: ingen åpne, ikke-draft bot-/Dependabot-PR-er funnet.")
     else:
         while True:
             candidate_choice = show_candidate_table(report, candidates)
