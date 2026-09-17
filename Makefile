@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup setup-npm-maven-token
 
 ##@ Hjelp
 
@@ -1033,8 +1033,17 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
+	@echo -e "  $(CYAN)→$(RESET) NPM_TOKEN for GitHub Packages (Maven + npm/pnpm)..."
+	@echo -e "  Vil du hente token fra gh og koble det til ~/.zshrc, ~/.npmrc og ~/.m2/settings.xml?"
+	@echo -n "  [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) python3 scripts/setup-npm-maven-token.py;; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: python3 scripts/setup-npm-maven-token.py";; \
+	esac
 	@echo -e ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
+
+setup-npm-maven-token: ## Hent NPM_TOKEN fra gh og koble det til ~/.zshrc, ~/.npmrc og ~/.m2/settings.xml
+	@python3 scripts/setup-npm-maven-token.py
 
 ##@ Internalt
 
