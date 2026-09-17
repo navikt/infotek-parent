@@ -61,6 +61,19 @@ make help
 
 > **IntelliJ:** Maven-modullisten i `.idea/misc.xml` synkes automatisk hver gang du kjører `make git-clone`. Kun `managed: true`-repos i `repos.yaml` med en `pom.xml` tas med. Åpne prosjektet i IntelliJ og trigg «Reload All Maven Projects» (Maven-panelet) om modulene ikke dukker opp automatisk.
 
+### Logging-agent
+
+`logging-agent` er en midlertidig arbeidsflyt. Den gjelder bare repoer med
+`managed: true` og skal fjernes når alle repoene er ferdig gjennomgått.
+
+| Kommando | Beskrivelse |
+|----------|-------------|
+| `make logging-agent` | Forhåndsvis og oppdater statusrapporten |
+| `make logging-agent APPLY=1` | Opprett branch og kjør agenten repo for repo |
+| `make logging-agent APPLY=1 CREATE_PR=1` | Kjør agenten og start eksisterende interaktive PR-flyt |
+
+Statusrapporten ligger i `docs/logging-agent-status.md`.
+
 ### Masseoppdateringer
 
 | Kommando | Beskrivelse |
