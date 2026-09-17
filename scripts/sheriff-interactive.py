@@ -1192,6 +1192,15 @@ def process_pending_entry(entry: dict, dry_run: bool, state: dict, state_path: P
         do_merge(candidate, dry_run)
         return
 
+    try:
+        ans = input(f"\n  {label} er klar til merge. Merge nå? [J/n] ").strip().lower()
+    except EOFError:
+        print("\n  … stdin tom — avbryter merge.")
+        return
+    if ans and ans != "j":
+        print(f"  … {label}: merge avbrutt av bruker.")
+        return
+
     merge_ok, merge_error = do_merge(candidate, False)
     if merge_ok:
         entry["status"] = STATUS_MERGED
