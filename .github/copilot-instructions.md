@@ -107,7 +107,7 @@ Aldri bruk `.repos[]` uten `select(.managed == true)` i targets som gjør endrin
 
 ### Preflight før AI-arbeid på tvers
 
-'AI kan bruke git til å undersøke arbeidskopiene med `git status`, `git branch`,
+AI kan bruke git til å undersøke arbeidskopiene med `git status`, `git branch`,
 `git log` og `git diff`, og kan opprette og bytte lokale branches med
 `git checkout` eller `git switch`. AI skal aldri kjøre `git fetch`,
 `git pull` eller `make git-update`; kommandoer som henter endringer skal
