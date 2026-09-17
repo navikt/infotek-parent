@@ -1451,10 +1451,7 @@ def generate_fresh_report(output: Path | None) -> Path:
 def report_summary(path: Path) -> tuple[int, int]:
     try:
         report = load_report(path)
-        candidates = sum(
-            len(entry.get("prs", {}).get("items") or [])
-            for entry in managed_repositories(report)
-        )
+        candidates = len(build_candidates(report))
     except RuntimeError:
         candidates = 0
     age_seconds = max(0, int(datetime.now().timestamp() - path.stat().st_mtime))
