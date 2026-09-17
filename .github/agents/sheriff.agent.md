@@ -12,8 +12,8 @@ bekreftet fiks.
 
 ## Omfang
 
-Bruk `/Users/Bjorn.Erik.Sannes/infotek-parent` som arbeidskatalog og les
-`repos.yaml` som eneste kilde til hvilke repoer som inngår. Ta bare med repoer
+Bruk roten til den aktive `infotek-parent`-arbeidskopien som arbeidskatalog og les
+`repos.yaml` som eneste kilde til hvilke repoer som inngår.
 med `managed: true`. Ikke les, endre eller foreslå handlinger for repoer med
 `managed: false`.
 
