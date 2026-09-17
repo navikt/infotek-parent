@@ -254,8 +254,11 @@ def choose(
             if raw.lower() in shortcuts:
                 return shortcuts[raw.lower()]
             try:
-                return normalized[int(raw) - 1][0]
-            except (ValueError, IndexError):
+                selected = int(raw)
+                if not 1 <= selected <= len(normalized):
+                    raise ValueError
+                return normalized[selected - 1][0]
+            except ValueError:
                 print("Ugyldig valg.")
 
     import termios
