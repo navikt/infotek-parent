@@ -21,6 +21,11 @@
 | `scripts/pr-behandle.py` | Interaktiv PR-behandler — behandler PRer på tvers av repos |
 | `scripts/vis-artifakt.py` | Last ned og vis CI-artifakter (logg, playwright-rapport) fra GitHub Actions |
 | `ai/AGENTS.md` | Auto-generert repo-oversikt (ikke rediger manuelt) |
+Skill for repo-verifisering og fiks:
+
+`.github/skills/repo-oppsett/` dekker GitHub Actions, Nais, frontend, backend,
+database, repo metadata og målrettet validering. Bruk skillen til å finne faktiske
+avvik og fikse dem uten å overskrive bevisste repo-spesifikke valg.
 
 ### Makefile-kommandoer
 
@@ -37,6 +42,8 @@ make git-push-all                        # push alle feature-branches
 make pr-lag                              # interaktiv PR-oppretter
 
 make pr                                  # behandle PRer interaktivt (velg modus ved oppstart)
+make review                              # lagret/fersk PR-rapport og tabell; automatisk standardvalg etter 10 sekunder
+make sheriff                             # prioritert bot-PR-behandling med rapportvalg ved oppstart og automatisk standardvalg etter 10 sekunder
 make pr-rerun                            # rerun feilede CI-sjekker på tvers av repos
 
 make mvn-update-kotlin VERSION=2.x.y    # bump kotlin i alle repos + PR
@@ -100,15 +107,30 @@ Aldri bruk `.repos[]` uten `select(.managed == true)` i targets som gjør endrin
 
 ### Preflight før AI-arbeid på tvers
 
-AI kan bruke git til å undersøke og oppdatere arbeidskopiene: `git status`, `git branch`, `git log`, `git diff`, `git fetch` og `make git-update`. Dette er tillatt når det er nødvendig for oppgaven. AI skal forklare hva som skal gjøres og spørre brukeren før kommandoer som kan bytte branch eller hente endringer kjøres.
+AI kan bruke git til å undersøke arbeidskopiene med `git status`, `git branch`,
+`git log` og `git diff`, og kan opprette og bytte lokale branches med
+`git checkout` eller `git switch`. AI skal aldri kjøre `git fetch`,
+`git pull` eller `make git-update`; kommandoer som henter endringer skal
+alltid kjøres av brukeren selv.
 
-Før AI gjør endringer skal AI først sjekke git-status og spørre brukeren om `make git-update` skal kjøres. Dette gjelder særlig endringer i parent-repoet eller flere underrepos. Kommandoen inkluderer parent-repoet og alle `managed: true`-repos, fetcher remote og kontrollerer at hvert repo:
+Før AI gjør endringer skal AI først sjekke git-status og be brukeren kjøre
+`make git-update`. Dette gjelder særlig endringer i parent-repoet eller flere
+underrepos. AI skal vente til brukeren bekrefter at kommandoen er fullført.
+Kommandoen inkluderer parent-repoet og alle `managed: true`-repos, fetcher
+remote og kontrollerer at hvert repo:
 
 - står på registrert default branch
 - har ren working tree, inkludert ingen utrackede filer
 - er oppdatert mot `origin/<default_branch>`
 
-AI skal for eksempel spørre: «Jeg ser at arbeidet berører parent/underrepos. Vil du at jeg kjører `make git-update` først? Dette kan bytte til default branch og oppdatere med `pull --ff-only` etter egen bekreftelse.» AI skal vente på svaret før den kjører kommandoen. Kommandoen spør deretter eksplisitt om brukeren vil bytte repoer som står på feil branch til registrert default branch og oppdatere med `git pull --ff-only`. Den skal aldri committe, pushe, merge, rebase eller overskrive lokale endringer. Dirty repos, divergerte branches, lokale commits foran remote, detached HEAD og manglende repos skal rapporteres med anbefalt manuell handling. Dette er en brukerbekreftelse, ikke en automatisk sperre; brukeren kan avslå og fortsette med eksisterende status.
+AI skal for eksempel si: «Arbeidet berører parent/underrepos. Kjør
+`make git-update` i terminalen og bekreft når den er ferdig.» Kommandoen spør
+brukeren eksplisitt om repoer som står på feil branch skal byttes til
+registrert default branch og oppdateres med `git pull --ff-only`. AI skal
+aldri kjøre kommandoen, heller ikke etter uttrykkelig bekreftelse. Dirty
+repos, divergerte branches, lokale commits foran remote, detached HEAD og
+manglende repos skal rapporteres med anbefalt manuell handling. Brukeren kan
+avslå preflight og be AI fortsette med eksisterende status.
 
 ### Bruk Makefile først ved masseoperasjoner
 
@@ -155,7 +177,10 @@ Alle repos har beskyttet `main`/`master`. **Aldri commit direkte til default-bra
 
 ### Git-kommandoer med brukerbekreftelse
 
-AI kan bruke git til lesing, status, fetch, branch-kontroll og den bekreftede `make git-update`-flyten. AI skal ikke lage commits eller kjøre `git push`; utvikleren kjører dette selv etter at filendringene er gjennomgått:
+AI kan bruke git til lesing, status, branch-kontroll og lokal branch-opprettelse
+eller branch-bytte. AI skal ikke kjøre fetch, pull, `make git-update`, lage
+commits eller kjøre `git push`; utvikleren kjører dette selv etter at
+filendringene er gjennomgått:
 
 ```bash
 git add -A
@@ -199,6 +224,11 @@ Se `ai/AGENTS.md` for fullstendig repo-oversikt.
 ## Viktige regler
 
 - Ikke logg PII (fødselsnummer, navn, adresse) — bruk sakId/behandlingId
+- Produksjonskonfigurasjon skal aldri ha fallback for secrets, credentials,
+  auth, tilgangskontroll, audit-destinasjon, database, schema eller eksterne
+  endepunkter. Slike verdier skal være obligatoriske og feile ved oppstart
+  dersom de mangler. Lokale defaults skal ligge i en eksplisitt lokal/testprofil
+  som ikke kan aktiveres i produksjon.
 - `HikariCP`: bruk `maximumPoolSize=3` i Nais-miljø
 - Aldri sett CPU-limits i nais.yaml — bruk kun requests
 - Alle endepunkter skal ha `accessPolicy.inbound` i nais.yaml

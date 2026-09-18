@@ -90,10 +90,42 @@ Statusrapporten ligger i `docs/logging-agent-status.md`.
 | Kommando | Beskrivelse |
 |----------|-------------|
 | `make pr` | Behandle PRer interaktivt — velg modus ved oppstart (alle, dependabot, mine, andres…) |
+| `make review` | PR-behandler med felles lagret/fersk PR-rapport, sheriff-lignende tabell, uten bot som standard og direkte filtre for forfatter eller titler med flere PR-er, samt eget sorteringsvalg for repo, forfatter, tittel eller branch |
+| `make sheriff` | Prioritert, tilstandsbasert behandling av bot-PRer; bruker samme PR-rapport som review |
 | `make pr-lag` | Lag PRer interaktivt — velg repos, tittel og body |
 | `make pr-rerun` | Rerun feilede CI-sjekker på åpne PRer |
 
 Valg per PR: `[a]` Godkjenn · `[b]` Godkjenn+auto-merge (Dependabot) · `[m]` Merge · `[u]` Update-branch · `[r]` Rerun CI · `[p]` Artifakter · `[v]` Åpne · `[s]` Skip · `[n]` Neste repo
+
+Ved oppstart av `make review` og `make sheriff` velges standard rapportvalg
+automatisk etter 10 sekunder: lagret tabell når rapporten er yngre enn 15
+minutter, ellers ny rapport.
+
+Review- og sheriff-tabellene viser samme antall åpne GitHub-varsler med
+kritisk og høy alvorlighetsgrad per repository som `GH C/H`, og Nais sin
+workload-oppsummering som `Nais C/H`. Nais-sårbarheter er en separat kilde og
+blandes ikke inn i GitHub-tallene. `-/-` betyr at Nais-data ikke var
+tilgjengelige for repoet.
+
+Hvis Nais krever innlogging, velg `[l] Logg inn i Nais nå`. Dette kjører
+`nais login --nais` og prøver Nais-oppslagene igjen. Alternativt velger du
+`[s] Fortsett uten Nais-oppslag`; da fortsetter rapporten med GitHub-data.
+Hvis Nais CLI mangler, tilbys bare å fortsette uten Nais eller avslutte.
+
+Sheriff viser først en kandidatabell med prioritert rekkefølge og antall åpne
+kritiske og høye sikkerhetsvarsler per repository, før behandlingsrunden
+starter. Tabellen avkorter titler for å holde én rad per kandidat i smale
+terminaler.
+
+Når en ny fellesrapport hentes, viser rapportvinduet ferdige repoer i en
+tabell og alle kommandoer for aktivt repo. Kommandoene merkes med fremdrift,
+for eksempel `Kommando 1/5`, og visningen tømmes når neste repo starter.
+Etterpå viser `make sheriff` kandidatabellen og valget
+`[s] Start review i prioritert rekkefølge`.
+
+Begge PR-tabellene har `[o] Vis sammendragsrapport`. Den viser den lagrede
+Nais-, GitHub- og repositoryoppsummeringen fra samme rapport og har
+`[b] Tilbake` til gjeldende tabell.
 
 Konfig i `config.json`: `diff_max_lines`, `merge_strategy`, `skip_repos`, `dependabot_skip_repos`, artifact-mønstre.
 
@@ -182,32 +214,32 @@ Dette oppdaterer `repos.yaml` og regenererer `ai/AGENTS.md` automatisk.
 
 | Repo | Beskrivelse | Miljøer | Nais |
 |------|-------------|---------|------|
-| [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | — | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-databaseuttrekk) |
-| [infotek-statistikk](https://github.com/navikt/infotek-statistikk) | — | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-statistikk) |
-| [infotek-personkort](https://github.com/navikt/infotek-personkort) | — | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-personkort) · [prod-gcp](https://console.nav.cloud.nais.io/team/infotek/app/prod-gcp/infotek-personkort) |
+| [infotek-statistikk](https://github.com/navikt/infotek-statistikk) | Infotrygd statistikk  faste uttrekk for å lage månedsrapport. | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-statistikk) |
+| [infotek-personkort](https://github.com/navikt/infotek-personkort) | Oppslagsløsning for IP_90 personkort | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-personkort) · [prod-gcp](https://console.nav.cloud.nais.io/team/infotek/app/prod-gcp/infotek-personkort) |
 
 ### 🟧 `infotrygd` — [Nais Console](https://console.nav.cloud.nais.io/team/infotrygd)
 
 | Repo | Beskrivelse | Miljøer | Nais |
 |------|-------------|---------|------|
-| [infotrygd-brukeroppslag](https://github.com/navikt/infotrygd-brukeroppslag) | — | dev-fss, prod-fss, dev-gcp, prod-gcp | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-brukeroppslag) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-brukeroppslag) · [dev-gcp](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-gcp/infotrygd-brukeroppslag) · [prod-gcp](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-gcp/infotrygd-brukeroppslag) |
+| [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | Applikasjon for å hente ut bruksdata av infotrygdrutiner | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-databaseuttrekk) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-databaseuttrekk) |
+| [infotrygd-brukeroppslag](https://github.com/navikt/infotrygd-brukeroppslag) | Intern app for brukerstøtte | dev-fss, prod-fss, dev-gcp, prod-gcp | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-brukeroppslag) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-brukeroppslag) · [dev-gcp](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-gcp/infotrygd-brukeroppslag) · [prod-gcp](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-gcp/infotrygd-brukeroppslag) |
 | [infotrygd-feed-proxy-v2](https://github.com/navikt/infotrygd-feed-proxy-v2) | — | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-feed-proxy-v2) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-feed-proxy-v2) |
-| [infotrygd-hentsaksliste](https://github.com/navikt/infotrygd-hentsaksliste) | — | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-hentsaksliste) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-hentsaksliste) |
-| [infotrygd-replikering](https://github.com/navikt/infotrygd-replikering) | — | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-replikering) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-replikering) |
+| [infotrygd-hentsaksliste](https://github.com/navikt/infotrygd-hentsaksliste) | Erstatter oppslag via bussen mot Infotrygd | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-hentsaksliste) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-hentsaksliste) |
+| [infotrygd-replikering](https://github.com/navikt/infotrygd-replikering) | Grafana status for replikering av Infotrygd data | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/dev-fss/infotrygd-replikering) · [prod-fss](https://console.nav.cloud.nais.io/team/infotrygd/app/prod-fss/infotrygd-replikering) |
 | [infotrygd-facade](https://github.com/navikt/infotrygd-facade) ⚠️ | — | — | — |
 
 ### 🟩 `historisk` — [Nais Console](https://console.nav.cloud.nais.io/team/historisk)
 
 | Repo | Beskrivelse | Miljøer | Nais |
 |------|-------------|---------|------|
-| [historisk-avstandskalkulator](https://github.com/navikt/historisk-avstandskalkulator) | — | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-avstandskalkulator) |
-| [historisk-gravferdkalkulator](https://github.com/navikt/historisk-gravferdkalkulator) | — | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-gravferdkalkulator) |
+| [historisk-avstandskalkulator](https://github.com/navikt/historisk-avstandskalkulator) | historisk-avstandskalkulator | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-avstandskalkulator) |
+| [historisk-gravferdkalkulator](https://github.com/navikt/historisk-gravferdkalkulator) | Kalkulator for å regne ut stønad til gravferdsstønad og båretransport | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-gravferdkalkulator) |
 | [historisk-exodus](https://github.com/navikt/historisk-exodus) | — | dev-fss, prod-fss | [dev-fss](https://console.nav.cloud.nais.io/team/historisk/app/dev-fss/historisk-exodus) · [prod-fss](https://console.nav.cloud.nais.io/team/historisk/app/prod-fss/historisk-exodus) |
-| [historisk-pensjon](https://github.com/navikt/historisk-pensjon) | — | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-pensjon) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-pensjon) |
-| [historisk-regnskap](https://github.com/navikt/historisk-regnskap) | — | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-regnskap) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-regnskap) |
-| [historisk-tidsbegrenset-uforestonad](https://github.com/navikt/historisk-tidsbegrenset-uforestonad) | — | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-tidsbegrenset-uforestonad) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-tidsbegrenset-uforestonad) |
-| [historisk-riddler](https://github.com/navikt/historisk-riddler) | — | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-riddler) |
-| [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | — | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-valutakalkulator) |
+| [historisk-pensjon](https://github.com/navikt/historisk-pensjon) | Oppslag på historiske pensjonsdata fra Infotrygd | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-pensjon) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-pensjon) |
+| [historisk-regnskap](https://github.com/navikt/historisk-regnskap) | Oppslag på historiske regnskapsdata fra Infotrygd | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-regnskap) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-regnskap) |
+| [historisk-tidsbegrenset-uforestonad](https://github.com/navikt/historisk-tidsbegrenset-uforestonad) | Oppslag på historiske data fra Infotrygd for tidsbegrenset uførestønad, rehabiliteringspenger, attføring | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-tidsbegrenset-uforestonad) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-tidsbegrenset-uforestonad) |
+| [historisk-riddler](https://github.com/navikt/historisk-riddler) | historisk-riddler: Beregninger av gamle infotrygdytelser | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-riddler) |
+| [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | Valutakalkulator som viser historiske vekslingskurser. | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-valutakalkulator) |
 | [historisk-avgiftssystem](https://github.com/navikt/historisk-avgiftssystem) ⚠️ | — | dev-gcp, prod-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/historisk/app/dev-gcp/historisk-avgiftssystem) · [prod-gcp](https://console.nav.cloud.nais.io/team/historisk/app/prod-gcp/historisk-avgiftssystem) |
 
 <!-- AUTO-GENERATED:README-REPOS END -->
