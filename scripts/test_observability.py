@@ -151,7 +151,7 @@ class ObservabilityTest(unittest.TestCase):
                 observability.APM_VERSION,
             )
             self.assertIn(
-                'init({ app: "example", namespace: "team" });',
+                "init();",
                 (source / "observability.ts").read_text(),
             )
 

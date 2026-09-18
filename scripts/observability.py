@@ -213,8 +213,8 @@ def ensure_npmrc(frontend_dir: Path, apply: bool, result: Result) -> bool:
     additions = [
         line
         for line in (
-            "@nais:registry=https://npm.pkg.github.com",
-            "//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}",
+            "@nais:registry=https://npm.pkg.github.com/",
+            "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}",
         )
         if line not in existing
     ]
@@ -236,16 +236,16 @@ def find_entrypoint(frontend_dir: Path) -> Path | None:
     return None
 
 
-def observability_module(app: str, namespace: str) -> str:
+def observability_module() -> str:
     return (
         'import { init } from "@nais/apm";\n\n'
         "export function initializeObservability() {\n"
-        f'    init({{ app: "{app}", namespace: "{namespace}" }});\n'
+        "    init();\n"
         "}\n"
     )
 
 
-def observability_test(app: str, namespace: str) -> str:
+def observability_test() -> str:
     return (
         'import { beforeEach, expect, test, vi } from "vitest";\n\n'
         "const { init } = vi.hoisted(() => ({ init: vi.fn() }));\n\n"
@@ -256,7 +256,7 @@ def observability_test(app: str, namespace: str) -> str:
         "});\n\n"
         'test("initialiserer Nais frontend-observability", () => {\n'
         "    initializeObservability();\n\n"
-        f'    expect(init).toHaveBeenCalledWith({{ app: "{app}", namespace: "{namespace}" }});\n'
+        "    expect(init).toHaveBeenCalledOnce();\n"
         "});\n"
     )
 
@@ -273,13 +273,12 @@ def ensure_frontend_initialization(
         result.manual_review(f"{frontend_dir}: fant ikke støttet frontend-entrypoint")
         return False
 
-    app = repository.nais_app or repository.name
     source_dir = entrypoint.parent
     module_path = source_dir / "observability.ts"
     test_path = source_dir / "observability.test.ts"
     changed = False
 
-    expected_module = observability_module(app, repository.namespace)
+    expected_module = observability_module()
     if not module_path.is_file():
         result.needs_changes(f"{module_path}: opprett @nais/apm-initialisering")
         changed = True
@@ -300,7 +299,7 @@ def ensure_frontend_initialization(
         result.needs_changes(f"{test_path}: legg til initialiseringstest")
         changed = True
         if apply:
-            test_path.write_text(observability_test(app, repository.namespace))
+            test_path.write_text(observability_test())
 
     content = entrypoint.read_text()
     import_line = 'import { initializeObservability } from "./observability";'

@@ -30,7 +30,6 @@ repos:
   - name: infotrygd-brukeroppslag
     org: navikt
     namespace: infotrygd
-    frontend_observability: false # Frontend deployes i FSS og støttes ikke av Nais browser-telemetri
     description: ""
     stack: []
     default_branch: master
