@@ -65,6 +65,9 @@ make help
 
 `logging-agent` er en midlertidig arbeidsflyt. Den gjelder bare repoer med
 `managed: true` og skal fjernes når alle repoene er ferdig gjennomgått.
+Orchestratoren kjører repoets testkommando automatisk etter en vellykket
+agentkjøring, og lagrer testkommando, exit-kode og tidspunkt i
+`docs/logging-agent-test-results.json`.
 
 | Kommando | Beskrivelse |
 |----------|-------------|
@@ -73,6 +76,27 @@ make help
 | `make logging-agent APPLY=1 CREATE_PR=1` | Kjør agenten og start eksisterende interaktive PR-flyt |
 
 Statusrapporten ligger i `docs/logging-agent-status.md`.
+
+### Observability
+
+`observability.py` sjekker alle repoer med `managed: true`. Den skiller mellom
+GCP-frontender, FSS-frontender og Java-backender. FSS-frontender får ikke
+browser-instrumentering.
+
+Migratoren legger til `@nais/apm` i GCP-frontender, aktiverer Nais
+auto-instrumentering for Java-workloads og fjerner Elastic som loggdestinasjon.
+Den rapporterer egen logging som må vurderes manuelt. Auditlogg,
+forretningsmetrikker, fallbacks og korrelasjonsheadere endres ikke automatisk.
+
+`@nais/apm` ligger i GitHub Packages. Sett `GITHUB_PACKAGES_TOKEN` til et token
+med `read:packages` før migratoren oppdaterer lockfiler.
+
+| Kommando | Beskrivelse |
+|----------|-------------|
+| `make observability-check` | Sjekk alle managed repoer uten å endre filer |
+| `make observability-status` | Skriv status som JSON lines |
+| `make observability-apply REPO=navn` | Oppdater ett eksisterende repo og lockfil |
+| `make observability-init REPO=navn` | Klargjør observability i et nytt repo |
 
 ### Masseoppdateringer
 

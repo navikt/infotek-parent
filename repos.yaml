@@ -8,6 +8,7 @@ repos:
   - name: infotek-databaseuttrekk
     org: navikt
     namespace: infotrygd
+    nais_app: infotrygd-databaseuttrekk
     description: ""
     stack: []
     default_branch: main
@@ -29,6 +30,7 @@ repos:
   - name: infotrygd-brukeroppslag
     org: navikt
     namespace: infotrygd
+    frontend_observability: false # Frontend deployes i FSS og støttes ikke av Nais browser-telemetri
     description: ""
     stack: []
     default_branch: master
@@ -71,6 +73,7 @@ repos:
   - name: historisk-avstandskalkulator
     org: navikt
     namespace: historisk
+    nais_app: avstandskalkulator
     description: ""
     stack: []
     default_branch: main
@@ -81,6 +84,7 @@ repos:
   - name: historisk-gravferdkalkulator
     org: navikt
     namespace: historisk
+    nais_app: gravferdkalkulator
     description: ""
     stack: []
     default_branch: main
@@ -129,6 +133,7 @@ repos:
   - name: historisk-riddler
     org: navikt
     namespace: historisk
+    nais_app: riddler
     description: ""
     stack: []
     default_branch: main
@@ -139,6 +144,7 @@ repos:
   - name: historisk-valutakalkulator
     org: navikt
     namespace: historisk
+    nais_app: valutakalkulator
     description: ""
     stack: []
     default_branch: main
