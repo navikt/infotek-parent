@@ -157,14 +157,17 @@ def decide(payload):
 def main():
     try:
         raw = sys.stdin.read()
-        # Samme feilsøkingskrok som ask-first-aria.py, og av samme grunn: uten
-        # den er "porten lastet ikke" og "porten traff ikke" samme observasjon
-        # fra utsiden. Logg utenfor arbeidsmappa.
         debug = os.environ.get("NAV_PILOT_HOOK_DEBUG")
-        if debug:
-            with open(debug, "a", encoding="utf8") as fh:
-                fh.write(raw.rstrip("\n") + "\n")
         payload = json.loads(raw)
+        if debug:
+            payload_dict = payload if isinstance(payload, dict) else {}
+            debug_entry = {
+                "tool": payload_dict.get("toolName") or payload_dict.get("tool_name"),
+                "has_tool_args": bool(payload_dict.get("toolArgs") or payload_dict.get("tool_input")),
+                "raw_bytes": len(raw),
+            }
+            with open(debug, "a", encoding="utf8") as fh:
+                fh.write(json.dumps(debug_entry, ensure_ascii=False) + "\n")
         reason = decide(payload) if isinstance(payload, dict) else None
     except Exception:
         # Fail-open. En preToolUse-hook som feiler nekter kallet, og en port som

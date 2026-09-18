@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -578,6 +578,21 @@ sheriff: ## Prioritert behandling av bot-PRer — bruk: make sheriff [DRY_RUN=1]
 
 sheriff-status: ## Vis lagret sheriff-status uten GitHub-kall
 	@python3 scripts/sheriff-interactive.py --status
+
+sheriff-report: ## Generer sheriff-rapport til tmp/sheriff-report.json
+	@python3 scripts/nais-vulnerability-report.py --output tmp/sheriff-report.json
+
+sheriff-report-view: ## Vis lagret sheriff-rapport uten nye API-kall
+	@python3 scripts/nais-vulnerability-report.py --show --output tmp/sheriff-report.json
+
+merge-approved-bot-prs: ## Vis/merge godkjente bot-PR-er (sett MERGE=1 for faktisk merge)
+	@python3 scripts/merge-approved-bot-prs.py $(if $(MERGE),--merge,)
+
+merge-approved-bot-prs-from-report: ## Lokal dry-run fra lagret rapport (bruk: make merge-approved-bot-prs-from-report REPORT=tmp/sheriff-report.json)
+ifndef REPORT
+	$(error REPORT mangler. Bruk: make merge-approved-bot-prs-from-report REPORT=tmp/sheriff-report.json)
+endif
+	@python3 scripts/merge-approved-bot-prs.py --report $(REPORT)
 
 review: ## Ny interaktiv PR-behandler med filtre og manuelle valg — bruk: make review [DRY_RUN=1]
 	@python3 scripts/pr-behandle.py --review $(if $(DRY_RUN),--dry-run,)

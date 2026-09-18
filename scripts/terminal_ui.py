@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import os
+import re
 import select
 import signal
 import sys
@@ -15,6 +16,7 @@ DIM = "\033[2m"
 RESET = "\033[0m"
 _ALT_SCREEN_ACTIVE = False
 REPORT_CHOICE_TIMEOUT_SECONDS = 10
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def supports_alt_screen() -> bool:
@@ -73,8 +75,38 @@ def terminal_width() -> int:
     return os.get_terminal_size().columns if sys.stdout.isatty() else 80
 
 
+def visible_length(value: str) -> int:
+    return len(ANSI_RE.sub("", value))
+
+
 def truncate(value: str, width: int) -> str:
-    return value if len(value) <= width else value[: max(0, width - 1)] + "…"
+    if visible_length(value) <= width:
+        return value
+    limit = max(0, width - 1)
+    parts: list[str] = []
+    visible = 0
+    index = 0
+    while index < len(value) and visible < limit:
+        match = ANSI_RE.match(value, index)
+        if match:
+            parts.append(match.group(0))
+            index = match.end()
+            continue
+        parts.append(value[index])
+        visible += 1
+        index += 1
+    while index < len(value):
+        match = ANSI_RE.match(value, index)
+        if not match:
+            break
+        parts.append(match.group(0))
+        index = match.end()
+    truncated = "".join(parts) + "…"
+    return truncated + (RESET if ANSI_RE.search(truncated) and not truncated.endswith(RESET) else "")
+
+
+def pad(value: str, width: int) -> str:
+    return value + " " * max(0, width - visible_length(value))
 
 
 def fit_table(
@@ -87,7 +119,7 @@ def fit_table(
     compact_headers = tuple(headers)
     values = [tuple(str(value) for value in row) for row in rows]
     widths = [
-        max(len(header), max((len(row[index]) for row in values), default=0))
+        max(visible_length(header), max((visible_length(row[index]) for row in values), default=0))
         for index, header in enumerate(compact_headers)
     ]
     minimum_widths = {
@@ -144,10 +176,10 @@ def choose_cached_report(path: Path, title: str, summary: Callable[[], str], fre
 def print_table(title: str, headers: Sequence[str], rows: Sequence[Sequence[str]], footer: str = "") -> None:
     headers, rows, widths = fit_table(headers, rows)
     print(f"\n{BOLD}{title}{RESET}\n")
-    print("  ".join(header.ljust(width) for header, width in zip(headers, widths)))
+    print("  ".join(pad(header, width) for header, width in zip(headers, widths)))
     print("  ".join("-" * width for width in widths))
     for row in rows:
-        print("  ".join(value.ljust(width) for value, width in zip(row, widths)))
+        print("  ".join(pad(value, width) for value, width in zip(row, widths)))
     if footer:
         print(f"\n{footer}")
 
@@ -174,11 +206,11 @@ def choose_table(
         clear_screen()
         compact_headers, compact_rows, widths = fit_table(headers, rows)
         print(f"\n{BOLD}{title}{RESET}\n")
-        print("  ".join(header.ljust(width) for header, width in zip(compact_headers, widths)))
+        print("  ".join(pad(header, width) for header, width in zip(compact_headers, widths)))
         print("  ".join("-" * width for width in widths))
         for index, row in enumerate(compact_rows):
             prefix = f"{CYAN}❯ {RESET}" if selected == index else "  "
-            print(prefix + "  ".join(value.ljust(width) for value, width in zip(row, widths)))
+            print(prefix + "  ".join(pad(value, width) for value, width in zip(row, widths)))
         print()
         for index, (_, label, shortcut) in enumerate(global_options):
             option_index = len(rows) + index

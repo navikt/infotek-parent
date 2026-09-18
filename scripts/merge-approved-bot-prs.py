@@ -13,7 +13,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REPOS_FILE = ROOT / "repos.yaml"
+CONFIG_FILE = ROOT / "config.json"
 ALLOWED_CONCLUSIONS = {"SUCCESS", "NEUTRAL", "SKIPPED"}
+REPORT_SCHEMA_VERSION = 7
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,22 @@ class Repository:
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, capture_output=True, text=True, check=False)
+
+
+def load_pr_config() -> dict[str, object]:
+    try:
+        config = json.loads(CONFIG_FILE.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(config, dict):
+        return {}
+    pr_config = config.get("pr")
+    return pr_config if isinstance(pr_config, dict) else {}
+
+
+PR_CONFIG = load_pr_config()
+MERGE_STRATEGY = str(PR_CONFIG.get("merge_strategy", "squash"))
+DELETE_BRANCH_ON_MERGE = bool(PR_CONFIG.get("delete_branch_on_merge", True))
 
 
 def gh_json(*arguments: str) -> object:
@@ -186,6 +204,15 @@ def load_report(path: Path) -> dict[str, object]:
         raise RuntimeError(f"Kunne ikke lese rapporten {path}: {error}") from error
     if not isinstance(value, dict):
         raise RuntimeError(f"Rapporten {path} har ugyldig format.")
+    if value.get("schema_version") != REPORT_SCHEMA_VERSION:
+        raise RuntimeError(
+            f"Rapporten {path} har feil schema_version "
+            f"({value.get('schema_version')}, forventet {REPORT_SCHEMA_VERSION})."
+        )
+    scope = value.get("scope")
+    repositories = value.get("repositories")
+    if not isinstance(scope, dict) or not isinstance(scope.get("repositories"), list) or not isinstance(repositories, dict):
+        raise RuntimeError(f"Rapporten {path} mangler forventet struktur for sheriff-rapport.")
     return value
 
 
@@ -199,6 +226,9 @@ def describe(pr: dict[str, object], repository: Repository) -> None:
 
 
 def merge_pr(pr: dict[str, object], repository: Repository) -> None:
+    strategy_flag = f"--{MERGE_STRATEGY}"
+    if strategy_flag not in {"--merge", "--squash", "--rebase"}:
+        strategy_flag = "--squash"
     result = run(
         [
             "gh",
@@ -207,8 +237,8 @@ def merge_pr(pr: dict[str, object], repository: Repository) -> None:
             str(pr["number"]),
             "--repo",
             repository.slug,
-            "--merge",
-            "--delete-branch=false",
+            strategy_flag,
+            *(["--delete-branch"] if DELETE_BRANCH_ON_MERGE else ["--delete-branch=false"]),
         ]
     )
     if result.returncode != 0:

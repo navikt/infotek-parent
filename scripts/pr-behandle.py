@@ -926,9 +926,21 @@ def print_review_report_progress(repo_groups: list, total: int, current: str = "
 
 def build_review_report(repos: list) -> list[dict]:
     print("Kjører fersk felles PR-rapport.")
-    result = subprocess.run([sys.executable, str(SHERIFF_REPORT_SCRIPT), "--output", str(REVIEW_REPORT_FILE)])
-    if result.returncode != 0 and not REVIEW_REPORT_FILE.exists():
-        raise RuntimeError("Kunne ikke generere felles PR-rapport.")
+    REVIEW_REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = REVIEW_REPORT_FILE.with_name(f"{REVIEW_REPORT_FILE.name}.tmp.{os.getpid()}")
+    result = subprocess.run([sys.executable, str(SHERIFF_REPORT_SCRIPT), "--output", str(temp_path)])
+    try:
+        if not temp_path.exists():
+            raise RuntimeError("Kunne ikke generere felles PR-rapport.")
+        temp_path.replace(REVIEW_REPORT_FILE)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+    if result.returncode != 0:
+        print(
+            f"⚠️  Felles PR-rapport returnerte feilkode {result.returncode} "
+            "og kan ha delvise data."
+        )
     return load_review_report()
 
 

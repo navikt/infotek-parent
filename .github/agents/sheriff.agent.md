@@ -242,8 +242,8 @@ make sheriff-status
 ```
 
 `make review` bruker samme rapportvalg, 15-minutters gjenbruksterskel,
-alternativskjerm og løpende tabell som sheriff, men lagrer bare åpne PR-data i
-`tmp/review-report.json`. Den bruker ikke sheriffens sikkerhetsrapport,
+alternativskjerm og løpende tabell som sheriff, og leser den delte
+`tmp/sheriff-report.json`-rapporten for åpne PR-data. Den bruker ikke sheriffens
 prioriteringsrekkefølge eller state-baserte merge-flyt.
 
 `sheriff` tilbyr ved oppstart å vise standardtabellen eller lage en ny rapport.

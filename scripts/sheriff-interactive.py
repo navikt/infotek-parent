@@ -1055,10 +1055,27 @@ def run_approval_round(
             continue
 
         if ready_to_merge_now:
-            print(
-                "  PR-en er allerede oppdatert mot base og har grønn CI — godkjenner og "
-                "merger med én gang, uten å vente på oppdater/merge-sveipen."
-            )
+            print("  PR-en er allerede oppdatert mot base og har grønn CI.")
+            try:
+                ans = input("  Merge nå? [J/n] ").strip().lower()
+            except EOFError:
+                print("  … stdin tom — hopper over merge nå.")
+                ans = "n"
+            if ans and ans != "j":
+                state["prs"][key] = new_state_entry(
+                    candidate,
+                    fresh,
+                    STATUS_APPROVED_PENDING_UPDATE,
+                    now_iso(),
+                    security_relevant,
+                    is_major,
+                )
+                save_state(state_path, state)
+                print(
+                    f"  {GREEN}✓ Godkjent.{RESET} Merge ble ikke bekreftet — "
+                    f"lagt til som '{STATUS_APPROVED_PENDING_UPDATE}'."
+                )
+                continue
             merge_ok, merge_error = do_merge(candidate, False)
             if merge_ok:
                 state["prs"][key] = new_state_entry(
@@ -1429,16 +1446,22 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
 
 def generate_fresh_report(output: Path | None) -> Path:
     report_path = output or DEFAULT_REPORT
-    command = [sys.executable, str(REPORT_SCRIPT)]
-    if output:
-        command += ["--output", str(output)]
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = report_path.with_name(f"{report_path.name}.tmp.{os.getpid()}")
+    command = [sys.executable, str(REPORT_SCRIPT), "--output", str(temp_path)]
     print(f"Kjører fersk sheriff-rapport: {show_command(command)}")
     result = subprocess.run(command)
-    if result.returncode != 0:
-        if not report_path.exists():
+    try:
+        if not temp_path.exists():
             raise RuntimeError(
                 "Kunne ikke generere fersk sheriff-rapport (ingen rapportfil ble skrevet)."
             )
+        load_report(temp_path)
+        temp_path.replace(report_path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+    if result.returncode != 0:
         print(
             "\u26a0\ufe0f  nais-vulnerability-report.py returnerte feilkode "
             f"{result.returncode} (blokkerte/feilede oppslag) \u2014 "

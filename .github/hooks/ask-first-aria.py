@@ -258,17 +258,18 @@ def decide(payload):
 def main():
     try:
         raw = sys.stdin.read()
-        # Sett NAV_PILOT_HOOK_DEBUG=<fil> for å få hver payload logget. Uten den
-        # er "porten lastet ikke" og "porten traff ikke" samme observasjon fra
-        # utsiden, og det er nettopp den forskjellen som avgjør om oppsettet i
-        # det hele tatt virker i `-p`. Logg utenfor arbeidsmappa: golden-
-        # harnesset fingeravtrykker den, og en loggfil inni ville telt som en
-        # skriving fra agenten.
         debug = os.environ.get("NAV_PILOT_HOOK_DEBUG")
-        if debug:
-            with open(debug, "a", encoding="utf8") as fh:
-                fh.write(raw.rstrip("\n") + "\n")
         payload = json.loads(raw)
+        if debug:
+            payload_dict = payload if isinstance(payload, dict) else {}
+            debug_entry = {
+                "tool": payload_dict.get("toolName") or payload_dict.get("tool_name"),
+                "has_tool_args": bool(payload_dict.get("toolArgs") or payload_dict.get("tool_input")),
+                "cwd": payload_dict.get("cwd") or payload_dict.get("workingDirectory"),
+                "raw_bytes": len(raw),
+            }
+            with open(debug, "a", encoding="utf8") as fh:
+                fh.write(json.dumps(debug_entry, ensure_ascii=False) + "\n")
         reason = decide(payload) if isinstance(payload, dict) else None
     except Exception:
         # Fail-open. En preToolUse-hook som feiler nekter kallet (1.0.82), og
