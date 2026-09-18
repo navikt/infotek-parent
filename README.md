@@ -88,7 +88,7 @@ auto-instrumentering for Java-workloads og fjerner Elastic som loggdestinasjon.
 Den rapporterer egen logging som må vurderes manuelt. Auditlogg,
 forretningsmetrikker, fallbacks og korrelasjonsheadere endres ikke automatisk.
 
-`@nais/apm` ligger i GitHub Packages. Sett `NPM_TOKEN` til et token
+`@nais/apm` ligger i GitHub Packages. Sett `NODE_AUTH_TOKEN` til et token
 med `read:packages` før migratoren oppdaterer lockfiler.
 
 | Kommando | Beskrivelse |

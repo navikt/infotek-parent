@@ -214,7 +214,7 @@ def ensure_npmrc(frontend_dir: Path, apply: bool, result: Result) -> bool:
         line
         for line in (
             "@nais:registry=https://npm.pkg.github.com/",
-            "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}",
+            "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}",
         )
         if line not in existing
     ]
