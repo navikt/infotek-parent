@@ -8,13 +8,12 @@ repos:
   - name: infotek-databaseuttrekk
     org: navikt
     namespace: infotrygd
+    nais_app: infotrygd-databaseuttrekk
     description: ""
     stack: []
     default_branch: main
     managed: true
-    dependabot_skip: true  # buggy app, kandidat for sletting
-    pr_skip: true
-    environments: [dev-gcp]
+    environments: [dev-fss, prod-fss]
   - name: infotek-statistikk
     org: navikt
     namespace: infotek

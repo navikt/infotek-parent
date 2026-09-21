@@ -1,6 +1,7 @@
 # Klonede team-repos (forvaltes i sine egne repos)
 repos/
 eksempel-repos/
+tmp/
 
 # Agent session-state (midlertidige artefakter fra Copilot/nav-pilot-økter)
 .copilot/session-state/
