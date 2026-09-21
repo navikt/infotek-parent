@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 
-from scripts.terminal_ui import REPORT_CHOICE_TIMEOUT_SECONDS, choose, choose_cached_report, choose_table, fit_table
+from scripts.terminal_ui import REPORT_CHOICE_TIMEOUT_SECONDS, choose, choose_cached_report, choose_checkboxes, choose_table, fit_table
 
 
 class TerminalUiTest(unittest.TestCase):
@@ -67,6 +67,19 @@ class TerminalUiTest(unittest.TestCase):
 
         self.assertLessEqual(sum(widths) + 2 * (len(widths) - 1), 80)
         self.assertTrue(rows[0][3].endswith("…"))
+
+    def test_checkbox_selector_toggles_and_returns_selected_keys(self) -> None:
+        with patch("sys.stdin.isatty", return_value=False), patch("sys.stdout.isatty", return_value=False):
+            with patch.object(builtins, "input", side_effect=["2", ""]):
+                self.assertEqual(
+                    ["first"],
+                    choose_checkboxes("Repoer", [("first", "Første"), ("second", "Andre")]),
+                )
+
+    def test_checkbox_selector_can_be_cancelled(self) -> None:
+        with patch("sys.stdin.isatty", return_value=False), patch("sys.stdout.isatty", return_value=False):
+            with patch.object(builtins, "input", return_value="q"):
+                self.assertIsNone(choose_checkboxes("Repoer", [("first", "Første")]))
 
 
 if __name__ == "__main__":

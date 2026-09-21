@@ -34,6 +34,7 @@ Ikoner:
 """
 
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -44,7 +45,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-from terminal_ui import choose, choose_cached_report, clear_screen, enter_alt_screen, exit_alt_screen, fit_table, github_alert_counts, nais_alert_counts, print_table, choose_table
+from terminal_ui import choose, choose_cached_report, choose_checkboxes, clear_screen, enter_alt_screen, exit_alt_screen, fit_table, github_alert_counts, nais_alert_counts, print_table, choose_table
 
 REPOS_FILE  = Path(__file__).parent.parent / "repos.yaml"
 CONFIG_FILE = Path(__file__).parent.parent / "config.json"
@@ -877,16 +878,17 @@ def apply_review_filter_to_groups(repo_groups: list) -> None:
         ]
 
 
-def load_review_report() -> list[dict]:
+def load_review_report(report_path: Path | None = None) -> list[dict]:
+    report_path = report_path or REVIEW_REPORT_FILE
     try:
-        report = json.loads(REVIEW_REPORT_FILE.read_text())
+        report = json.loads(report_path.read_text())
         if report.get("schema_version") != REPORT_SCHEMA_VERSION:
             raise RuntimeError("feil rapportversjon")
         scope = report["scope"]["repositories"]
         repositories = report["repositories"]
     except (OSError, json.JSONDecodeError, KeyError, TypeError, RuntimeError) as error:
         raise RuntimeError(
-            f"Kunne ikke lese gyldig felles PR-rapport {REVIEW_REPORT_FILE}: {error}. "
+            f"Kunne ikke lese gyldig felles PR-rapport {report_path}: {error}. "
             "Velg ny rapport."
         ) from error
     repo_groups = [
@@ -924,15 +926,36 @@ def print_review_report_progress(repo_groups: list, total: int, current: str = "
     )
 
 
-def build_review_report(repos: list) -> list[dict]:
+def review_report_path(repos: list[dict]) -> Path:
+    scope = "\n".join(sorted(f"{repo.get('org', 'navikt')}/{repo['name']}" for repo in repos))
+    digest = hashlib.sha256(scope.encode()).hexdigest()[:12]
+    return REVIEW_REPORT_FILE.with_name(f"review-report-{digest}.json")
+
+
+def choose_review_repositories(repos: list[dict]) -> list[dict]:
+    selected = choose_checkboxes(
+        "Velg repoer for review-rapporten",
+        [(f"{repo.get('org', 'navikt')}/{repo['name']}", f"{repo.get('org', 'navikt')}/{repo['name']}") for repo in repos],
+    )
+    if selected is None:
+        raise KeyboardInterrupt
+    return [repo for repo in repos if f"{repo.get('org', 'navikt')}/{repo['name']}" in selected]
+
+
+def build_review_report(repos: list[dict], report_path: Path) -> list[dict]:
     print("Kjører fersk felles PR-rapport.")
-    REVIEW_REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = REVIEW_REPORT_FILE.with_name(f"{REVIEW_REPORT_FILE.name}.tmp.{os.getpid()}")
-    result = subprocess.run([sys.executable, str(SHERIFF_REPORT_SCRIPT), "--output", str(temp_path)])
+def build_review_report(repos: list[dict], report_path: Path) -> list[dict]:
+    print("Kjører fersk felles PR-rapport.")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = report_path.with_name(f"{report_path.name}.tmp.{os.getpid()}")
+    command = [sys.executable, str(SHERIFF_REPORT_SCRIPT), "--output", str(temp_path)]
+    for repo in repos:
+        command.extend(("--repo", f"{repo.get('org', 'navikt')}/{repo['name']}"))
+    result = subprocess.run(command)
     try:
         if not temp_path.exists():
             raise RuntimeError("Kunne ikke generere felles PR-rapport.")
-        temp_path.replace(REVIEW_REPORT_FILE)
+        temp_path.replace(report_path)
     finally:
         if temp_path.exists():
             temp_path.unlink()
@@ -941,12 +964,12 @@ def build_review_report(repos: list) -> list[dict]:
             f"⚠️  Felles PR-rapport returnerte feilkode {result.returncode} "
             "og kan ha delvise data."
         )
-    return load_review_report()
+    return load_review_report(report_path)
 
 
-def show_review_report_summary() -> bool:
+def show_review_report_summary(report_path: Path) -> bool:
     subprocess.run(
-        [sys.executable, str(SHERIFF_REPORT_SCRIPT), "--show", "--output", str(REVIEW_REPORT_FILE)],
+        [sys.executable, str(SHERIFF_REPORT_SCRIPT), "--show", "--output", str(report_path)],
         check=False,
     )
     return choose(
@@ -955,23 +978,30 @@ def show_review_report_summary() -> bool:
     ) != "quit"
 
 
-def choose_review_report(repos: list) -> list[dict]:
-    if REVIEW_REPORT_FILE.exists():
+def choose_review_report(
+    repos: list[dict],
+    force_refresh: bool = False,
+) -> tuple[list[dict], list[dict], Path]:
+    selected_repos = choose_review_repositories(repos)
+    report_path = review_report_path(selected_repos)
+    if force_refresh:
+        return build_review_report(selected_repos, report_path), selected_repos, report_path
+    if report_path.exists():
         try:
-            load_review_report()
+            load_review_report(report_path)
         except RuntimeError as error:
             print(f"⚠️  {error}")
-            return build_review_report(repos)
+            return build_review_report(selected_repos, report_path), selected_repos, report_path
     report_choice = choose_cached_report(
-        REVIEW_REPORT_FILE,
+        report_path,
         "Review-rapport",
-        lambda: f"{sum(len(group['raw_prs']) for group in load_review_report())} PR-er",
+        lambda: f"{sum(len(group['raw_prs']) for group in load_review_report(report_path))} PR-er",
     )
     if report_choice == "quit":
         raise KeyboardInterrupt
     if report_choice == "fortsett":
-        return load_review_report()
-    return build_review_report(repos)
+        return load_review_report(report_path), selected_repos, report_path
+    return build_review_report(selected_repos, report_path), selected_repos, report_path
 
 
 def print_overview_dependabot(repo_groups: list, total_prs: int, prefix: str):
@@ -1183,13 +1213,47 @@ def print_review_table(entries: list[dict]) -> None:
     print(f"\n{len(rows)} PR-er.")
 
 
+def refresh_repo_in_groups(repo_groups: list, org: str, name: str) -> None:
+    """Hent fersk PR-status for ett repo og oppdater kun det i repo_groups."""
+    result = run([
+        "gh", "pr", "list", "--repo", f"{org}/{name}",
+        "--json", "number,title,headRefName,author,mergeable,mergeStateStatus,statusCheckRollup,reviewDecision,autoMergeRequest,labels,additions,deletions,changedFiles,url,state",
+        "--limit", "100",
+    ])
+    if result.returncode != 0:
+        print(f"  {YELLOW}⚠️  Kunne ikke hente fersk status for {name}{RESET}")
+        return
+    try:
+        fresh_prs = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return
+    # Finn repo-gruppen og oppdater entries
+    for group in repo_groups:
+        if group["org"] == org and group["name"] == name:
+            group["raw_prs"] = fresh_prs
+            group["entries"] = [
+                {
+                    "org": group["org"],
+                    "name": group["name"],
+                    "pr": pr,
+                    "state": pr_state(pr),
+                    "github_critical": group.get("github_critical", 0),
+                    "github_high": group.get("github_high", 0),
+                    "nais_critical": group.get("nais_critical"),
+                    "nais_high": group.get("nais_high"),
+                }
+                for pr in apply_filter(fresh_prs)
+            ]
+            break
+
+
 def main_review(repos: list) -> None:
-    repo_groups = choose_review_report(repos)
+    repo_groups, selected_repos, report_path = choose_review_report(repos)
     counts = {"merget": 0, "oppdatert": 0, "rerun": 0, "skippet": 0}
 
     def refresh() -> None:
-        nonlocal repo_groups
-        repo_groups = build_review_report(repos)
+        nonlocal repo_groups, selected_repos, report_path
+        repo_groups, selected_repos, report_path = choose_review_report(repos, force_refresh=True)
 
     while True:
         entries = review_entries(repo_groups)
@@ -1233,7 +1297,7 @@ def main_review(repos: list) -> None:
                 break
             continue
         if choice == "summary":
-            if not show_review_report_summary():
+            if not show_review_report_summary(report_path):
                 break
             continue
         if choice == "refresh":
@@ -1242,8 +1306,24 @@ def main_review(repos: list) -> None:
         if not choice.startswith("row-"):
             continue
         entry = entries[int(choice.removeprefix("row-"))]
-        handle_pr(entry["org"], entry["name"], entry["pr"], entry["state"], counts)
-        refresh()
+        result = handle_pr(entry["org"], entry["name"], entry["pr"], entry["state"], counts)
+        if result in ("done", "next_repo"):
+            # Kun oppdater det repoet vi jobbet i, ikke hele rapporten
+            refresh_repo_in_groups(repo_groups, entry["org"], entry["name"])
+            # Spør om full refresh hvis ønskelig
+            refresh_choice = choose(
+                "Oppdatert repo. Hva nå?",
+                [
+                    ("continue", "Fortsett med neste PR", "c"),
+                    ("refresh", "Hent helt ny rapport", "r"),
+                    ("quit", "Avslutt review", "q"),
+                ],
+                default=0,
+            )
+            if refresh_choice == "refresh":
+                refresh()
+            elif refresh_choice == "quit":
+                break
     print_summary(counts)
 
 

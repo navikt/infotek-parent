@@ -129,6 +129,20 @@ class SheriffReportProgressTest(unittest.TestCase):
 
         self.assertIn("HOPPET OVER", output.getvalue())
 
+    def test_filters_scope_to_requested_managed_repositories(self) -> None:
+        repositories = [
+            {"org": "navikt", "name": "first"},
+            {"org": "navikt", "name": "second"},
+        ]
+
+        selected = module.select_repositories(repositories, ["navikt/second"])
+
+        self.assertEqual([{"org": "navikt", "name": "second"}], selected)
+
+    def test_rejects_unknown_repository_scope(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unknown"):
+            module.select_repositories([{"org": "navikt", "name": "first"}], ["navikt/unknown"])
+
 
 if __name__ == "__main__":
     unittest.main()

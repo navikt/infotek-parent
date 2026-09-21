@@ -157,7 +157,6 @@ def choose_cached_report(path: Path, title: str, summary: Callable[[], str], fre
             title,
             [("ny", "Lag ny rapport", "n"), ("quit", "Avslutt", "q")],
             clear=True,
-            timeout_seconds=REPORT_CHOICE_TIMEOUT_SECONDS,
         )
     age_seconds = max(0, int(time.time() - path.stat().st_mtime))
     return choose(
@@ -169,7 +168,6 @@ def choose_cached_report(path: Path, title: str, summary: Callable[[], str], fre
         ],
         default=0 if age_seconds < freshness_seconds else 1,
         clear=True,
-        timeout_seconds=REPORT_CHOICE_TIMEOUT_SECONDS,
     )
 
 
@@ -355,3 +353,100 @@ def choose(
         if not clear:
             sys.stdout.write(f"\r\033[{menu_lines}A\033[J")
             sys.stdout.flush()
+
+
+def choose_checkboxes(
+    title: str,
+    options: Sequence[tuple[str, str]],
+    selected: Sequence[str] | None = None,
+) -> list[str] | None:
+    """Velger null eller flere elementer. Returnerer None når brukeren avbryter."""
+    if not options:
+        raise ValueError("Menyen må ha minst ett valg.")
+    selected_keys = set(selected if selected is not None else (key for key, _ in options))
+    keys = {key for key, _ in options}
+    if len(keys) != len(options):
+        raise ValueError("Valgnøkler må være unike.")
+
+    if not (sys.stdin.isatty() and sys.stdout.isatty() and os.environ.get("TERM", "") not in ("", "dumb")):
+        while True:
+            print(f"\n{BOLD}{title}{RESET}")
+            for index, (key, label) in enumerate(options, 1):
+                marker = "x" if key in selected_keys else " "
+                print(f"  {index}. [{marker}] {label}")
+            print("Skriv nummer for å bytte valg, «a» for alle, «i» for ingen, Enter for å fortsette eller «q» for å avbryte.")
+            try:
+                raw = input("Velg: ").strip().lower()
+            except EOFError:
+                return None
+            if raw == "q":
+                return None
+            if not raw:
+                if selected_keys:
+                    return [key for key, _ in options if key in selected_keys]
+                print("Velg minst ett repo.")
+                continue
+            if raw == "a":
+                selected_keys = keys.copy()
+                continue
+            if raw == "i":
+                selected_keys.clear()
+                continue
+            try:
+                index = int(raw) - 1
+                if not 0 <= index < len(options):
+                    raise ValueError
+            except ValueError:
+                print("Ugyldig valg.")
+                continue
+            key = options[index][0]
+            if key in selected_keys:
+                selected_keys.remove(key)
+            else:
+                selected_keys.add(key)
+
+    import termios
+    import tty
+
+    current = 0
+    while True:
+        clear_screen()
+        print(f"\n{BOLD}{title}{RESET}\n")
+        for index, (key, label) in enumerate(options):
+            marker = "x" if key in selected_keys else " "
+            prefix = f"{CYAN}❯ {RESET}" if index == current else "  "
+            print(f"{prefix}[{marker}] {label}")
+        print("\n[Space] bytt valg  [a] alle  [i] ingen  [Enter] fortsett  [q] avbryt", end="", flush=True)
+
+        descriptor = sys.stdin.fileno()
+        previous = termios.tcgetattr(descriptor)
+        try:
+            tty.setraw(descriptor)
+            key = sys.stdin.read(1)
+            if key == "\x1b":
+                key += sys.stdin.read(2)
+            elif key == "\x03":
+                raise KeyboardInterrupt
+        finally:
+            termios.tcsetattr(descriptor, termios.TCSADRAIN, previous)
+
+        if key in ("\r", "\n"):
+            if selected_keys:
+                return [option_key for option_key, _ in options if option_key in selected_keys]
+            continue
+        if key == " ":
+            selected_key = options[current][0]
+            if selected_key in selected_keys:
+                selected_keys.remove(selected_key)
+            else:
+                selected_keys.add(selected_key)
+        elif key.lower() == "a":
+            selected_keys = keys.copy()
+        elif key.lower() == "i":
+            selected_keys.clear()
+        elif key.lower() == "q":
+            return None
+        elif key == "\x1b[A":
+            current = (current - 1) % len(options)
+        elif key == "\x1b[B":
+            current = (current + 1) % len(options)

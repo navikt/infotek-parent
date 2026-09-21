@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -66,6 +67,32 @@ class ReviewReportTest(unittest.TestCase):
                     module.load_review_report()
         finally:
             module.REVIEW_REPORT_FILE = original
+
+    def test_uses_a_stable_cache_path_for_selected_repositories(self) -> None:
+        repositories = [
+            {"org": "navikt", "name": "second"},
+            {"org": "navikt", "name": "first"},
+        ]
+
+        self.assertEqual(
+            module.review_report_path(repositories),
+            module.review_report_path(list(reversed(repositories))),
+        )
+        self.assertNotEqual(
+            module.review_report_path(repositories),
+            module.review_report_path(repositories[:1]),
+        )
+
+    def test_refresh_rebuilds_report_after_new_scope_selection(self) -> None:
+        repositories = [{"org": "navikt", "name": "example"}]
+        with (
+            patch.object(module, "choose_review_repositories", return_value=repositories),
+            patch.object(module, "build_review_report", return_value=[]) as build_report,
+        ):
+            result = module.choose_review_report(repositories, force_refresh=True)
+
+        self.assertEqual(([], repositories, module.review_report_path(repositories)), result)
+        build_report.assert_called_once_with(repositories, module.review_report_path(repositories))
 
 
 if __name__ == "__main__":

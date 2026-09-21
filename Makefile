@@ -255,7 +255,7 @@ git-prune-merged: _require-yq ## Switch til default branch og slett merged branc
 	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
 	  echo -n "  Bytt til default branch og slett $$count branch(es)? [j/N] " && read ans && case "$$ans" in \
 	    [jJ]*) \
-	      while read name branch b delete_mode; do \
+	      while read -r name branch b delete_mode <&3; do \
 	        dir=$(PARENT_DIR)/$$name; \
 	        worktree_path=$$(git -C $$dir worktree list --porcelain | awk -v ref="refs/heads/$$b" 'BEGIN{p=""} /^worktree /{p=substr($$0,10)} /^branch /{if ($$2==ref){print p; exit}}'); \
 	        if [ -n "$$worktree_path" ] && [ "$$worktree_path" != "$$dir" ]; then \
@@ -275,7 +275,7 @@ git-prune-merged: _require-yq ## Switch til default branch og slett merged branc
 	        git -C $$dir branch $$delete_mode "$$b" --quiet && \
 	          echo -e "  $(GREEN)-$(RESET) $$name  $$b" || \
 	          echo -e "  ❌ $$name  $$b feilet"; \
-	      done < $$tmpfile;; \
+	      done 3< $$tmpfile;; \
 	    *) echo -e "  Avbrutt.";; \
 	  esac; \
 	  rm -f $$tmpfile; \

@@ -24,8 +24,6 @@ ikke at repoet automatisk skal skjules fra øvrig sikkerhetsanalyse.
 ## Sikkerhetsgrenser
 
 - Start alltid med `git status --short --branch`.
-- Be brukeren kjøre `make git-update` og bekrefte resultatet før fiksing. Ikke
-  kjør kommandoen selv, heller ikke etter uttrykkelig bekreftelse.
 - Lokale `git checkout`- og `git switch`-operasjoner er tillatt når status er
   kontrollert og målet er forklart. Ikke kjør `git pull`, `git fetch`, `make
   git-update`, `gh pr merge`, `gh pr close`, `gh pr edit`, `gh pr create`,

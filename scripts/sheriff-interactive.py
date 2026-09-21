@@ -95,6 +95,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -105,7 +106,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from terminal_ui import choose, choose_cached_report, clear_screen, enter_alt_screen, format_age, github_alert_counts, nais_alert_counts, print_table
+from terminal_ui import choose, choose_cached_report, clear_screen, enter_alt_screen, exit_alt_screen, format_age, github_alert_counts, nais_alert_counts, print_table
 
 ROOT = Path(__file__).resolve().parent.parent
 REPOS_DIR = ROOT / "repos"
@@ -115,7 +116,6 @@ STATE_PATH = ROOT / "tmp" / "sheriff-interactive-state.json"
 CONFIG_FILE = ROOT / "config.json"
 REPORT_FRESHNESS_SECONDS = 15 * 60
 REPORT_SCHEMA_VERSION = 7
-DIFF_PREVIEW_LINES = 36
 
 
 def _load_config() -> dict:
@@ -429,6 +429,7 @@ def show_candidate_table(report: dict, candidates: list[tuple[Candidate, bool, b
         [
             ("start", "Start review i prioritert rekkefølge", "s"),
             ("summary", "Vis sammendragsrapport", "o"),
+            ("refresh", "Hent ny rapport", "r"),
             ("quit", "Avslutt", "q"),
         ],
     )
@@ -489,17 +490,11 @@ def colorize_diff(lines: list[str]) -> str:
     return "\n".join(colored)
 
 
-def format_diff_preview(diff: str, max_lines: int = DIFF_PREVIEW_LINES) -> str:
+def format_diff_full(diff: str) -> str:
     lines = diff.splitlines()
     if not lines:
         return f"  {DIM}Ingen diff tilgjengelig.{RESET}"
-    colored = [colorize_diff(lines[:max_lines])]
-    if len(lines) > max_lines:
-        colored.append(
-            f"  {DIM}… viser {max_lines} av {len(lines)} linjer. "
-            f"Velg «Vis full diff» for resten.{RESET}"
-        )
-    return "\n".join(colored)
+    return colorize_diff(lines)
 
 
 def fetch_pr_status(candidate: Candidate) -> dict:
@@ -523,7 +518,7 @@ def print_candidate(
 
     diff = fetch_pr_diff(candidate)
     print_header(f"Diff ({len(diff.splitlines())} linjer)")
-    print(format_diff_preview(diff))
+    print(format_diff_full(diff))
     checks = pr.get("statusCheckRollup") or []
     ci_state = f"{GREEN}grønn{RESET}" if checks_are_green(checks) else f"{RED}ikke grønn{RESET}"
     review = pr.get("reviewDecision") or "ingen"
@@ -595,8 +590,6 @@ def prompt_approval_action(candidate: Candidate, question: str, pr: dict, diff: 
         if approve_allowed:
             options.append(("ja", "Godkjenn", "g"))
         options.append(("nei", "Hopp over", "h"))
-        if len(diff.splitlines()) > DIFF_PREVIEW_LINES:
-            options.append(("diff", "Vis full diff", "d"))
         options.append(("nettleser", "Åpne PR i nettleser", "n"))
         options.append(("sjekk-ut", "Sjekk ut branchen lokalt", "s"))
         if is_behind:
@@ -608,14 +601,6 @@ def prompt_approval_action(candidate: Candidate, question: str, pr: dict, diff: 
             action = choose(question, options)
         except (EOFError, KeyboardInterrupt):
             return "avslutt"
-        if action == "diff":
-            subprocess.run(
-                ["less", "-R", "-F"],
-                input=colorize_diff(diff.splitlines()),
-                text=True,
-                check=False,
-            )
-            continue
         if action == "nettleser":
             webbrowser.open(pr.get("url") or "")
             continue
@@ -1209,15 +1194,6 @@ def process_pending_entry(entry: dict, dry_run: bool, state: dict, state_path: P
         do_merge(candidate, dry_run)
         return
 
-    try:
-        ans = input(f"\n  {label} er klar til merge. Merge nå? [J/n] ").strip().lower()
-    except EOFError:
-        print("\n  … stdin tom — avbryter merge.")
-        return
-    if ans and ans != "j":
-        print(f"  … {label}: merge avbrutt av bruker.")
-        return
-
     merge_ok, merge_error = do_merge(candidate, False)
     if merge_ok:
         entry["status"] = STATUS_MERGED
@@ -1363,6 +1339,7 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
             is_behind = fresh.get("mergeStateStatus") == "BEHIND"
             checks_failed = checks_are_completed(checks) and not checks_are_green(checks)
             is_computing = fresh.get("mergeable") == "UNKNOWN"
+            ready_to_merge = False
             if fresh.get("mergeable") == "CONFLICTING":
                 live_summary = "fortsatt konflikt med base-branch"
             elif live_blocked_reason:
@@ -1384,38 +1361,112 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
                 )
             elif fresh.get("mergeable") == "MERGEABLE" and checks_are_green(checks):
                 live_summary = f"{GREEN}ikke lenger 'blocked' hos GitHub — ser nå klar til merge{RESET}"
+                ready_to_merge = True
             else:
                 live_summary = f"ukjent (mergeable={fresh.get('mergeable')}, mergeStateStatus={fresh.get('mergeStateStatus')})"
+                ready_to_merge = False
             print(f"  {label}: lagret grunn: {entry.get('error') or '-'}")
             print(f"    live nå:     {live_summary}")
 
             if not interactive:
                 break
 
-            options = ["[w] nettleser", "[c] sjekk ut lokalt", "[f] hent status på nytt"]
+            # Sjekk om PR-en er godkjent
+            is_approved = fresh.get("reviewDecision") == "APPROVED"
+            if not is_approved:
+                reviews = fresh.get("reviews") or []
+                is_approved = any(
+                    r.get("state") == "APPROVED" and not is_bot({"author": r.get("author", {})})
+                    for r in reviews
+                )
+
+            menu_options: list[tuple[str, str, str]] = []
+            if ready_to_merge and is_approved:
+                menu_options.append(("merge", "Merge nå", "m"))
+            elif ready_to_merge and not is_approved:
+                menu_options.append(("approve", "Godkjenn", "a"))
+            menu_options.extend([
+                ("nettleser", "Åpne PR i nettleser", "w"),
+                ("sjekk-ut", "Sjekk ut branchen lokalt", "c"),
+                ("refetch", "Hent status på nytt", "f"),
+            ])
             if is_behind:
-                options.append("[u] update-branch")
+                menu_options.append(("oppdater", "Update-branch", "u"))
             if checks_failed:
-                options.append("[r] rerun CI")
-            options += ["[d] fjern rad (ta opp på nytt neste kjøring)", "[s] hopp over", "[q] avslutt"]
+                menu_options.append(("rerun", "Kjør feilede CI-sjekker på nytt", "r"))
+            menu_options.append(("fjern", "Fjern rad (ta opp på nytt neste kjøring)", "d"))
+            menu_options.append(("hopp", "Hopp over", "s"))
+            menu_options.append(("avslutt", "Avslutt sheriff", "q"))
+
+            # Standard: merge hvis klar og godkjent, ellers hopp over
+            if ready_to_merge and is_approved:
+                default_index = next(i for i, (key, _, _) in enumerate(menu_options) if key == "merge")
+            else:
+                default_index = next(i for i, (key, _, _) in enumerate(menu_options) if key == "hopp")
+
             refetch = False
             while True:
-                choice = ask(f"    {'  '.join(options)}  >")
-                if choice in ("q", "avslutt", "quit"):
+                try:
+                    action = choose(
+                        f"Velg handling for {label}",
+                        menu_options,
+                        default=default_index,
+                    )
+                except (EOFError, KeyboardInterrupt):
                     print("\nAvsluttet av bruker.")
                     sys.exit(0)
-                if choice in ("s", "hopp", "hopp over", "skip", ""):
+                if action == "avslutt":
+                    print("\nAvsluttet av bruker.")
+                    sys.exit(0)
+                if action == "hopp":
                     break
-                if choice == "w":
+                if action == "merge" and ready_to_merge and is_approved:
+                    merge_ok, merge_error = do_merge(candidate, False)
+                    if merge_ok:
+                        entry["status"] = STATUS_MERGED
+                        entry["approved_at"] = entry.get("approved_at") or now_iso()
+                        entry["last_checked_at"] = now_iso()
+                        entry["error"] = None
+                        save_state(state_path, state)
+                        print(f"    {GREEN}✓ Merget!{RESET}")
+                    else:
+                        entry["status"] = STATUS_BLOCKED
+                        entry["last_checked_at"] = now_iso()
+                        entry["error"] = merge_error or "merge feilet."
+                        save_state(state_path, state)
+                        print(f"    {RED}✗ Merge feilet — fortsatt 'blocked'.{RESET}")
+                    break
+                if action == "approve" and ready_to_merge and not is_approved:
+                    approve_ok, approve_error = do_approve(candidate, False)
+                    if approve_ok:
+                        print(f"    {GREEN}✓ Godkjent — prøver merge...{RESET}")
+                        merge_ok, merge_error = do_merge(candidate, False)
+                        if merge_ok:
+                            entry["status"] = STATUS_MERGED
+                            entry["approved_at"] = now_iso()
+                            entry["last_checked_at"] = now_iso()
+                            entry["error"] = None
+                            save_state(state_path, state)
+                            print(f"    {GREEN}✓ Merget!{RESET}")
+                        else:
+                            entry["status"] = STATUS_BLOCKED
+                            entry["last_checked_at"] = now_iso()
+                            entry["error"] = merge_error or "merge feilet etter godkjenning."
+                            save_state(state_path, state)
+                            print(f"    {RED}✗ Merge feilet — fortsatt 'blocked'.{RESET}")
+                    else:
+                        print(f"    {RED}✗ Godkjenning feilet: {approve_error}{RESET}")
+                    break
+                if action == "nettleser":
                     webbrowser.open(candidate.pr.get("url") or entry.get("url") or "")
                     continue
-                if choice == "c":
+                if action == "sjekk-ut":
                     checkout_pr_locally(candidate)
                     continue
-                if choice == "f":
+                if action == "refetch":
                     refetch = True
                     break
-                if choice == "u" and is_behind:
+                if action == "oppdater" and is_behind:
                     update_ok, _ = do_update_branch(candidate, False)
                     if update_ok:
                         print(f"    {GREEN}✓ Update-branch sendt for {label} — henter fersk status.{RESET}")
@@ -1424,7 +1475,7 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
                         refetch = True
                         break
                     continue
-                if choice == "r" and checks_failed:
+                if action == "rerun" and checks_failed:
                     rerun_ok, _ = do_rerun_failed_checks(candidate)
                     if rerun_ok:
                         print(f"    {GREEN}✓ Rerun startet for {label} — henter fersk status.{RESET}")
@@ -1433,12 +1484,11 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
                         refetch = True
                         break
                     continue
-                if choice == "d":
+                if action == "fjern":
                     del entries[key]
                     save_state(state_path, state)
                     print(f"    {GREEN}✓ Rad fjernet — {label} tas opp på nytt neste kjøring.{RESET}")
                     break
-                print("    Ugyldig valg — prøv igjen.")
             if refetch:
                 continue
             break
@@ -1590,81 +1640,134 @@ def main() -> int:
 
     enter_alt_screen()
 
-    try:
-        sync_merged_or_closed_blocked_entries(state, STATE_PATH, args.dry_run)
-    except (RuntimeError, KeyError, TypeError, ValueError) as error:
-        print(f"⚠️  Kunne ikke synkronisere 'blocked'-rader ved oppstart: {error}", file=sys.stderr)
+    report_path: Path | None = None
+    report: dict | None = None
+    candidates: list | None = None
 
-    try:
-        report_path = choose_report_source(args)
-    except RuntimeError as error:
-        print(f"❌ {error}", file=sys.stderr)
-        return 1
-
-    try:
-        report = load_report(report_path)
-        candidates = build_candidates(report)
-    except RuntimeError as error:
-        print(f"❌ {error}", file=sys.stderr)
-        return 1
-
-    if args.dry_run:
-        print(
-            f"{YELLOW}DRY-RUN: ingen gh review/merge/update-branch-kommandoer kjøres, og "
-            f"state-filen skrives ikke.{RESET}"
-        )
-
-    if not candidates:
-        print("Ingen kandidater i rapporten: ingen åpne, ikke-draft bot-/Dependabot-PR-er funnet.")
-    else:
-        while True:
-            candidate_choice = show_candidate_table(report, candidates)
-            if candidate_choice == "start":
-                break
-            if candidate_choice == "summary" and show_report_summary(report_path):
-                continue
-            return 0
-        try:
-            quit_requested = run_approval_round(candidates, state, STATE_PATH, args.dry_run)
-        except (RuntimeError, KeyError, TypeError, ValueError) as error:
-            print(f"❌ {error}", file=sys.stderr)
-            return 1
-        if quit_requested:
-            print("\nAvsluttet av bruker under godkjenningsrunden.")
-            if not args.dry_run:
-                reconcile_blocked_entries(state, STATE_PATH, interactive=True)
-            print_status_table(state)
-            return 0
-
-    try:
-        run_pending_sweep(state, STATE_PATH, args.dry_run)
-    except (RuntimeError, KeyError, TypeError, ValueError) as error:
-        print(f"❌ {error}", file=sys.stderr)
-        return 1
-
-    if args.watch and not args.dry_run:
-        try:
-            while count_pending(state) > 0:
-                print(
-                    f"\n⏳ {count_pending(state)} PR-er venter fortsatt (update/CI/merge). "
-                    f"Sjekker igjen om {args.watch_interval}s … (Ctrl+C for å avbryte og "
-                    "fortsette senere med samme kommando)"
+    while True:
+        # --- Rapportvalg ---
+        if report_path is None:
+            # Første runde: velg rapport
+            try:
+                report_path = choose_report_source(args)
+            except RuntimeError as error:
+                print(f"❌ {error}", file=sys.stderr)
+                return 1
+            try:
+                report = load_report(report_path)
+                candidates = build_candidates(report)
+            except RuntimeError as error:
+                print(f"❌ {error}", file=sys.stderr)
+                return 1
+        else:
+            # Tilbakekomst: spør om ny rapport hvis gammel
+            age, _ = report_summary(report_path)
+            if age > REPORT_FRESHNESS_SECONDS:
+                refresh_choice = choose(
+                    f"Rapporten er {format_age(age)} — hente ny?",
+                    [
+                        ("ny", "Lag ny rapport", "n"),
+                        ("fortsett", "Bruk lagret rapport", "f"),
+                        ("quit", "Avslutt", "q"),
+                    ],
+                    default=1,
                 )
-                time.sleep(args.watch_interval)
-                run_pending_sweep(state, STATE_PATH, args.dry_run)
-            if state.get("prs"):
-                print("\n✅ Ingen ventende PR-er igjen i state-filen.")
-        except KeyboardInterrupt:
-            print("\n\nAvbrutt av bruker. Fremgangen er lagret i state-filen — kjør samme kommando for å fortsette.")
+                if refresh_choice == "quit":
+                    break
+                if refresh_choice == "ny":
+                    try:
+                        report_path = generate_fresh_report(args.output)
+                        report = load_report(report_path)
+                        candidates = build_candidates(report)
+                    except RuntimeError as error:
+                        print(f"❌ {error}", file=sys.stderr)
+                        continue
+
+        # --- Sync blocked først ---
+        try:
+            sync_merged_or_closed_blocked_entries(state, STATE_PATH, args.dry_run)
+        except (RuntimeError, KeyError, TypeError, ValueError) as error:
+            print(f"⚠️  Kunne ikke synkronisere 'blocked'-rader: {error}", file=sys.stderr)
+
+        if args.dry_run:
+            print(
+                f"{YELLOW}DRY-RUN: ingen gh review/merge/update-branch-kommandoer kjøres, og "
+                f"state-filen skrives ikke.{RESET}"
+            )
+
+        # --- Hovedmeny ---
+        if not candidates:
+            print("Ingen kandidater i rapporten: ingen åpne, ikke-draft bot-/Dependabot-PR-er funnet.")
+        else:
+            while True:
+                candidate_choice = show_candidate_table(report, candidates)
+                if candidate_choice == "start":
+                    break
+                if candidate_choice == "summary" and show_report_summary(report_path):
+                    continue
+                if candidate_choice == "refresh":
+                    try:
+                        report_path = generate_fresh_report(args.output)
+                        report = load_report(report_path)
+                        candidates = build_candidates(report)
+                    except RuntimeError as error:
+                        print(f"❌ {error}", file=sys.stderr)
+                    continue
+                if candidate_choice == "quit":
+                    break
+            if candidate_choice == "quit":
+                break
+
+            # --- Godkjenningsrunde ---
+            try:
+                quit_requested = run_approval_round(candidates, state, STATE_PATH, args.dry_run)
+            except (RuntimeError, KeyError, TypeError, ValueError) as error:
+                print(f"❌ {error}", file=sys.stderr)
+                continue  # tilbake til hovedmeny, ikke exit 1
+
+            if quit_requested:
+                break  # bruker valgte [q] inne i approval-runden — drep appen
+
+        # --- Pending sweep ---
+        try:
+            run_pending_sweep(state, STATE_PATH, args.dry_run)
         except (RuntimeError, KeyError, TypeError, ValueError) as error:
             print(f"❌ {error}", file=sys.stderr)
-            return 1
+            continue
 
-    if not args.dry_run:
-        reconcile_blocked_entries(state, STATE_PATH, interactive=True)
-    print_status_table(state)
+        # --- Reconcile blocked ---
+        if not args.dry_run:
+            reconcile_blocked_entries(state, STATE_PATH, interactive=True)
+            # NB: [q] her gjør sys.exit(0) — dreper appen (uendret)
+
+        # --- Kort sammendrag før tilbake til hovedmeny ---
+        pending_count = count_pending(state)
+        merged_count = sum(1 for e in state.get("prs", {}).values() if e.get("status") == STATUS_MERGED)
+        blocked_count = sum(1 for e in state.get("prs", {}).values() if e.get("status") == STATUS_BLOCKED)
+        print(
+            f"\n{BOLD}Sammendrag:{RESET} {GREEN}{merged_count} merget{RESET} · "
+            f"{YELLOW}{pending_count} venter{RESET} · {RED}{blocked_count} blokkert{RESET}"
+        )
+        # loop tilbake til hovedmeny
+
+    exit_alt_screen()
+    print("Avslutter.")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        # Bytt tilbake til hovedskjermen, men skriv en kort, ren melding i
+        # stedet for en full traceback — Ctrl-C er en normal avbrytelse,
+        # ikke en feil.
+        exit_alt_screen()
+        print("\nAvbrutt av bruker.")
+        raise SystemExit(130)
+    except BaseException:
+        # Bytt tilbake til hovedskjermen FØR tracebacken skrives — ellers
+        # forsvinner feilmeldingen i alternate-screen-bufferen når atexit
+        # bytter skjerm etter at exceptionen allerede er skrevet ut.
+        exit_alt_screen()
+        raise

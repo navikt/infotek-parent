@@ -27,13 +27,16 @@ class SheriffDiffTest(unittest.TestCase):
         self.assertIn("\033[32m", colored)
         self.assertIn("\033[36m", colored)
 
-    def test_preview_only_mentions_full_diff_when_truncated(self) -> None:
-        complete = module.format_diff_preview("+one\n-two")
-        truncated = module.format_diff_preview("\n".join("+line" for _ in range(module.DIFF_PREVIEW_LINES + 1)))
+    def test_full_diff_shows_all_lines_without_truncation(self) -> None:
+        many_lines = "\n".join(f"+line{i}" for i in range(50))
 
-        self.assertNotIn("Vis full diff", complete)
-        self.assertIn(f"viser {module.DIFF_PREVIEW_LINES} av {module.DIFF_PREVIEW_LINES + 1} linjer", truncated)
-        self.assertIn("Vis full diff", truncated)
+        result = module.format_diff_full(many_lines)
+
+        self.assertEqual(50, result.count("\n") + 1)
+        self.assertNotIn("Vis full diff", result)
+
+    def test_full_diff_reports_when_empty(self) -> None:
+        self.assertIn("Ingen diff tilgjengelig", module.format_diff_full(""))
 
     def test_candidate_table_lists_critical_and_high_alert_counts(self) -> None:
         candidate = module.Candidate(
@@ -84,6 +87,40 @@ class SheriffDiffTest(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "feil versjon"):
                 module.load_report(report)
+
+    def test_reconcile_blocked_entries_handles_conflicting_status_without_crash(self) -> None:
+        """Regresjonstest: 'ready_to_merge' må være definert for alle statusgrener,
+        ellers krasjer sheriff med UnboundLocalError for CONFLICTING/BLOCKED/BEHIND-PR-er."""
+        state = {
+            "prs": {
+                "navikt/example#1": {
+                    "status": module.STATUS_BLOCKED,
+                    "org": "navikt",
+                    "repo": "example",
+                    "number": 1,
+                    "base_ref": "main",
+                    "title": "Bump dependency",
+                    "url": "https://example/1",
+                    "error": "Konflikt med base-branch.",
+                }
+            }
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "state.json"
+            with patch.object(
+                module,
+                "fetch_pr_status",
+                return_value={"mergeable": "CONFLICTING", "mergeStateStatus": "DIRTY", "state": "OPEN"},
+            ):
+                module.reconcile_blocked_entries(state, state_path, interactive=False)
+
+        self.assertEqual(module.STATUS_BLOCKED, state["prs"]["navikt/example#1"]["status"])
+
+    def test_exit_alt_screen_is_imported_and_callable(self) -> None:
+        """Regresjonstest: exit_alt_screen() kalles flere steder i skriptet (normal
+        avslutning og krasjhåndtering), men var tidligere ikke importert fra
+        terminal_ui — det ga NameError i stedet for ren avslutning."""
+        self.assertTrue(callable(module.exit_alt_screen))
 
     def test_candidate_table_offers_summary_action(self) -> None:
         candidate = module.Candidate("navikt", "example", {"number": 1, "title": "Bump dependency"})
