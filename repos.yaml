@@ -13,7 +13,7 @@ repos:
     stack: []
     default_branch: main
     managed: true
-    environments: [dev-fss, prod-fss]
+    environments: [prod-fss, prod-gcp]
   - name: infotek-statistikk
     org: navikt
     namespace: infotek
