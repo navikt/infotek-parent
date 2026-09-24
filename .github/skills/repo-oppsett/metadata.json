@@ -1,0 +1,20 @@
+{
+  "name": "repo-oppsett",
+  "description": "Verifiser og fiks konkrete konfigurasjonsavvik i Infotek-repoer på tvers av GitHub, Nais, frontend, backend og database",
+  "license": "MIT",
+  "metadata": {
+    "domain": "repository-maintenance",
+    "tags": [
+      "repo-oppsett",
+      "github-actions",
+      "nais",
+      "frontend",
+      "backend",
+      "database",
+      "spring",
+      "kotlin",
+      "pnpm",
+      "maven"
+    ]
+  }
+}

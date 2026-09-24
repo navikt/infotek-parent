@@ -13,9 +13,7 @@ repos:
     stack: []
     default_branch: main
     managed: true
-    dependabot_skip: true  # buggy app, kandidat for sletting
-    pr_skip: true
-    environments: [dev-gcp]
+    environments: [prod-fss, prod-gcp]
   - name: infotek-statistikk
     org: navikt
     namespace: infotek
@@ -25,6 +23,15 @@ repos:
     managed: true
     environments: [dev-gcp]
     playwright: true
+
+  - name: infotrygd-the-final-countdown
+    org: navikt
+    namespace: infotek
+    description: ""
+    stack: []
+    default_branch: main
+    managed: true
+    environments: [dev-gcp]
 
   # ── Namespace: infotrygd ───────────────────────────────────────────────────
   - name: infotrygd-brukeroppslag
@@ -66,7 +73,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: false
+    managed: true
     environments: []
   # ── Namespace: historisk — aktivt forvaltet ────────────────────────────────
   - name: historisk-avstandskalkulator
@@ -76,8 +83,8 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
-    environments: [dev-gcp]
+    managed: false
+    environments: []
     playwright: true
 
   - name: historisk-gravferdkalkulator
@@ -87,8 +94,8 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
-    environments: [dev-gcp]
+    managed: false
+    environments: []
     playwright: true
 
   - name: historisk-exodus
@@ -136,8 +143,8 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
-    environments: [dev-gcp]
+    managed: false
+    environments: []
     playwright: true
 
   - name: historisk-valutakalkulator
@@ -147,8 +154,8 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
-    environments: [dev-gcp]
+    managed: false
+    environments: []
     playwright: true
 
   - name: historisk-avgiftssystem
@@ -165,5 +172,5 @@ repos:
     description: Oppslagsløsning for IP_90 personkort
     stack: []
     default_branch: main
-    managed: true
-    environments: [dev-gcp, prod-gcp]
+    managed: false
+    environments: []

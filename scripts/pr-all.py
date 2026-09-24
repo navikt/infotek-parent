@@ -3,7 +3,7 @@
 Interaktiv PR-oppretter for alle repos.
 
 Håndterer to typer repos i samme velger:
-  - repos som allerede står på en feature-branch (klare for push+PR)
+  - repos som allerede står på en feature-branch (committer ved behov, deretter push+PR)
   - repos som har lokale endringer på default-branch (trenger branch+commit+push+PR)
 
 Bruk:
@@ -67,6 +67,14 @@ def get_current_branch(repo_dir):
 def get_local_changes(repo_dir):
     r = run(["git", "status", "--porcelain"], cwd=repo_dir)
     return [l for l in r.stdout.strip().splitlines() if l]
+
+
+def branch_has_commits(repo_dir, default_branch, branch):
+    for base in [f"origin/{default_branch}", default_branch]:
+        r = run(["git", "rev-list", "--count", f"{base}..{branch}"], cwd=repo_dir)
+        if r.returncode == 0:
+            return int(r.stdout.strip() or "0") > 0
+    return None
 
 
 def get_first_commit_title(repo_dir, default_branch, branch):
@@ -145,12 +153,21 @@ def main():
         else:
             if branch_filter and branch != branch_filter:
                 continue
+            changes = get_local_changes(repo_dir)
+            comparison_failed = False
+            if not changes:
+                has_commits = branch_has_commits(repo_dir, default_branch, branch)
+                if has_commits is False:
+                    continue
+                comparison_failed = has_commits is None
             branch_candidates.append({
                 "name": name,
                 "dir": repo_dir,
                 "branch": branch,
                 "default_branch": default_branch,
                 "slug": get_repo_slug(repo_dir),
+                "change_count": len(changes),
+                "comparison_failed": comparison_failed,
                 "needs_branch": False,
             })
 
@@ -180,9 +197,17 @@ def main():
                 print(f"    [{idx}] {item['name']}  {YELLOW}(kunne ikke sjekke PR){RESET}")
             elif existing:
                 print(f"    [{idx}] {item['name']}  {YELLOW}✓ PR finnes: {existing}{RESET}")
+            elif item["change_count"]:
+                print(f"    [{idx}] {item['name']}  {item['change_count']} fil(er) endret, ikke committet")
+            elif item["comparison_failed"]:
+                print(f"    [{idx}] {item['name']}  {YELLOW}(kunne ikke sammenligne med default-branch){RESET}")
             else:
                 print(f"    [{idx}] {item['name']}")
-            flat.append({**item, "existing_pr": existing if existing != "?" else None})
+            flat.append({
+                **item,
+                "existing_pr": existing if existing != "?" else None,
+                "pr_check_failed": existing == "?",
+            })
             group_indices.append(idx)
         group_map[letter] = group_indices
         print()
@@ -195,7 +220,7 @@ def main():
         for item in needs_branch_candidates:
             idx = len(flat) + 1
             print(f"    [{idx}] {item['name']}  [{item['default_branch']}]  {item['change_count']} fil(er) endret")
-            flat.append({**item, "existing_pr": None})
+            flat.append({**item, "existing_pr": None, "pr_check_failed": False})
             group_indices.append(idx)
         group_map[letter] = group_indices
         print()
@@ -231,8 +256,25 @@ def main():
         print("Ingen valgt")
         return
 
+    unavailable = [item for item in selected if item["pr_check_failed"]]
+    for item in unavailable:
+        print(f"  {YELLOW}⏭{RESET} {item['name']} — skipper fordi PR-status ikke kunne sjekkes")
+    selected = [item for item in selected if not item["pr_check_failed"]]
+    if not selected:
+        print("Ingen valgte repos med bekreftet PR-status.")
+        return
+
     needs_branch_selected = [s for s in selected if s["needs_branch"]]
     branch_selected = [s for s in selected if not s["needs_branch"]]
+    needs_commit = [s for s in branch_selected if s["change_count"]]
+
+    commit_msg = None
+    if needs_branch_selected or needs_commit:
+        try:
+            commit_msg = msg_arg or prompt("Commit-melding", required=True)
+        except KeyboardInterrupt:
+            print("\n  Avbrutt.")
+            return
 
     # Steg 1: opprett branch + commit for repos som trenger det
     if needs_branch_selected:
@@ -241,7 +283,6 @@ def main():
             "Branch-navn for nye branches (brukes i alle valgte repos uten branch)",
             required=True,
         )
-        commit_msg = msg_arg or prompt("Commit-melding (for branch+commit)", required=True)
         print()
         still_ok = []
         for item in needs_branch_selected:
@@ -269,29 +310,71 @@ def main():
         print("Ingen repos gjensto etter branch/commit-steget.")
         return
 
-    # Hent standardtittel fra første commit i første repo uten eksisterende PR
-    first = next((s for s in selected if not s["existing_pr"]), selected[0])
-    default_title = get_first_commit_title(first["dir"], first["default_branch"], first["branch"])
+    new_prs = [s for s in selected if not s["existing_pr"]]
+    title = None
+    body = None
+    if new_prs:
+        first = new_prs[0]
+        default_title = get_first_commit_title(first["dir"], first["default_branch"], first["branch"])
+        print()
+        try:
+            title = prompt("Tittel", default_title)
+            body = prompt("Body (valgfri, enter for tom)", None)
+        except KeyboardInterrupt:
+            print("\n  Avbrutt.")
+            return
+        print()
 
-    print()
-    try:
-        title = prompt("Tittel", default_title)
-        body = prompt("Body (valgfri, enter for tom)", None)
-    except KeyboardInterrupt:
-        print("\n  Avbrutt.")
-        return
-    print()
+    # Steg 2: commit lokale endringer på eksisterende feature-branches
+    if needs_commit:
+        print("  Følgende repos har lokale endringer som må committes:")
+        for item in needs_commit:
+            print(f"    {item['name']}  ({item['branch']}, {item['change_count']} fil(er))")
+        try:
+            ans = input(f"\n  Commit med meldingen '{commit_msg}', push og lag PRer? [j/N] ").strip().lower()
+        except KeyboardInterrupt:
+            print("\n  Avbrutt.")
+            return
+        if ans not in ("j", "ja"):
+            print("  Avbrutt.")
+            return
+
+        committed = []
+        failed = set()
+        for item in needs_commit:
+            add = run(["git", "add", "-A"], cwd=item["dir"])
+            if add.returncode != 0:
+                print(f"  ❌ {item['name']} — git add feilet: {add.stderr.strip()}")
+                failed.add(item["name"])
+                continue
+            commit = run(["git", "commit", "-m", commit_msg], cwd=item["dir"])
+            if commit.returncode != 0:
+                print(f"  ❌ {item['name']} — commit feilet: {commit.stderr.strip()}")
+                failed.add(item["name"])
+                continue
+            item["committed"] = True
+            committed.append(item)
+            print(f"  {GREEN}✓{RESET} {item['name']} — committet")
+
+        selected = [item for item in selected if item["name"] not in failed]
+        if not selected:
+            print("Ingen repos gjensto etter commit-steget.")
+            return
+        print()
 
     # Finn repos som trenger push
     needs_push = []
     for item in selected:
+        if item.get("committed"):
+            needs_push.append(item)
+            continue
         if item["existing_pr"]:
             continue
         remote_check = run(["git", "ls-remote", "--heads", "origin", item["branch"]], cwd=item["dir"])
         if not remote_check.stdout.strip():
             needs_push.append(item)
 
-    if needs_push:
+    if needs_push and not needs_commit:
         print(f"\n  Disse branches er ikke pushet ennå:")
         for item in needs_push:
             print(f"    {item['name']}  ({item['branch']})")
@@ -305,16 +388,16 @@ def main():
             return
 
     for item in selected:
-        if item["existing_pr"]:
-            print(f"  {CYAN}→{RESET} {item['name']} — PR finnes allerede: {item['existing_pr']}")
-            continue
-
         if item in needs_push:
             push = run(["git", "push", "-u", "origin", item["branch"]], cwd=item["dir"])
             if push.returncode != 0:
                 print(f"  ❌ {item['name']} — push feilet: {push.stderr.strip()}")
                 continue
             print(f"  ⏫ {item['name']} — pushet")
+
+        if item["existing_pr"]:
+            print(f"  {CYAN}→{RESET} {item['name']} — PR oppdatert: {item['existing_pr']}")
+            continue
 
         r = run(
             ["gh", "pr", "create",

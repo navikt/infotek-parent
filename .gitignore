@@ -1,6 +1,7 @@
 # Klonede team-repos (forvaltes i sine egne repos)
 repos/
 eksempel-repos/
+tmp/
 
 # Lokal pnpm-cache
 .pnpm-store/
