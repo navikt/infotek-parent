@@ -31,7 +31,7 @@ repos:
     stack: []
     default_branch: main
     managed: true
-    environments: []
+    environments: [dev-gcp]
 
   # ── Namespace: infotrygd ───────────────────────────────────────────────────
   - name: infotrygd-brukeroppslag
@@ -83,7 +83,7 @@ repos:
     stack: []
     default_branch: main
     managed: false
-    environments: [dev-gcp]
+    environments: []
     playwright: true
 
   - name: historisk-gravferdkalkulator
@@ -93,7 +93,7 @@ repos:
     stack: []
     default_branch: main
     managed: false
-    environments: [dev-gcp]
+    environments: []
     playwright: true
 
   - name: historisk-exodus
@@ -141,7 +141,7 @@ repos:
     stack: []
     default_branch: main
     managed: false
-    environments: [dev-gcp]
+    environments: []
     playwright: true
 
   - name: historisk-valutakalkulator
@@ -151,7 +151,7 @@ repos:
     stack: []
     default_branch: main
     managed: false
-    environments: [dev-gcp]
+    environments: []
     playwright: true
 
   - name: historisk-avgiftssystem
@@ -169,4 +169,4 @@ repos:
     stack: []
     default_branch: main
     managed: false
-    environments: [dev-gcp, prod-gcp]
+    environments: []
