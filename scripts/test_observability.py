@@ -296,6 +296,73 @@ class ObservabilityTest(unittest.TestCase):
 
             self.assertEqual(result.warnings, [])
 
+    def test_workflow_token_check_reports_missing_token_for_composite_action(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            action = repo_dir / ".github" / "actions" / "setup"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            action.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (action / "action.yml").write_text(
+                "runs:\n"
+                "  using: composite\n"
+                "  steps:\n"
+                "    - run: pnpm install --frozen-lockfile\n"
+                "      shell: bash\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - uses: ./.github/actions/setup\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_accepts_token_for_composite_action(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            action = repo_dir / ".github" / "actions" / "setup"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            action.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (action / "action.yml").write_text(
+                "runs:\n"
+                "  using: composite\n"
+                "  steps:\n"
+                "    - run: pnpm install --frozen-lockfile\n"
+                "      shell: bash\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - uses: ./.github/actions/setup\n"
+                "        with:\n"
+                "          node-auth-token: ${{ secrets.READER_TOKEN }}\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(result.warnings, [])
+
     def test_workflow_token_check_reports_missing_token_without_value(self):
         with tempfile.TemporaryDirectory() as directory:
             repo_dir = Path(directory)

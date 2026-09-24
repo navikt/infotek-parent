@@ -221,6 +221,9 @@ NODE_AUTH_TOKEN_SECRET_PATTERN = re.compile(
 COMPOSITE_ACTION_TOKEN_INPUT_PATTERN = re.compile(
     r"(?m)^\s*node-auth-token:\s*\$\{\{\s*secrets\.[A-Z0-9_]+\s*\}\}\s*(?:#.*)?$"
 )
+LOCAL_COMPOSITE_ACTION_PATTERN = re.compile(
+    r"^(?P<indent>\s*)-\s+uses:\s*(?P<path>\./[^\s#]+)\s*(?:#.*)?$"
+)
 
 
 def ensure_npmrc(frontend_dir: Path, apply: bool, result: Result) -> bool:
@@ -300,6 +303,29 @@ def job_runs_node_package_manager(content: str) -> bool:
     return False
 
 
+def local_composite_action_runs_node_package_manager(repo_dir: Path, action_path: str) -> bool:
+    action_dir = (repo_dir / action_path).resolve()
+    try:
+        action_dir.relative_to(repo_dir.resolve())
+    except ValueError:
+        return False
+    for filename in ("action.yml", "action.yaml"):
+        manifest = action_dir / filename
+        if manifest.is_file() and job_runs_node_package_manager(manifest.read_text(errors="ignore")):
+            return True
+    return False
+
+
+def job_uses_node_composite_action(repo_dir: Path, content: str) -> bool:
+    for line in content.splitlines():
+        match = LOCAL_COMPOSITE_ACTION_PATTERN.match(line)
+        if match and local_composite_action_runs_node_package_manager(
+            repo_dir, match.group("path")
+        ):
+            return True
+    return False
+
+
 def ensure_workflow_node_auth_token(
     frontend_dir: Path,
     repo_dir: Path,
@@ -319,7 +345,9 @@ def ensure_workflow_node_auth_token(
         for workflow in workflows_dir.glob(pattern):
             content = workflow.read_text(errors="ignore")
             for job in job_blocks(content):
-                if not job_runs_node_package_manager(job):
+                runs_node_package_manager = job_runs_node_package_manager(job)
+                uses_node_composite_action = job_uses_node_composite_action(repo_dir, job)
+                if not runs_node_package_manager and not uses_node_composite_action:
                     continue
                 has_token = NODE_AUTH_TOKEN_SECRET_PATTERN.search(job)
                 has_composite_input = COMPOSITE_ACTION_TOKEN_INPUT_PATTERN.search(job)
