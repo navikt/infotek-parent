@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -541,7 +541,8 @@ endif
 	    echo -e "  ⚠️  Kloning feilet"; \
 	fi; \
 	echo; \
-	echo -e "$(GREEN)✅ $(BOLD)navikt/$(REPO) er klar!$(RESET)"
+	echo -e "$(GREEN)✅ $(BOLD)navikt/$(REPO) er registrert.$(RESET)"; \
+	echo -e "  Opprett en feature-branch i repoet og kjør: make observability-init REPO=$(REPO)"
 
 gh-detach-repo: ## Løsriv eit repo frå infotek — bruk: make gh-detach-repo REPO=<namn> [DRY_RUN=1]
 ifndef REPO
@@ -608,6 +609,24 @@ pr-rerun: ## Rerun feilede CI-sjekker på åpne PRer — bruk: make pr-rerun [DR
 
 logging-agent: ## Kjør logging-agent kontrollert på managed-repoer — bruk: make logging-agent [REPO=navn] [APPLY=1] [CREATE_PR=1]
 	@python3 scripts/logging_agent.py $(if $(REPO),--repo $(REPO),) $(if $(APPLY),--apply,) $(if $(CREATE_PR),--create-pr,)
+
+observability-check: ## Sjekk Nais APM, auto-instrumentering og logging i alle managed-repoer
+	@python3 scripts/observability.py
+
+observability-status: ## Skriv maskinlesbar observability-status som JSON lines
+	@python3 scripts/observability.py --json
+
+observability-apply: ## Oppdater ett managed-repo — bruk: make observability-apply REPO=navn
+ifndef REPO
+	$(error REPO mangler. Bruk: make observability-apply REPO=navn)
+endif
+	@python3 scripts/observability.py --apply --update-lockfiles --repo $(REPO)
+
+observability-init: ## Klargjør observability i et nytt managed-repo — bruk: make observability-init REPO=navn
+ifndef REPO
+	$(error REPO mangler. Bruk: make observability-init REPO=navn)
+endif
+	@python3 scripts/observability.py --apply --update-lockfiles --repo $(REPO)
 
 ##@ git — Masseoperasjoner
 

@@ -28,6 +28,34 @@ personopplysninger, tokens, eksterne respons-bodyer eller unødvendig støy.
 5. Ikke endre API-fallback eller feilkoder som del av en loggrydding. Avklar
    konsumentkontrakt først, særlig der en `catch` i dag gir degradert svar.
 
+## Kjente støykilder
+
+Enkelte "uventede" exceptions er faktisk forventet støy og skal ikke fikses
+som en reell feil.
+
+**`NoResourceFoundException` fra et fjernet frontend-logger-endepunkt.** Når
+et eget frontend-logger-endepunkt (f.eks. `POST /api/frontendLogger`) fjernes
+til fordel for en plattform-løsning som `@nais/apm`, fortsetter utdaterte
+nettleser-bundles hos brukere å kalle det gamle endepunktet en periode etter
+deploy. Spring svarer da med `NoResourceFoundException`, som uten en
+spesifikk `@ExceptionHandler` fanges av den generiske
+`@ExceptionHandler(Exception::class)` og logges som `WARN "Uhåndtert
+exception"` med 500-status — selv om riktig svar til klienten er en vanlig
+404.
+
+Sjekk om mønsteret er relevant for et repo med:
+
+```
+git log --all -S"FrontendLoggerController" -- .
+```
+
+eller søk etter navnet på det aktuelle, fjernede endepunktet. Er det
+relevant, la enten Spring returnere sin vanlige 404 for
+`NoResourceFoundException`, eller legg til en egen
+`@ExceptionHandler(NoResourceFoundException::class)` som returnerer 404 uten
+stack trace-logging. Ikke anta at mønsteret gjelder alle repoer med en
+`frontend/`-mappe — bekreft historikken først.
+
 ## Nais-observability
 
 Foretrekk Nais OpenTelemetry auto-instrumentering for HTTP-server/-klient, database,
@@ -95,5 +123,7 @@ formatfeil og unødvendig konstruksjon når nivået er deaktivert.
 - [ ] Håndterte 5xx-feil logger kun sikker kontekst uten stack trace.
 - [ ] Uventede feil logges én gang sentralt med stack trace.
 - [ ] Auditlogg er urørt og separat fra ordinær applikasjonslogging.
+- [ ] `NoResourceFoundException` for et fjernet frontend-logger-endepunkt
+      logges ikke som uventet feil (se «Kjente støykilder»).
 - [ ] Nais OpenTelemetry erstatter redundante HTTP-logger/metrikker.
 - [ ] API-atferd, statuskoder og etablerte fallbacks er uendret.

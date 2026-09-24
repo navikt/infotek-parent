@@ -3,6 +3,9 @@ repos/
 eksempel-repos/
 tmp/
 
+# Lokal pnpm-cache
+.pnpm-store/
+
 # Agent session-state (midlertidige artefakter fra Copilot/nav-pilot-økter)
 .copilot/session-state/
 

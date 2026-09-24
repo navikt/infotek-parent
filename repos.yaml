@@ -79,6 +79,7 @@ repos:
   - name: historisk-avstandskalkulator
     org: navikt
     namespace: historisk
+    nais_app: avstandskalkulator
     description: ""
     stack: []
     default_branch: main
@@ -89,6 +90,7 @@ repos:
   - name: historisk-gravferdkalkulator
     org: navikt
     namespace: historisk
+    nais_app: gravferdkalkulator
     description: ""
     stack: []
     default_branch: main
@@ -137,6 +139,7 @@ repos:
   - name: historisk-riddler
     org: navikt
     namespace: historisk
+    nais_app: riddler
     description: ""
     stack: []
     default_branch: main
@@ -147,6 +150,7 @@ repos:
   - name: historisk-valutakalkulator
     org: navikt
     namespace: historisk
+    nais_app: valutakalkulator
     description: ""
     stack: []
     default_branch: main
