@@ -271,15 +271,50 @@ class ObservabilityTest(unittest.TestCase):
 
             self.assertEqual(result.warnings, [])
 
+    def test_npmrc_github_packages_check_ignores_comments_and_other_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            (frontend / ".npmrc").write_text(
+                "# https://npm.pkg.github.com is documented here\n"
+                "registry=https://registry.npmjs.org/?mirror=npm.pkg.github.com\n"
+            )
+
+            self.assertFalse(observability.npmrc_uses_github_packages(frontend))
+
+    def test_npmrc_github_packages_check_accepts_registry_and_auth_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            npmrc = frontend / ".npmrc"
+            npmrc.write_text("@navikt:registry=https://npm.pkg.github.com/\n")
+
+            self.assertTrue(observability.npmrc_uses_github_packages(frontend))
+
+            npmrc.write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+
+            self.assertTrue(observability.npmrc_uses_github_packages(frontend))
+
     def test_workflow_token_check_accepts_composite_action_input(self):
         with tempfile.TemporaryDirectory() as directory:
             repo_dir = Path(directory)
             frontend = repo_dir / "frontend"
             workflows = repo_dir / ".github" / "workflows"
+            action = repo_dir / ".github" / "actions" / "setup"
             frontend.mkdir()
             workflows.mkdir(parents=True)
+            action.mkdir(parents=True)
             (frontend / ".npmrc").write_text(
                 "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (action / "action.yml").write_text(
+                "runs:\n"
+                "  using: composite\n"
+                "  steps:\n"
+                "    - run: pnpm install --frozen-lockfile\n"
+                "      shell: bash\n"
+                "      env:\n"
+                "        NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}\n"
             )
             (workflows / "test.yml").write_text(
                 "jobs:\n"
@@ -288,7 +323,6 @@ class ObservabilityTest(unittest.TestCase):
                 "      - uses: ./.github/actions/setup\n"
                 "        with:\n"
                 "          node-auth-token: ${{ secrets.READER_TOKEN }}\n"
-                "      - run: pnpm install --frozen-lockfile\n"
             )
             result = observability.Result("example")
 
@@ -314,6 +348,8 @@ class ObservabilityTest(unittest.TestCase):
                 "  steps:\n"
                 "    - run: pnpm install --frozen-lockfile\n"
                 "      shell: bash\n"
+                "      env:\n"
+                "        NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}\n"
             )
             (workflows / "test.yml").write_text(
                 "jobs:\n"
@@ -348,6 +384,8 @@ class ObservabilityTest(unittest.TestCase):
                 "  steps:\n"
                 "    - run: pnpm install --frozen-lockfile\n"
                 "      shell: bash\n"
+                "      env:\n"
+                "        NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}\n"
             )
             (workflows / "test.yml").write_text(
                 "jobs:\n"
@@ -362,6 +400,160 @@ class ObservabilityTest(unittest.TestCase):
             observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
 
             self.assertEqual(result.warnings, [])
+
+    def test_workflow_token_check_rejects_token_mapping_in_unrelated_composite_step(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            action = repo_dir / ".github" / "actions" / "setup"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            action.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (action / "action.yml").write_text(
+                "runs:\n"
+                "  using: composite\n"
+                "  steps:\n"
+                "    - run: pnpm install --frozen-lockfile\n"
+                "      shell: bash\n"
+                "    - run: echo ready\n"
+                "      shell: bash\n"
+                "      env:\n"
+                "        NODE_AUTH_TOKEN: ${{ inputs.node-auth-token }}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - uses: ./.github/actions/setup\n"
+                "        with:\n"
+                "          node-auth-token: ${{ secrets.READER_TOKEN }}\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_rejects_token_for_external_action(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - uses: attacker/action@v1\n"
+                "        with:\n"
+                "          node-auth-token: ${{ secrets.READER_TOKEN }}\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_rejects_token_for_unrelated_step(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - run: echo ready\n"
+                "        env:\n"
+                "          NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_rejects_token_for_later_named_step(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - name: Installer avhengigheter\n"
+                "        run: pnpm install --frozen-lockfile\n"
+                "      - name: Urelatert steg\n"
+                "        run: echo ready\n"
+                "        env:\n"
+                "          NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_rejects_job_level_token(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    env:\n"
+                "      NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}\n"
+                "    steps:\n"
+                "      - uses: attacker/action@v1\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
 
     def test_workflow_token_check_reports_missing_token_without_value(self):
         with tempfile.TemporaryDirectory() as directory:

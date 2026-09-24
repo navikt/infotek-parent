@@ -210,6 +210,10 @@ def ensure_apm_dependency(package_path: Path, apply: bool, result: Result) -> bo
 REGISTRY_LINE = "@nais:registry=https://npm.pkg.github.com/"
 AUTH_TOKEN_LINE = "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}"
 REGISTRY_PATTERN = re.compile(r"^@nais:registry=https://npm\.pkg\.github\.com/?\s*$")
+GITHUB_PACKAGES_NPMRC_PATTERN = re.compile(
+    r"^(?:@(?:nais|navikt):registry=https://npm\.pkg\.github\.com/?|"
+    r"//npm\.pkg\.github\.com/:_authToken=\$\{[A-Z_]+\})\s*(?:#.*)?$"
+)
 AUTH_TOKEN_PATTERN = re.compile(
     r"^//npm\.pkg\.github\.com/:_authToken=\$\{(?P<var>[A-Z_]+)\}\s*$"
 )
@@ -270,7 +274,10 @@ def npmrc_uses_github_packages(frontend_dir: Path) -> bool:
     path = frontend_dir / ".npmrc"
     if not path.is_file():
         return False
-    return "npm.pkg.github.com" in path.read_text()
+    return any(
+        GITHUB_PACKAGES_NPMRC_PATTERN.match(line.strip())
+        for line in path.read_text().splitlines()
+    )
 
 
 def job_blocks(content: str) -> list[str]:
@@ -303,6 +310,19 @@ def job_runs_node_package_manager(content: str) -> bool:
     return False
 
 
+def step_blocks(content: str) -> list[str]:
+    lines = content.splitlines(keepends=True)
+    starts = [
+        index
+        for index, line in enumerate(lines)
+        if re.match(r"^\s*-\s+(?:name|run|uses):", line)
+    ]
+    return [
+        "".join(lines[start: starts[index + 1] if index + 1 < len(starts) else None])
+        for index, start in enumerate(starts)
+    ]
+
+
 def local_composite_action_runs_node_package_manager(repo_dir: Path, action_path: str) -> bool:
     action_dir = (repo_dir / action_path).resolve()
     try:
@@ -311,19 +331,46 @@ def local_composite_action_runs_node_package_manager(repo_dir: Path, action_path
         return False
     for filename in ("action.yml", "action.yaml"):
         manifest = action_dir / filename
-        if manifest.is_file() and job_runs_node_package_manager(manifest.read_text(errors="ignore")):
+        if not manifest.is_file():
+            continue
+        content = manifest.read_text(errors="ignore")
+        if job_runs_node_package_manager(content):
             return True
     return False
 
 
-def job_uses_node_composite_action(repo_dir: Path, content: str) -> bool:
-    for line in content.splitlines():
-        match = LOCAL_COMPOSITE_ACTION_PATTERN.match(line)
-        if match and local_composite_action_runs_node_package_manager(
-            repo_dir, match.group("path")
-        ):
-            return True
+def local_composite_action_uses_node_auth_token(repo_dir: Path, action_path: str) -> bool:
+    action_dir = (repo_dir / action_path).resolve()
+    try:
+        action_dir.relative_to(repo_dir.resolve())
+    except ValueError:
+        return False
+    for filename in ("action.yml", "action.yaml"):
+        manifest = action_dir / filename
+        if not manifest.is_file():
+            continue
+        for step in step_blocks(manifest.read_text(errors="ignore")):
+            if not job_runs_node_package_manager(step):
+                continue
+            if re.search(
+                r"(?m)^\s*NODE_AUTH_TOKEN:\s*\$\{\{\s*inputs\.node-auth-token\s*\}\}\s*(?:#.*)?$",
+                step,
+            ):
+                return True
     return False
+
+
+def step_runs_node_package_manager(content: str) -> bool:
+    return job_runs_node_package_manager(content)
+
+
+def step_uses_node_composite_action(repo_dir: Path, content: str) -> bool:
+    first_line = content.splitlines()[0]
+    match = LOCAL_COMPOSITE_ACTION_PATTERN.match(first_line)
+    return bool(
+        match
+        and local_composite_action_runs_node_package_manager(repo_dir, match.group("path"))
+    )
 
 
 def ensure_workflow_node_auth_token(
@@ -345,17 +392,27 @@ def ensure_workflow_node_auth_token(
         for workflow in workflows_dir.glob(pattern):
             content = workflow.read_text(errors="ignore")
             for job in job_blocks(content):
-                runs_node_package_manager = job_runs_node_package_manager(job)
-                uses_node_composite_action = job_uses_node_composite_action(repo_dir, job)
-                if not runs_node_package_manager and not uses_node_composite_action:
-                    continue
-                has_token = NODE_AUTH_TOKEN_SECRET_PATTERN.search(job)
-                has_composite_input = COMPOSITE_ACTION_TOKEN_INPUT_PATTERN.search(job)
-                if has_token or has_composite_input:
-                    continue
-                result.manual_review(
-                    f"{workflow.relative_to(repo_dir)}: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"
-                )
+                for step in step_blocks(job):
+                    direct_package_manager = step_runs_node_package_manager(step)
+                    local_composite_action = step_uses_node_composite_action(repo_dir, step)
+                    if not direct_package_manager and not local_composite_action:
+                        continue
+                    step_token = NODE_AUTH_TOKEN_SECRET_PATTERN.search(step)
+                    composite_input = COMPOSITE_ACTION_TOKEN_INPUT_PATTERN.search(step)
+                    if step_token or (
+                        local_composite_action
+                        and composite_input
+                        and local_composite_action_uses_node_auth_token(
+                            repo_dir,
+                            LOCAL_COMPOSITE_ACTION_PATTERN.match(
+                                step.splitlines()[0]
+                            ).group("path"),
+                        )
+                    ):
+                        continue
+                    result.manual_review(
+                        f"{workflow.relative_to(repo_dir)}: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"
+                    )
 
 
 def find_entrypoint(frontend_dir: Path) -> Path | None:
