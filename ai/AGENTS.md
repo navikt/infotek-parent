@@ -72,22 +72,23 @@ Rydd opp egne artefakter når økten er ferdig hvis de ikke lenger trengs.
 
 | Repo | Org | Namespace | Miljøer | Forvaltet |
 |------|-----|-----------|---------|-----------|
-| [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
+| [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | `navikt` | `infotrygd` | prod-fss, prod-gcp | ✅ |
 | [infotek-statistikk](https://github.com/navikt/infotek-statistikk) | `navikt` | `infotek` | dev-gcp | ✅ |
+| [infotrygd-the-final-countdown](https://github.com/navikt/infotrygd-the-final-countdown) | `navikt` | `infotek` | dev-gcp | ✅ |
 | [infotrygd-brukeroppslag](https://github.com/navikt/infotrygd-brukeroppslag) | `navikt` | `infotrygd` | dev-fss, prod-fss, dev-gcp, prod-gcp | ✅ |
 | [infotrygd-feed-proxy-v2](https://github.com/navikt/infotrygd-feed-proxy-v2) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
 | [infotrygd-hentsaksliste](https://github.com/navikt/infotrygd-hentsaksliste) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
 | [infotrygd-replikering](https://github.com/navikt/infotrygd-replikering) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
-| [infotrygd-facade](https://github.com/navikt/infotrygd-facade) | `navikt` | `infotrygd` | — | ❌ |
-| [historisk-avstandskalkulator](https://github.com/navikt/historisk-avstandskalkulator) | `navikt` | `historisk` | dev-gcp | ✅ |
-| [historisk-gravferdkalkulator](https://github.com/navikt/historisk-gravferdkalkulator) | `navikt` | `historisk` | dev-gcp | ✅ |
+| [infotrygd-facade](https://github.com/navikt/infotrygd-facade) | `navikt` | `infotrygd` | — | ✅ |
+| [historisk-avstandskalkulator](https://github.com/navikt/historisk-avstandskalkulator) | `navikt` | `historisk` | — | ❌ |
+| [historisk-gravferdkalkulator](https://github.com/navikt/historisk-gravferdkalkulator) | `navikt` | `historisk` | — | ❌ |
 | [historisk-exodus](https://github.com/navikt/historisk-exodus) | `navikt` | `historisk` | dev-fss, prod-fss | ✅ |
 | [historisk-pensjon](https://github.com/navikt/historisk-pensjon) | `navikt` | `historisk` | dev-gcp, prod-gcp | ✅ |
 | [historisk-regnskap](https://github.com/navikt/historisk-regnskap) | `navikt` | `historisk` | dev-gcp, prod-gcp | ✅ |
 | [historisk-tidsbegrenset-uforestonad](https://github.com/navikt/historisk-tidsbegrenset-uforestonad) | `navikt` | `historisk` | dev-gcp, prod-gcp | ✅ |
-| [historisk-riddler](https://github.com/navikt/historisk-riddler) | `navikt` | `historisk` | dev-gcp | ✅ |
-| [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | `navikt` | `historisk` | dev-gcp | ✅ |
+| [historisk-riddler](https://github.com/navikt/historisk-riddler) | `navikt` | `historisk` | — | ❌ |
+| [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | `navikt` | `historisk` | — | ❌ |
 | [historisk-avgiftssystem](https://github.com/navikt/historisk-avgiftssystem) | `navikt` | `historisk` | dev-gcp, prod-gcp | ❌ |
-| [infotek-personkort](https://github.com/navikt/infotek-personkort) | `navikt` | `infotek` | dev-gcp, prod-gcp | ✅ |
+| [infotek-personkort](https://github.com/navikt/infotek-personkort) | `navikt` | `infotek` | — | ❌ |
 
 <!-- AUTO-GENERATED:REPOS END -->
