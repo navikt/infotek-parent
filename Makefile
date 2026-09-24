@@ -583,8 +583,8 @@ pr-lag: ## Lag PRer interaktivt — velg repos (feature-branch ELLER lokale endr
 pr-rerun: ## Rerun feilede CI-sjekker på åpne PRer — bruk: make pr-rerun [DRY_RUN=1]
 	@python3 scripts/dependabot-rerun-failed.py $(if $(DRY_RUN),--dry-run,)
 
-logging-agent: ## Kjør logging-agent kontrollert på managed-repoer — bruk: make logging-agent [REPO=navn] [APPLY=1] [CREATE_PR=1]
-	@python3 scripts/logging_agent.py $(if $(REPO),--repo $(REPO),) $(if $(APPLY),--apply,) $(if $(CREATE_PR),--create-pr,)
+logging-agent: ## Kjør logging-agent kontrollert — bruk: make logging-agent REPO=navn [APPLY=1] [CREATE_PR=1] eller ALL=1
+	@python3 scripts/logging_agent.py $(if $(REPO),--repo $(REPO),) $(if $(ALL),--all,) $(if $(DRY_RUN),--dry-run,) $(if $(APPLY),--apply,) $(if $(CREATE_PR),--create-pr,)
 
 observability-check: ## Sjekk Nais APM, auto-instrumentering og logging i alle managed-repoer
 	@python3 scripts/observability.py

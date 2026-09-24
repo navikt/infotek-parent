@@ -102,13 +102,18 @@ def prompt(label, default=None, required=False):
 def main():
     branch_filter = None
     msg_arg = None
+    repo_filter = None
     for arg in sys.argv[1:]:
         if arg.startswith("BRANCH="):
             branch_filter = arg.split("=", 1)[1]
         elif arg.startswith("MSG="):
             msg_arg = arg.split("=", 1)[1]
+        elif arg.startswith("REPOS="):
+            repo_filter = {name for name in arg.split("=", 1)[1].split(",") if name}
 
     repos = parse_repos()
+    if repo_filter is not None:
+        repos = [repo for repo in repos if repo["name"] in repo_filter]
 
     # Kandidater: allerede på feature-branch (klare for push+PR)
     branch_candidates = []

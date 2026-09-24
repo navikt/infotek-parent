@@ -59,7 +59,7 @@ Rydd opp egne artefakter når økten er ferdig hvis de ikke lenger trengs.
 
 | Repo | Org | Namespace | Miljøer | Forvaltet |
 |------|-----|-----------|---------|-----------|
-| [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | `navikt` | `infotek` | dev-gcp | ✅ |
+| [infotek-databaseuttrekk](https://github.com/navikt/infotek-databaseuttrekk) | `navikt` | `infotrygd` | dev-gcp | ✅ |
 | [infotek-statistikk](https://github.com/navikt/infotek-statistikk) | `navikt` | `infotek` | dev-gcp | ✅ |
 | [infotrygd-brukeroppslag](https://github.com/navikt/infotrygd-brukeroppslag) | `navikt` | `infotrygd` | dev-fss, prod-fss, dev-gcp, prod-gcp | ✅ |
 | [infotrygd-feed-proxy-v2](https://github.com/navikt/infotrygd-feed-proxy-v2) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
