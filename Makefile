@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
 
 ##@ Hjelp
 
@@ -255,7 +255,7 @@ git-prune-merged: _require-yq ## Switch til default branch og slett merged branc
 	  count=$$(wc -l < $$tmpfile | tr -d ' '); \
 	  echo -n "  Bytt til default branch og slett $$count branch(es)? [j/N] " && read ans && case "$$ans" in \
 	    [jJ]*) \
-	      while read name branch b delete_mode; do \
+	      while read -r name branch b delete_mode <&3; do \
 	        dir=$(PARENT_DIR)/$$name; \
 	        worktree_path=$$(git -C $$dir worktree list --porcelain | awk -v ref="refs/heads/$$b" 'BEGIN{p=""} /^worktree /{p=substr($$0,10)} /^branch /{if ($$2==ref){print p; exit}}'); \
 	        if [ -n "$$worktree_path" ] && [ "$$worktree_path" != "$$dir" ]; then \
@@ -275,7 +275,7 @@ git-prune-merged: _require-yq ## Switch til default branch og slett merged branc
 	        git -C $$dir branch $$delete_mode "$$b" --quiet && \
 	          echo -e "  $(GREEN)-$(RESET) $$name  $$b" || \
 	          echo -e "  ❌ $$name  $$b feilet"; \
-	      done < $$tmpfile;; \
+	      done 3< $$tmpfile;; \
 	    *) echo -e "  Avbrutt.";; \
 	  esac; \
 	  rm -f $$tmpfile; \
@@ -574,6 +574,30 @@ endif
 
 ##@ pr — Pull requests
 
+sheriff: ## Prioritert behandling av bot-PRer — bruk: make sheriff [DRY_RUN=1] [REPORT=fil] [STATUS=1] [WATCH=1]
+	@python3 scripts/sheriff-interactive.py $(if $(DRY_RUN),--dry-run,) $(if $(REPORT),--report $(REPORT),) $(if $(STATUS),--status,) $(if $(WATCH),--watch,)
+
+sheriff-status: ## Vis lagret sheriff-status uten GitHub-kall
+	@python3 scripts/sheriff-interactive.py --status
+
+sheriff-report: ## Generer sheriff-rapport til tmp/sheriff-report.json
+	@python3 scripts/nais-vulnerability-report.py --output tmp/sheriff-report.json
+
+sheriff-report-view: ## Vis lagret sheriff-rapport uten nye API-kall
+	@python3 scripts/nais-vulnerability-report.py --show --output tmp/sheriff-report.json
+
+merge-approved-bot-prs: ## Vis/merge godkjente bot-PR-er (sett MERGE=1 for faktisk merge)
+	@python3 scripts/merge-approved-bot-prs.py $(if $(MERGE),--merge,)
+
+merge-approved-bot-prs-from-report: ## Lokal dry-run fra lagret rapport (bruk: make merge-approved-bot-prs-from-report REPORT=tmp/sheriff-report.json)
+ifndef REPORT
+	$(error REPORT mangler. Bruk: make merge-approved-bot-prs-from-report REPORT=tmp/sheriff-report.json)
+endif
+	@python3 scripts/merge-approved-bot-prs.py --report $(REPORT)
+
+review: ## Ny interaktiv PR-behandler med filtre og manuelle valg — bruk: make review [DRY_RUN=1]
+	@python3 scripts/pr-behandle.py --review $(if $(DRY_RUN),--dry-run,)
+
 pr: ## Behandle PRer interaktivt — velg modus ved oppstart — bruk: make pr [DRY_RUN=1]
 	@python3 scripts/pr-behandle.py $(if $(DRY_RUN),--dry-run,)
 
@@ -857,16 +881,20 @@ endif
 
 ##@ pnpm — Frontend
 
-pnpm-migrate-frontend-config: ## Engangs-migrasjon: legg til infotek-frontend-config i alle repos — bruk: make pnpm-migrate-frontend-config [DRY_RUN=1]
-	@echo -e "$(BOLD)Migrerer alle repos til @navikt/infotek-frontend-config$(RESET)"
+pnpm-migrate-frontend-config: ## Skriv eksplisitt frontend-konfig i ett managed repo — bruk: make pnpm-migrate-frontend-config REPO=navn [DRY_RUN=1]
+	@echo -e "$(BOLD)Migrerer til eksplisitt lokal TypeScript- og Biome-konfig$(RESET)"
+	@if [ -z "$(REPO)" ]; then \
+	  echo -e "  $(RED)REPO mangler.$(RESET) Bruk: make pnpm-migrate-frontend-config REPO=<repo-navn> [DRY_RUN=1]"; \
+	  exit 1; \
+	fi
 	@if [ -n "$(DRY_RUN)" ]; then \
-	  python3 scripts/migrate-frontend-config.py --dry-run; \
+	  python3 scripts/migrate-frontend-config.py --dry-run --repo "$(REPO)"; \
 	else \
 	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
-	  python3 scripts/migrate-frontend-config.py --dry-run; \
+	  python3 scripts/migrate-frontend-config.py --dry-run --repo "$(REPO)"; \
 	  echo ""; \
-	  echo -n "  Kjør migrering nå? [j/N] " && read ans && case "$$ans" in \
-	    [jJ]*) python3 scripts/migrate-frontend-config.py;; \
+	  echo -n "  Skriv lokale endringer nå? [j/N] " && read ans && case "$$ans" in \
+	    [jJ]*) python3 scripts/migrate-frontend-config.py --repo "$(REPO)";; \
 	    *) echo -e "  Avbrutt.";; \
 	  esac; \
 	fi
