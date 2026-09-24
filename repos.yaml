@@ -24,6 +24,15 @@ repos:
     environments: [dev-gcp]
     playwright: true
 
+  - name: infotrygd-the-final-countdown
+    org: navikt
+    namespace: infotek
+    description: ""
+    stack: []
+    default_branch: main
+    managed: true
+    environments: []
+
   # ── Namespace: infotrygd ───────────────────────────────────────────────────
   - name: infotrygd-brukeroppslag
     org: navikt
@@ -64,7 +73,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: false
+    managed: true
     environments: []
   # ── Namespace: historisk — aktivt forvaltet ────────────────────────────────
   - name: historisk-avstandskalkulator
@@ -73,7 +82,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
+    managed: false
     environments: [dev-gcp]
     playwright: true
 
@@ -83,7 +92,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
+    managed: false
     environments: [dev-gcp]
     playwright: true
 
@@ -131,7 +140,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
+    managed: false
     environments: [dev-gcp]
     playwright: true
 
@@ -141,7 +150,7 @@ repos:
     description: ""
     stack: []
     default_branch: main
-    managed: true
+    managed: false
     environments: [dev-gcp]
     playwright: true
 
@@ -159,5 +168,5 @@ repos:
     description: Oppslagsløsning for IP_90 personkort
     stack: []
     default_branch: main
-    managed: true
+    managed: false
     environments: [dev-gcp, prod-gcp]
