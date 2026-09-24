@@ -151,11 +151,103 @@ class ObservabilityTest(unittest.TestCase):
                 observability.APM_VERSION,
             )
             self.assertIn(
-                "init();",
+                'init({ namespace: "team", tracing: true });',
                 (source / "observability.ts").read_text(),
             )
 
-    def test_process_repository_ignores_disabled_frontend(self):
+    def test_frontend_initialization_generates_namespace_from_repository(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            entrypoint = source / "main.tsx"
+            package_path = frontend / "package.json"
+            package_path.write_text(json.dumps({}) + "\n")
+            entrypoint.write_text(
+                'import { createRoot } from "react-dom/client";\n\n'
+                'createRoot(document.getElementById("root")!).render(null);\n'
+            )
+            repository = observability.Repository(
+                "example",
+                "infotrygd",
+                "main",
+                ("dev-gcp",),
+            )
+            result = observability.Result(repository.name)
+
+            observability.ensure_frontend_initialization(
+                package_path, repository, True, result
+            )
+
+            module_content = (source / "observability.ts").read_text()
+            test_content = (source / "observability.test.ts").read_text()
+            self.assertIn(
+                'init({ namespace: "infotrygd", tracing: true });', module_content
+            )
+            self.assertIn(
+                'toHaveBeenCalledWith({ namespace: "infotrygd", tracing: true });',
+                test_content,
+            )
+
+    def test_frontend_initialization_flags_missing_namespace_for_review(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            entrypoint = source / "main.tsx"
+            package_path = frontend / "package.json"
+            package_path.write_text(json.dumps({}) + "\n")
+            entrypoint.write_text(
+                'import { createRoot } from "react-dom/client";\n\n'
+                'createRoot(document.getElementById("root")!).render(null);\n'
+            )
+            (source / "observability.ts").write_text(
+                'import { init } from "@nais/apm";\n\n'
+                "export function initializeObservability() {\n"
+                "    init();\n"
+                "}\n"
+            )
+            repository = observability.Repository(
+                "example",
+                "infotrygd",
+                "main",
+                ("dev-gcp",),
+            )
+            result = observability.Result(repository.name)
+
+            observability.ensure_frontend_initialization(
+                package_path, repository, True, result
+            )
+
+            self.assertTrue(
+                any("mangler namespace" in warning for warning in result.warnings)
+            )
+
+    def test_ensure_npmrc_normalizes_trailing_slash_and_old_token_var(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            npmrc = frontend / ".npmrc"
+            npmrc.write_text(
+                "@nais:registry=https://npm.pkg.github.com\n"
+                "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n"
+            )
+            result = observability.Result("example")
+
+            changed = observability.ensure_npmrc(frontend, True, result)
+
+            content = npmrc.read_text()
+            self.assertTrue(changed)
+            self.assertIn("@nais:registry=https://npm.pkg.github.com/\n", content)
+            self.assertIn(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n", content
+            )
+            self.assertNotIn("NPM_TOKEN}", content)
+
+            second_result = observability.Result("example")
+            unchanged = observability.ensure_npmrc(frontend, True, second_result)
+            self.assertFalse(unchanged)
+
+
         with tempfile.TemporaryDirectory() as directory:
             repos_dir = Path(directory)
             repo_dir = self.create_git_repository(repos_dir, "example")

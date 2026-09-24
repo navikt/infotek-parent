@@ -207,24 +207,52 @@ def ensure_apm_dependency(package_path: Path, apply: bool, result: Result) -> bo
     return True
 
 
+REGISTRY_LINE = "@nais:registry=https://npm.pkg.github.com/"
+AUTH_TOKEN_LINE = "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}"
+REGISTRY_PATTERN = re.compile(r"^@nais:registry=https://npm\.pkg\.github\.com/?\s*$")
+AUTH_TOKEN_PATTERN = re.compile(
+    r"^//npm\.pkg\.github\.com/:_authToken=\$\{(?P<var>[A-Z_]+)\}\s*$"
+)
+OUTDATED_TOKEN_VARS = {"NPM_TOKEN", "GITHUB_PACKAGES_TOKEN"}
+
+
 def ensure_npmrc(frontend_dir: Path, apply: bool, result: Result) -> bool:
     path = frontend_dir / ".npmrc"
     existing = path.read_text().splitlines() if path.is_file() else []
-    additions = [
-        line
-        for line in (
-            "@nais:registry=https://npm.pkg.github.com/",
-            "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}",
-        )
-        if line not in existing
-    ]
-    if not additions:
+    lines = list(existing)
+    changed = False
+
+    if not any(REGISTRY_PATTERN.match(line) for line in lines):
+        lines.append(REGISTRY_LINE)
+        changed = True
+    else:
+        lines = [
+            REGISTRY_LINE if REGISTRY_PATTERN.match(line) and line != REGISTRY_LINE else line
+            for line in lines
+        ]
+        if lines != existing:
+            changed = True
+
+    if not any(AUTH_TOKEN_PATTERN.match(line) for line in lines):
+        lines.append(AUTH_TOKEN_LINE)
+        changed = True
+    else:
+        normalized = []
+        for line in lines:
+            match = AUTH_TOKEN_PATTERN.match(line)
+            if match and match.group("var") in OUTDATED_TOKEN_VARS:
+                normalized.append(AUTH_TOKEN_LINE)
+            else:
+                normalized.append(line)
+        if normalized != lines:
+            changed = True
+        lines = normalized
+
+    if not changed:
         return False
-    result.needs_changes(f"{path}: legg til @nais-registry")
+    result.needs_changes(f"{path}: legg til/normaliser @nais-registry")
     if apply:
-        content = path.read_text() if path.is_file() else ""
-        separator = "" if not content or content.endswith("\n") else "\n"
-        path.write_text(content + separator + "\n".join(additions) + "\n")
+        path.write_text("\n".join(lines) + "\n")
     return True
 
 
@@ -236,16 +264,21 @@ def find_entrypoint(frontend_dir: Path) -> Path | None:
     return None
 
 
-def observability_module() -> str:
+def observability_module(namespace: str) -> str:
     return (
         'import { init } from "@nais/apm";\n\n'
         "export function initializeObservability() {\n"
-        "    init();\n"
+        "    // namespace kan ikke løses fra meta-tags eller build-time env her:\n"
+        "    // BFF-en server statisk index.html uten SSR-templating, og\n"
+        "    // nais.yaml har ikke spec.frontend.generatedConfig. Uten dette\n"
+        '    // faller init() tilbake til "unknown-team". namespace er stabil\n'
+        "    // på tvers av miljø, så den er trygg å hardkode.\n"
+        f'    init({{ namespace: "{namespace}", tracing: true }});\n'
         "}\n"
     )
 
 
-def observability_test() -> str:
+def observability_test(namespace: str) -> str:
     return (
         'import { beforeEach, expect, test, vi } from "vitest";\n\n'
         "const { init } = vi.hoisted(() => ({ init: vi.fn() }));\n\n"
@@ -257,6 +290,7 @@ def observability_test() -> str:
         'test("initialiserer Nais frontend-observability", () => {\n'
         "    initializeObservability();\n\n"
         "    expect(init).toHaveBeenCalledOnce();\n"
+        f'    expect(init).toHaveBeenCalledWith({{ namespace: "{namespace}", tracing: true }});\n'
         "});\n"
     )
 
@@ -278,7 +312,7 @@ def ensure_frontend_initialization(
     test_path = source_dir / "observability.test.ts"
     changed = False
 
-    expected_module = observability_module()
+    expected_module = observability_module(repository.namespace)
     if not module_path.is_file():
         result.needs_changes(f"{module_path}: opprett @nais/apm-initialisering")
         changed = True
@@ -294,12 +328,16 @@ def ensure_frontend_initialization(
                 f"{module_path}: eksisterende observability-modul må vurderes"
             )
             return changed
+        if "namespace:" not in module_content:
+            result.manual_review(
+                f"{module_path}: mangler namespace i init() — se manuell fiks i chore/observability"
+            )
 
     if not test_path.is_file():
         result.needs_changes(f"{test_path}: legg til initialiseringstest")
         changed = True
         if apply:
-            test_path.write_text(observability_test())
+            test_path.write_text(observability_test(repository.namespace))
 
     content = entrypoint.read_text()
     import_line = 'import { initializeObservability } from "./observability";'
