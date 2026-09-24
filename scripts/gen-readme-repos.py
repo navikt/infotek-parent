@@ -119,8 +119,6 @@ def nais_links(namespace: str, name: str, environments: list) -> str:
 def generate_section(repos: list[dict]) -> str:
     groups: dict[str, list] = defaultdict(list)
     for r in repos:
-        if not r.get("managed", True):
-            continue
         groups[r.get("namespace", "ukjent")].append(r)
 
     lines = [MARKER_START, "", "## Teamets repos", ""]
@@ -143,13 +141,15 @@ def generate_section(repos: list[dict]) -> str:
             repo_name = r["name"]
             org = r.get("org", "navikt")
             envs = r.get("environments", [])
+            managed = r.get("managed", True)
             gh_url = f"https://github.com/{org}/{repo_name}"
             print(f"  Henter beskrivelse: {org}/{repo_name} ...", file=sys.stderr)
             desc = fetch_github_description(org, repo_name)
             env_str = ", ".join(envs) if envs else "—"
             nais = nais_links(namespace, repo_name, envs)
+            managed_badge = "" if managed else " ⚠️"
 
-            lines.append(f"| [{repo_name}]({gh_url}) | {desc} | {env_str} | {nais} |")
+            lines.append(f"| [{repo_name}]({gh_url}){managed_badge} | {desc} | {env_str} | {nais} |")
 
         lines.append("")
 
