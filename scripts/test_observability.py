@@ -247,6 +247,185 @@ class ObservabilityTest(unittest.TestCase):
             unchanged = observability.ensure_npmrc(frontend, True, second_result)
             self.assertFalse(unchanged)
 
+    def test_workflow_token_check_accepts_node_auth_token(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+                "        env:\n"
+                "          NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(result.warnings, [])
+
+    def test_workflow_token_check_accepts_composite_action_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - uses: ./.github/actions/setup\n"
+                "        with:\n"
+                "          node-auth-token: ${{ secrets.READER_TOKEN }}\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(result.warnings, [])
+
+    def test_workflow_token_check_reports_missing_token_without_value(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_rejects_hardcoded_token(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+                "        env:\n"
+                "          NODE_AUTH_TOKEN: hardcoded-token\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_rejects_token_in_another_job(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  install:\n"
+                "    steps:\n"
+                "      - run: pnpm install --frozen-lockfile\n"
+                "  unrelated:\n"
+                "    env:\n"
+                "      NODE_AUTH_TOKEN: ${{ secrets.READER_TOKEN }}\n"
+                "    steps:\n"
+                "      - run: echo done\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_detects_multiline_node_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "test.yml").write_text(
+                "jobs:\n"
+                "  test:\n"
+                "    steps:\n"
+                "      - run: |\n"
+                "          pnpm install --frozen-lockfile\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(
+                result.warnings,
+                [".github/workflows/test.yml: npm/pnpm/yarn mangler NODE_AUTH_TOKEN"],
+            )
+
+    def test_workflow_token_check_ignores_workflow_without_node_package_manager(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            frontend = repo_dir / "frontend"
+            workflows = repo_dir / ".github" / "workflows"
+            frontend.mkdir()
+            workflows.mkdir(parents=True)
+            (frontend / ".npmrc").write_text(
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n"
+            )
+            (workflows / "deploy.yml").write_text(
+                "jobs:\n"
+                "  deploy:\n"
+                "    steps:\n"
+                "      - run: mvn verify\n"
+            )
+            result = observability.Result("example")
+
+            observability.ensure_workflow_node_auth_token(frontend, repo_dir, result)
+
+            self.assertEqual(result.warnings, [])
+
 
         with tempfile.TemporaryDirectory() as directory:
             repos_dir = Path(directory)

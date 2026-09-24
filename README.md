@@ -87,6 +87,8 @@ Migratoren legger til `@nais/apm` i GCP-frontender, aktiverer Nais
 auto-instrumentering for Java-workloads og fjerner Elastic som loggdestinasjon.
 Den rapporterer egen logging som må vurderes manuelt. Auditlogg,
 forretningsmetrikker, fallbacks og korrelasjonsheadere endres ikke automatisk.
+For frontender som bruker GitHub Packages, rapporterer den også npm/pnpm-workflows
+som mangler `NODE_AUTH_TOKEN`.
 
 `@nais/apm` ligger i GitHub Packages. Sett `NODE_AUTH_TOKEN` til et token
 med `read:packages` før migratoren oppdaterer lockfiler.
