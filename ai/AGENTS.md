@@ -79,7 +79,7 @@ Rydd opp egne artefakter når økten er ferdig hvis de ikke lenger trengs.
 | [infotrygd-feed-proxy-v2](https://github.com/navikt/infotrygd-feed-proxy-v2) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
 | [infotrygd-hentsaksliste](https://github.com/navikt/infotrygd-hentsaksliste) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
 | [infotrygd-replikering](https://github.com/navikt/infotrygd-replikering) | `navikt` | `infotrygd` | dev-fss, prod-fss | ✅ |
-| [infotrygd-facade](https://github.com/navikt/infotrygd-facade) | `navikt` | `infotrygd` | — | ✅ |
+| [infotrygd-facade](https://github.com/navikt/infotrygd-facade) | `navikt` | `infotrygd` | — | ❌ |
 | [historisk-avstandskalkulator](https://github.com/navikt/historisk-avstandskalkulator) | `navikt` | `historisk` | — | ❌ |
 | [historisk-gravferdkalkulator](https://github.com/navikt/historisk-gravferdkalkulator) | `navikt` | `historisk` | — | ❌ |
 | [historisk-exodus](https://github.com/navikt/historisk-exodus) | `navikt` | `historisk` | dev-fss, prod-fss | ✅ |
