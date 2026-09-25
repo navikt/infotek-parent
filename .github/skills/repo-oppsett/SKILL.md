@@ -91,6 +91,13 @@ For React/Vite med pnpm kontrollerer du:
   `typecheck`-scripts der repoet trenger dem.
 - `.npmrc` bruker npmjs for offentlige pakker og GitHub Packages for interne
   `@navikt`- og `@nais`-pakker når de faktisk kommer derfra.
+- Når `.npmrc` bruker GitHub Packages, skal
+  `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` brukes. Erstatt
+  `${NPM_TOKEN}` og `${GITHUB_PACKAGES_TOKEN}`.
+- Workflows som installerer eller bygger private npm/pnpm-pakker skal sette
+  `NODE_AUTH_TOKEN` fra en GitHub Secret i relevant jobb eller steg. Et
+  `node-auth-token`-input til en composite action er også gyldig når actionen
+  setter miljøvariabelen. Ikke skriv ut tokenverdier i rapporter eller logger.
 - `ignore-scripts=true` og `engine-strict=true` er med i teamstandarden.
 - `pnpm-workspace.yaml` har supply-chain-innstillinger fra teamstandarden.
 - Repo-spesifikke `overrides` beholdes til bruken er undersøkt. Fjern dem bare

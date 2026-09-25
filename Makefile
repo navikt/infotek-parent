@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup setup-node-package-token
 
 ##@ Hjelp
 
@@ -1032,6 +1032,7 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@brew upgrade yq git gh maven pnpm nais navikt/tap/cplt navikt/tap/nav-pilot 2>/dev/null || true
 	@brew upgrade --cask temurin copilot-cli 2>/dev/null || true
 	@command -v copilot >/dev/null || { echo "❌ GitHub Copilot CLI mangler — kjør 'brew install --cask copilot-cli'"; exit 1; }
+	@command -v pnpm >/dev/null || { echo "  ⚠️  pnpm mangler etter installasjon — prøver på nytt..."; brew install pnpm || { echo "❌ Klarte ikke installere pnpm — kjør 'brew install pnpm' manuelt"; exit 1; }; }
 	@echo -e "  $(GREEN)✓$(RESET) Verktøy installert"
 	@echo -e "  $(CYAN)→$(RESET) Git-identitet..."
 	@current_name=$$(git config --global user.name 2>/dev/null || true); \
@@ -1065,17 +1066,26 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	@echo -e "  (minimumReleaseAge=1440, ignore-scripts, engine-strict)"
 	@echo -n "  [j/N] " && read ans && case "$$ans" in \
 	  [jJ]*) \
-	    pnpm config set minimumReleaseAge 1440 --location=user 2>/dev/null && \
-	    pnpm config set ignore-scripts true --location=user 2>/dev/null && \
-	    pnpm config set engine-strict true --location=user 2>/dev/null && \
+	    pnpm config set minimumReleaseAge 1440 --location=global && \
+	    pnpm config set ignore-scripts true --location=global && \
+	    pnpm config set engine-strict true --location=global && \
 	    echo -e "  $(GREEN)✓$(RESET) pnpm brukerkonfig oppdatert" || \
-	    echo -e "  ⚠️  pnpm ikke funnet — installer med: brew install pnpm";; \
-	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: pnpm config set minimumReleaseAge 1440 --location=user";; \
+	    echo -e "  ⚠️  Klarte ikke sette pnpm-konfig — sjekk pnpm-installasjonen";; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: pnpm config set minimumReleaseAge 1440 --location=global";; \
 	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
+	@echo -e "  $(CYAN)→$(RESET) NODE_AUTH_TOKEN for npm/pnpm..."
+	@echo -e "  Vil du koble GitHub CLI-tokenet til ~/.zshrc og ~/.npmrc?"
+	@echo -n "  [j/N] " && read ans && case "$$ans" in \
+	  [jJ]*) python3 scripts/setup_node_package_token.py;; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: make setup-node-package-token";; \
+	esac
 	@echo -e ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
+
+setup-node-package-token: ## Sett opp NODE_AUTH_TOKEN for lokal npm/pnpm-bruk
+	@python3 scripts/setup_node_package_token.py
 
 ##@ Internalt
 
