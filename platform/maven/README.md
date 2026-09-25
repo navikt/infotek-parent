@@ -18,19 +18,49 @@ Parent POM publiseres til GitHub Packages og krever autentisering selv om repoet
 
 ### Lokal utvikling — `~/.m2/settings.xml`
 
+Sett `MAVEN_USERNAME` til ditt eget GitHub-brukernavn og velg én passordkilde:
+
+```bash
+export MAVEN_USERNAME=DITT_GITHUB_BRUKERNAVN
+
+# Manuelt: les inn PAT uten shell-historikk
+read -rs MAVEN_PASSWORD
+export MAVEN_PASSWORD
+make setup-maven-credentials
+
+# Valgfritt på macOS/zsh: koble fremtidige shell til gh auth token
+make setup-maven-credentials GH_TOKEN=1
+```
+
+Kjør bare kommandoen for valgt passordkilde. Med `GH_TOKEN=1` må GitHub CLI
+være innlogget med `read:packages`. Scriptet legger en kommando, ikke tokenet,
+i `~/.zshrc`; start et nytt shell etterpå. Du setter fortsatt
+`MAVEN_USERNAME` selv i hvert shell. Uten `GH_TOKEN=1` må
+`MAVEN_PASSWORD` være satt før kommandoen kjøres, og i alle shell som senere
+kjører Maven. På andre plattformer og shell setter du begge variablene selv.
+
+Kommandoen lager bare en manglende `github`-server, uten å skrive brukernavn
+eller PAT til disk. Hvis serveren finnes, endrer den ingenting, men minner deg
+om å bytte ut brukernavn og token som er lagret direkte. Hvis nødvendige
+verdier mangler, stopper den før filene endres.
+
 ```xml
 <settings>
   <servers>
     <server>
       <id>github</id>
-      <username>DITT_GITHUB_BRUKERNAVN</username>
-      <password>DITT_PAT_MED_read:packages</password>
+      <username>${env.MAVEN_USERNAME}</username>
+      <password>${env.MAVEN_PASSWORD}</password>
     </server>
   </servers>
 </settings>
 ```
 
-Hent PAT: GitHub → Settings → Developer settings → Personal access tokens → `read:packages`.
+Et token med `read:packages` er normalt nok for nedlasting; private pakker kan
+også kreve repo-tilgang og SSO. Oppdater GitHub CLI-scopes med
+`gh auth refresh -h github.com -s read:packages` i en vanlig terminal.
+Publisering krever `write:packages`. CI-eksempelet nedenfor bruker
+`x-access-token`, men lokal bruk standardiserer ikke på det brukernavnet.
 
 Eller bruk `nais login` som oppdaterer credentials automatisk.
 
