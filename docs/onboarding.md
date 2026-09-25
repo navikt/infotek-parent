@@ -111,17 +111,55 @@ Teamet bruker GitHub Packages for Maven (Java/Kotlin) og npm (frontend).
 
 ### Maven — `~/.m2/settings.xml`
 
+Sett GitHub-brukernavnet ditt for dette shellet. Velg deretter passordkilde:
+
+```bash
+export MAVEN_USERNAME=DITT_GITHUB_BRUKERNAVN
+
+# Alternativ A: les inn PAT uten å skrive verdien i shell-historikken
+read -rs MAVEN_PASSWORD
+export MAVEN_PASSWORD
+make setup-maven-credentials
+
+# Alternativ B (macOS/zsh): hent token fra GitHub CLI i hvert nytt shell
+make setup-maven-credentials GH_TOKEN=1
+```
+
+Kjør bare kommandoen for alternativet du velger. For B må `gh` være innlogget
+med `read:packages`; oppdater ved behov med
+`gh auth refresh -h github.com -s read:packages` i en vanlig terminal.
+Kommandoen legger `export MAVEN_PASSWORD="$(gh auth token)"` i en merket
+blokk i `~/.zshrc`, ikke tokenverdien. Start et nytt shell etterpå.
+`MAVEN_USERNAME` må du fortsatt sette selv i hvert shell. Alternativ A
+setter passordet kun i det aktive shellet.
+
+Hvis du bruker et annet shell eller en annen plattform, sett begge
+miljøvariablene selv og kjør `make setup-maven-credentials`. Oppsettet utvider
+ikke dagens automatiske macOS/zsh-støtte. Ikke skriv ut miljøvariablene i
+logger eller delte terminaløkter.
+
+Scriptet oppretter bare en manglende `github`-server. Finnes den fra før,
+endres verken den eller shell-konfigurasjonen. Kommandoen minner deg om å endre
+serveren manuelt hvis den inneholder brukernavn eller token direkte. Mangler
+brukernavn eller valgt passordkilde ved nyoppretting, stopper scriptet før det
+endrer filer.
+En ny server får kun disse referansene:
+
 ```xml
 <settings>
   <servers>
     <server>
       <id>github</id>
-      <username>DITT_GITHUB_BRUKERNAVN</username>
-      <password>DITT_PAT</password>
+      <username>${env.MAVEN_USERNAME}</username>
+      <password>${env.MAVEN_PASSWORD}</password>
     </server>
   </servers>
 </settings>
 ```
+
+Vanlig nedlasting trenger normalt `read:packages`, i tillegg til nødvendig
+tilgang til private pakker og eventuell SSO-godkjenning. Publisering krever
+`write:packages`; CI bruker egne credentials og kan ha et annet brukernavn.
 
 ### npm/pnpm — `~/.npmrc`
 
@@ -170,7 +208,7 @@ GitHub CLI-innloggingen trenger `read:packages`. Publisering krever også
 gh auth refresh -h github.com -s read:packages
 ```
 
-Maven-oppsettet er uendret. Teamet gjennomgår Maven-credentials separat.
+npm-kommandoen endrer ikke Maven-oppsettet. Bruk Maven-kommandoen ovenfor separat.
 
 ## 6. AI-verktøy
 
