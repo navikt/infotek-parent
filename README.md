@@ -121,6 +121,8 @@ med `read:packages` før migratoren oppdaterer lockfiler.
 | `make pr` | Behandle PRer interaktivt — velg modus ved oppstart (alle, dependabot, mine, andres…) |
 | `make review` | PR-behandler med felles lagret/fersk PR-rapport, sheriff-lignende tabell, uten bot som standard og direkte filtre for forfatter eller titler med flere PR-er, samt eget sorteringsvalg for repo, forfatter, tittel eller branch |
 | `make sheriff` | Prioritert, tilstandsbasert behandling av bot-PRer; bruker samme PR-rapport som review |
+| `make sheriff-report` | Hent en samlet sårbarhetsrapport for alle managed-repoer til `tmp/sheriff-report.json` |
+| `make sheriff-report-view` | Vis lagret sårbarhetsrapport uten nye API-kall |
 | `make pr-lag` | Lag PRer interaktivt — velg repos, tittel og body |
 | `make pr-rerun` | Rerun feilede CI-sjekker på åpne PRer |
 
