@@ -97,6 +97,8 @@ som mangler `NODE_AUTH_TOKEN`.
 
 `@nais/apm` ligger i GitHub Packages. Sett `NODE_AUTH_TOKEN` til et token
 med `read:packages` før migratoren oppdaterer lockfiler.
+Kjør `make setup-node-package-token` for å koble lokal npm/pnpm-bruk til
+eksisterende GitHub CLI-innlogging. Kommandoen endrer ikke Maven-oppsettet.
 
 | Kommando | Beskrivelse |
 |----------|-------------|

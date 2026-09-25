@@ -125,20 +125,47 @@ Teamet bruker GitHub Packages for Maven (Java/Kotlin) og npm (frontend).
 
 ### npm/pnpm — `~/.npmrc`
 
+Kjør anbefalt oppsett:
+
+```bash
+make setup-node-package-token
 ```
-//npm.pkg.github.com/:_authToken=DITT_PAT
+
+Kommandoen bruker eksisterende GitHub CLI-innlogging og legger denne referansen
+i `~/.npmrc`, sammen med registrene for `@navikt` og `@nais`:
+
+```
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 @navikt:registry=https://npm.pkg.github.com
-ignore-scripts=true
-min-release-age=7d
-engine-strict=true
+@nais:registry=https://npm.pkg.github.com
+```
+
+`~/.zshrc` får `export NODE_AUTH_TOKEN="$(gh auth token)"`. Selve tokenverdien
+lagres ikke i `.zshrc` eller `.npmrc`. Når shell-konfigurasjonen lastes, blir
+tokenet tilgjengelig for npm, pnpm og andre prosesser som startes fra shellet.
+Unngå derfor kommandoer og debug-output som skriver ut miljøvariabler.
+
+Start et nytt shell eller last konfigurasjonen på nytt etter oppsett:
+
+```bash
+source ~/.zshrc
 ```
 
 > `ignore-scripts` og `min-release-age` bør ligge globalt i `~/.npmrc` — da gjelder de for alle prosjekter, ikke bare infotek.  
-> `make setup` legger dette til automatisk.
+> `make setup` tilbyr disse innstillingene i et eget steg.
 
-> **PAT-krav:** `read:packages` (og `write:packages` om du skal publisere).  
-> Opprett på: GitHub → Settings → Developer settings → Personal access tokens.  
-> Eller kjør `nais login` som oppdaterer credentials automatisk.
+Scriptet erstatter ikke eldre `NODE_AUTH_TOKEN`-eksporter utenfor den merkede
+blokken i `.zshrc`. Det varsler hvis det finner en slik eksport. Kontroller og
+fjern eventuelle gamle tokenverdier manuelt.
+
+GitHub CLI-innloggingen trenger `read:packages`. Publisering krever også
+`write:packages`. Oppdater scopes i en vanlig terminal:
+
+```bash
+gh auth refresh -h github.com -s read:packages
+```
+
+Maven-oppsettet er uendret. Teamet gjennomgår Maven-credentials separat.
 
 ## 6. AI-verktøy
 
