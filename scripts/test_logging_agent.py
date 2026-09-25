@@ -73,7 +73,7 @@ class LoggingAgentTest(unittest.TestCase):
             saved = json.loads(path.read_text())
             self.assertEqual(saved["version"], 1)
             fields = set(saved["repos"]["example"].keys())
-            self.assertEqual(fields, {"command", "result", "timestamp"})
+            self.assertEqual(fields, {"command", "result", "timestamp", "status", "head", "diff_hash"})
 
     def test_run_repository_test_missing_command_returns_false(self):
         with mock.patch.object(logging_agent, "detect_test_command", return_value=None), \
@@ -82,6 +82,17 @@ class LoggingAgentTest(unittest.TestCase):
             ok = logging_agent.run_repository_test(logging_agent.Repository("example", "main"), results)
             self.assertFalse(ok)
             record.assert_called_once()
+
+    def test_apply_repository_blocks_existing_logging_branch(self):
+        repository = logging_agent.Repository("example", "main")
+        with mock.patch("pathlib.Path.is_dir", return_value=True), \
+                mock.patch.object(logging_agent, "is_dirty", return_value=False), \
+                mock.patch.object(logging_agent, "current_branch", return_value="main"), \
+                mock.patch.object(logging_agent, "run") as run_mock, \
+                mock.patch.object(logging_agent, "record_test_result"):
+            run_mock.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+            self.assertFalse(logging_agent.apply_repository(repository, {"version": 1, "repos": {}}))
+            self.assertEqual(run_mock.call_count, 1)
 
     def test_run_repository_test_oserror_returns_false(self):
         with mock.patch.object(logging_agent, "detect_test_command", return_value=["npm", "test"]), \
@@ -125,8 +136,10 @@ class LoggingAgentTest(unittest.TestCase):
             with mock.patch("pathlib.Path.is_dir", return_value=True), \
                     mock.patch.object(logging_agent, "is_dirty", return_value=False), \
                     mock.patch.object(logging_agent, "current_branch", return_value="main"), \
-                    mock.patch.object(logging_agent, "run") as run_mock:
+                    mock.patch.object(logging_agent, "run") as run_mock, \
+                    mock.patch.object(logging_agent, "record_test_result"):
                 run_mock.side_effect = [
+                    subprocess.CompletedProcess(args=[], returncode=1),
                     subprocess.CompletedProcess(args=[], returncode=0),
                     subprocess.CompletedProcess(args=[], returncode=1),
                 ]
@@ -140,6 +153,7 @@ class LoggingAgentTest(unittest.TestCase):
                     mock.patch.object(logging_agent, "run") as run_mock, \
                     mock.patch.object(logging_agent, "run_repository_test", return_value=False) as test_mock:
                 run_mock.side_effect = [
+                    subprocess.CompletedProcess(args=[], returncode=1),
                     subprocess.CompletedProcess(args=[], returncode=0),
                     subprocess.CompletedProcess(args=[], returncode=0),
                 ]
@@ -168,6 +182,26 @@ class LoggingAgentTest(unittest.TestCase):
             called_command = run_mock.call_args[0][0]
             self.assertIn("scripts/pr-all.py", called_command[1])
             self.assertIn(f"BRANCH={logging_agent.BRANCH}", called_command[2])
+            self.assertIn("REPOS=example", called_command[4])
+
+    def test_main_requires_explicit_scope_for_apply(self):
+        with mock.patch("sys.argv", ["logging_agent.py", "--apply"]), \
+                self.assertRaises(SystemExit):
+            logging_agent.main()
+
+    def test_main_rejects_pr_creation_without_apply(self):
+        with mock.patch("sys.argv", ["logging_agent.py", "--all", "--create-pr"]), \
+                self.assertRaises(SystemExit):
+            logging_agent.main()
+
+    def test_main_dry_run_does_not_apply(self):
+        with mock.patch.object(logging_agent, "parse_repositories", return_value=[
+            logging_agent.Repository("example", "main")
+        ]), \
+                mock.patch.object(logging_agent, "apply_repository") as apply, \
+                mock.patch("sys.argv", ["logging_agent.py", "--all", "--dry-run"]):
+            self.assertEqual(logging_agent.main(), 0)
+            apply.assert_not_called()
 
     def test_repo_filter_reject_and_accept(self):
         with self.subTest("rejects unknown repo"):
