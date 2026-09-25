@@ -145,6 +145,11 @@ lagres ikke i `.zshrc` eller `.npmrc`. Når shell-konfigurasjonen lastes, blir
 tokenet tilgjengelig for npm, pnpm og andre prosesser som startes fra shellet.
 Unngå derfor kommandoer og debug-output som skriver ut miljøvariabler.
 
+Automatiseringen støtter macOS med zsh, som er plattformen `make setup` er laget
+for. Den konfigurerer ikke Bash, Fish, Linux eller Windows. På andre oppsett må
+du selv sette `NODE_AUTH_TOKEN` fra `gh auth token` på en måte som passer
+shellet. `.npmrc` bruker den samme variabelen på alle plattformer.
+
 Start et nytt shell eller last konfigurasjonen på nytt etter oppsett:
 
 ```bash

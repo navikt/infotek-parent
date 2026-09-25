@@ -99,6 +99,8 @@ som mangler `NODE_AUTH_TOKEN`.
 med `read:packages` før migratoren oppdaterer lockfiler.
 Kjør `make setup-node-package-token` for å koble lokal npm/pnpm-bruk til
 eksisterende GitHub CLI-innlogging. Kommandoen endrer ikke Maven-oppsettet.
+Automatiseringen støtter macOS med zsh. Andre shell og plattformer må sette
+`NODE_AUTH_TOKEN` manuelt.
 
 | Kommando | Beskrivelse |
 |----------|-------------|
