@@ -66,14 +66,19 @@ make help
 `logging-agent` er en midlertidig arbeidsflyt. Den gjelder bare repoer med
 `managed: true` og skal fjernes når alle repoene er ferdig gjennomgått.
 Orchestratoren kjører repoets testkommando automatisk etter en vellykket
-agentkjøring, og lagrer testkommando, exit-kode og tidspunkt i
+agentkjøring, og lagrer testkommando, exit-kode, branch, `HEAD` og diff-hash i
 `docs/logging-agent-test-results.json`.
 
 | Kommando | Beskrivelse |
 |----------|-------------|
-| `make logging-agent` | Forhåndsvis og oppdater statusrapporten |
-| `make logging-agent APPLY=1` | Opprett branch og kjør agenten repo for repo |
-| `make logging-agent APPLY=1 CREATE_PR=1` | Kjør agenten og start eksisterende interaktive PR-flyt |
+| `make logging-agent ALL=1 DRY_RUN=1` | Vis alle managed-repoer uten å endre dem |
+| `make logging-agent REPO=navn APPLY=1` | Opprett branch og kjør agenten for ett repo |
+| `make logging-agent ALL=1 APPLY=1` | Kjør agenten på alle managed-repoer etter eksplisitt valg |
+| `make logging-agent REPO=navn APPLY=1 CREATE_PR=1` | Start PR-flyten bare for repoet som passerte kjøringen |
+
+En full kjøring krever `ALL=1`. En eksisterende logging-branch blokkerer ny
+kjøring til den er gjennomgått manuelt. Agent og tester har tidsavbrudd, og
+statusrapporten skiller mellom agentfeil, testfeil og endringer klare for review.
 
 Statusrapporten ligger i `docs/logging-agent-status.md`.
 

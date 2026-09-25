@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -20,6 +21,8 @@ TEST_RESULTS_FILE = ROOT / "docs" / "logging-agent-test-results.json"
 BRANCH = "chore/logging-hygiene"
 COMMIT_MESSAGE = "chore: rydd logging etter nav-logghygiene"
 TEST_RESULTS_VERSION = 1
+COMMAND_TIMEOUT_SECONDS = 30 * 60
+PR_TIMEOUT_SECONDS = 5 * 60
 
 
 @dataclass(frozen=True)
@@ -46,8 +49,27 @@ def parse_repositories(path: Path = REPOS_FILE) -> list[Repository]:
     return repositories
 
 
-def run(command: list[str], cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=cwd, text=True, capture_output=True, check=False)
+def run(
+    command: list[str],
+    cwd: Path = ROOT,
+    timeout: int | None = None,
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            command,
+            cwd=cwd,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        return subprocess.CompletedProcess(
+            command,
+            124,
+            stdout=error.stdout or "",
+            stderr=f"kommandoen tidsavbrøt etter {timeout} sekunder",
+        )
 
 
 def current_branch(repo_dir: Path) -> str:
@@ -57,6 +79,38 @@ def current_branch(repo_dir: Path) -> str:
 
 def is_dirty(repo_dir: Path) -> bool:
     return bool(run(["git", "status", "--porcelain"], repo_dir).stdout.strip())
+
+
+def git_head(repo_dir: Path) -> str:
+    if not repo_dir.is_dir():
+        return "-"
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo_dir,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return "-"
+    return result.stdout.strip() or "-"
+
+
+def diff_hash(repo_dir: Path) -> str:
+    if not repo_dir.is_dir():
+        return "-"
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--binary", "HEAD"],
+            cwd=repo_dir,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return "-"
+    return hashlib.sha256(result.stdout.encode()).hexdigest() if result.returncode == 0 else "-"
 
 
 def agent_command(repo_dir: Path, name: str) -> list[str]:
@@ -145,8 +199,22 @@ def test_result_for(results: dict[str, object], name: str) -> dict[str, str]:
     if isinstance(repos, dict) and isinstance(repos.get(name), dict):
         result = repos[name]
         if all(isinstance(result.get(key), str) for key in ("command", "result", "timestamp")):
-            return result
-    return {"command": "-", "result": "-", "timestamp": "-"}
+            return {
+                "command": result["command"],
+                "result": result["result"],
+                "timestamp": result["timestamp"],
+                "status": result.get("status", "ukjent"),
+                "head": result.get("head", "-"),
+                "diff_hash": result.get("diff_hash", "-"),
+            }
+    return {
+        "command": "-",
+        "result": "-",
+        "timestamp": "-",
+        "status": "-",
+        "head": "-",
+        "diff_hash": "-",
+    }
 
 
 def record_test_result(
@@ -155,6 +223,7 @@ def record_test_result(
     command: list[str] | None,
     result: str,
     path: Path = TEST_RESULTS_FILE,
+    status: str = "tester feilet",
 ) -> None:
     repos = results.setdefault("repos", {})
     assert isinstance(repos, dict)
@@ -162,6 +231,9 @@ def record_test_result(
         "command": " ".join(command) if command else "ikke konfigurert",
         "result": result,
         "timestamp": now_iso(),
+        "status": status,
+        "head": git_head(REPOS_DIR / repository.name),
+        "diff_hash": diff_hash(REPOS_DIR / repository.name),
     }
     save_test_results(results, path)
 
@@ -176,7 +248,13 @@ def status_rows(repositories: list[Repository], test_results: dict[str, object])
         else:
             branch = current_branch(repo_dir)
             dirty = is_dirty(repo_dir)
-            if branch == BRANCH and dirty:
+            test = test_result_for(test_results, repository.name)
+            run_status = test["status"]
+            if branch == BRANCH and run_status in {"agent feilet", "tester feilet"}:
+                state = run_status
+            elif branch == BRANCH and run_status.startswith("blokkert:"):
+                state = run_status
+            elif branch == BRANCH and dirty:
                 state = "endringer klare for review"
             elif branch == BRANCH:
                 state = "branch uten endringer"
@@ -187,7 +265,7 @@ def status_rows(repositories: list[Repository], test_results: dict[str, object])
         test = test_result_for(test_results, repository.name)
         rows.append(
             f"| {repository.name} | {state} | {branch} | {test['command']} | "
-            f"{test['result']} | {test['timestamp']} |"
+            f"{test['result']} | {test['status']} | {test['timestamp']} |"
         )
     return rows
 
@@ -199,8 +277,8 @@ def write_status(repositories: list[Repository]) -> None:
         f"Sist oppdatert: {date.today().isoformat()}\n\n"
         "Statusen er menneskelesbar og inneholder ikke agentens rå output. "
         "Oppdater den etter agentkjøring, tester og PR-review.\n\n"
-        "| Repo | Status | Branch | Testkommando | Testresultat | Tidspunkt |\n"
-        "|---|---|---|---|---|---|\n"
+        "| Repo | Status | Branch | Testkommando | Testresultat | Kjøringsstatus | Tidspunkt |\n"
+        "|---|---|---|---|---|---|---|\n"
         + "\n".join(status_rows(repositories, test_results))
         + "\n"
     )
@@ -212,16 +290,45 @@ def run_repository_test(repository: Repository, results: dict[str, object]) -> b
     command = detect_test_command(repo_dir)
     if command is None:
         print(f"  - {repository.name}: testkommando ikke konfigurert")
-        record_test_result(results, repository, None, "ikke konfigurert")
+        record_test_result(
+            results,
+            repository,
+            None,
+            "ikke konfigurert",
+            status="blokkert: ingen tester",
+        )
         return False
     print(f"  → {repository.name}: kjører {' '.join(command)}")
     try:
-        completed = subprocess.run(command, cwd=repo_dir, text=True, check=False)
+        completed = subprocess.run(
+            command,
+            cwd=repo_dir,
+            text=True,
+            check=False,
+            timeout=COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"  ✗ {repository.name}: tester tidsavbrøt", file=sys.stderr)
+        record_test_result(results, repository, command, "tidsavbrudd", status="tester feilet")
+        return False
     except OSError as error:
         print(f"  ✗ {repository.name}: kunne ikke starte testkommandoen: {error}", file=sys.stderr)
-        record_test_result(results, repository, command, "exit 127")
+        record_test_result(
+            results,
+            repository,
+            command,
+            "exit 127",
+            status="blokkert: test kunne ikke starte",
+        )
         return False
-    record_test_result(results, repository, command, f"exit {completed.returncode}")
+    test_status = "tester godkjent" if completed.returncode == 0 else "tester feilet"
+    record_test_result(
+        results,
+        repository,
+        command,
+        f"exit {completed.returncode}",
+        status=test_status,
+    )
     marker = "✓" if completed.returncode == 0 else "✗"
     print(f"  {marker} {repository.name}: tester avsluttet med exit {completed.returncode}")
     return completed.returncode == 0
@@ -239,14 +346,25 @@ def apply_repository(repository: Repository, results: dict[str, object]) -> bool
     if branch != repository.default_branch:
         print(f"  ⚠ {repository.name}: står på {branch}, forventet {repository.default_branch}", file=sys.stderr)
         return False
+    branch_exists = run(["git", "show-ref", "--verify", f"refs/heads/{BRANCH}"], repo_dir)
+    if branch_exists.returncode == 0:
+        print(
+            f"  ⚠ {repository.name}: {BRANCH} finnes allerede. "
+            "Gjennomgå eller rydd branchen manuelt før ny kjøring.",
+            file=sys.stderr,
+        )
+        return False
     created = run(["git", "switch", "-c", BRANCH], repo_dir)
     if created.returncode != 0:
-        print(f"  ✗ {repository.name}: kunne ikke opprette {BRANCH}: {created.stderr.strip()}", file=sys.stderr)
+        error = (created.stderr or "").strip()
+        print(f"  ✗ {repository.name}: kunne ikke opprette {BRANCH}{': ' + error if error else ''}", file=sys.stderr)
         return False
     print(f"  → {repository.name}: kjører logging-agent")
-    result = run(agent_command(repo_dir, repository.name), ROOT)
+    result = run(agent_command(repo_dir, repository.name), ROOT, COMMAND_TIMEOUT_SECONDS)
     if result.returncode != 0:
-        print(f"  ✗ {repository.name}: agenten feilet", file=sys.stderr)
+        error = (result.stderr or "").strip()
+        print(f"  ✗ {repository.name}: agenten feilet{': ' + error if error else ''}", file=sys.stderr)
+        record_test_result(results, repository, None, "agent feilet", status="agent feilet")
         return False
     print(f"  ✓ {repository.name}: agenten fullførte")
     return run_repository_test(repository, results)
@@ -255,9 +373,18 @@ def apply_repository(repository: Repository, results: dict[str, object]) -> bool
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="opprett branch og kjør agenten")
+    parser.add_argument("--all", action="store_true", help="tillat eksplisitt kjøring på alle managed-repoer")
+    parser.add_argument("--dry-run", action="store_true", help="vis valgte repoer uten å endre dem")
     parser.add_argument("--create-pr", action="store_true", help="start eksisterende interaktive PR-flyt etter kjøring")
     parser.add_argument("--repo", help="kjør bare på ett managed-repo, f.eks. infotek-statistikk")
     args = parser.parse_args()
+
+    if args.repo and args.all:
+        parser.error("--repo og --all kan ikke brukes samtidig")
+    if args.create_pr and (not args.apply or args.dry_run):
+        parser.error("--create-pr krever --apply uten --dry-run")
+    if args.apply and not args.repo and not args.all:
+        parser.error("--apply krever --repo eller --all")
 
     repositories = parse_repositories()
     if not repositories:
@@ -276,11 +403,19 @@ def main() -> int:
     else:
         target_repositories = repositories
 
+    if args.dry_run:
+        for repository in target_repositories:
+            print(f"  - {repository.name} ({repository.default_branch})")
+        return 0
+
     apply_ok = True
+    successful_repositories: list[Repository] = []
     if args.apply:
         results = load_test_results()
         for repository in target_repositories:
-            if not apply_repository(repository, results):
+            if apply_repository(repository, results):
+                successful_repositories.append(repository)
+            else:
                 apply_ok = False
 
     write_status(repositories)
@@ -289,9 +424,17 @@ def main() -> int:
         return 1
 
     if args.create_pr:
+        repo_names = ",".join(repository.name for repository in successful_repositories)
         result = run(
-            ["python3", str(ROOT / "scripts" / "pr-all.py"), f"BRANCH={BRANCH}", f"MSG={COMMIT_MESSAGE}"],
+            [
+                "python3",
+                str(ROOT / "scripts" / "pr-all.py"),
+                f"BRANCH={BRANCH}",
+                f"MSG={COMMIT_MESSAGE}",
+                f"REPOS={repo_names}",
+            ],
             ROOT,
+            PR_TIMEOUT_SECONDS,
         )
         print(result.stdout, end="")
         if result.returncode != 0:

@@ -81,6 +81,12 @@ eller et eksplisitt unntak er dokumentert med eier og begrunnelse.
 - Ingen commit eller push skal utføres skjult eller utenfor den dokumenterte
   kontrollflyten.
 - Agenten er midlertidig; statusrapporten må gjøre avvikling etterprøvbar.
+- En full kjøring krever `--all`. `--dry-run` viser utvalget uten å endre repoer.
+- En eksisterende logging-branch blokkerer ny kjøring til den er gjennomgått
+  manuelt.
+- PR-flyten får bare repoer som passerte agent og tester i samme kjøring.
+- Agent- og testkjøringer har tidsavbrudd. Feil, branch, `HEAD` og diff-hash
+  skrives til testresultatet.
 
 ## Åpne spørsmål
 
