@@ -1,14 +1,11 @@
-#!/usr/bin/env python3
-"""Sett opp NODE_AUTH_TOKEN for lokal npm/pnpm-bruk mot GitHub Packages."""
+"""npm/pnpm-delen av oppsettet for GitHub Packages. Kjøres via setup_github_packages."""
 
 from __future__ import annotations
 
-import argparse
 import os
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -178,65 +175,3 @@ def configure(home: Path, dry_run: bool = False) -> list[Path]:
         for path in changed:
             atomic_write(path, updates[path])
     return changed
-
-
-def has_unmanaged_token_export(content: str) -> bool:
-    content_without_managed_block = re.sub(
-        rf"(?ms)^{re.escape(ZSHRC_MARKER_START)}$.*?"
-        rf"^{re.escape(ZSHRC_MARKER_END)}$\n?",
-        "",
-        content,
-    )
-    return bool(
-        re.search(
-            r"(?m)^\s*export\s+NODE_AUTH_TOKEN\s*=",
-            content_without_managed_block,
-        )
-    )
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="vis hvilke filer som ville blitt endret",
-    )
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    try:
-        validate_gh()
-        home = Path.home()
-        zshrc = home / ".zshrc"
-        unmanaged_export = (
-            zshrc.exists() and has_unmanaged_token_export(zshrc.read_text())
-        )
-        changed = configure(home, args.dry_run)
-    except (OSError, SetupError) as error:
-        print(f"Feil: {error}", file=sys.stderr)
-        return 1
-
-    action = "Ville oppdatert" if args.dry_run else "Oppdaterte"
-    for path in changed:
-        print(f"{action} {path}")
-    if not changed:
-        print("NODE_AUTH_TOKEN er allerede satt opp.")
-    if unmanaged_export:
-        print(
-            "Advarsel: .zshrc har også en NODE_AUTH_TOKEN-eksport utenfor "
-            "den administrerte blokken. Kontroller og fjern gamle tokenverdier manuelt.",
-            file=sys.stderr,
-        )
-    print("Start et nytt shell eller kjør: source ~/.zshrc")
-    print(
-        "Hvis GitHub Packages avviser tokenet, kjør "
-        "gh auth refresh -h github.com -s read:packages i en vanlig terminal."
-    )
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

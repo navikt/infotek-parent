@@ -11,7 +11,7 @@ RESET := \033[0m
 GREEN := \033[32m
 CYAN  := \033[36m
 
-.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup setup-node-package-token
+.PHONY: help git-clone git-fetch git-pull git-default git-update git-status git-clean-branches git-prune-merged git-branch-all git-stage-all git-multi-commit git-push-all git-merge-main gh-add-repo gh-apply-ruleset gh-detach-repo pr pr-lag pr-rerun sheriff sheriff-status sheriff-report sheriff-report-view merge-approved-bot-prs merge-approved-bot-prs-from-report logging-agent observability-check observability-apply observability-status observability-init idea-sync-maven mvn-versions mvn-update-kotlin mvn-release pnpm-versions pnpm-install pnpm-biome-check pnpm-update-npmrc pnpm-migrate-frontend-config pnpm-update-frontend-config pnpm-release docs update-readme setup setup-github-packages
 
 ##@ Hjelp
 
@@ -1075,17 +1075,17 @@ setup: ## Installer verktøy på ny maskin (macOS)
 	esac
 	@echo -e "  $(CYAN)→$(RESET) Logger inn på GitHub CLI..."
 	@gh auth status >/dev/null 2>&1 || gh auth login
-	@echo -e "  $(CYAN)→$(RESET) NODE_AUTH_TOKEN for npm/pnpm..."
-	@echo -e "  Vil du koble GitHub CLI-tokenet til ~/.zshrc og ~/.npmrc?"
+	@echo -e "  $(CYAN)→$(RESET) GitHub Packages for npm/pnpm og Maven..."
+	@echo -e "  Vil du sette opp ~/.npmrc, ~/.m2/settings.xml og ~/.zshrc, og kontrollere dem for tokens som er lagret direkte?"
 	@echo -n "  [j/N] " && read ans && case "$$ans" in \
-	  [jJ]*) python3 scripts/setup_node_package_token.py;; \
-	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: make setup-node-package-token";; \
+	  [jJ]*) $(MAKE) --no-print-directory setup-github-packages;; \
+	  *) echo -e "  ⏭  Hopper over — kan gjøres manuelt: make setup-github-packages";; \
 	esac
 	@echo -e ""
 	@echo -e "$(GREEN)$(BOLD)Alt klart! Kjør 'make git-clone' for å klone alle repos.$(RESET)"
 
-setup-node-package-token: ## Sett opp NODE_AUTH_TOKEN for lokal npm/pnpm-bruk
-	@python3 scripts/setup_node_package_token.py
+setup-github-packages: ## Sett opp GitHub Packages for npm/pnpm og Maven med gh, og varsle om tokens som er lagret direkte
+	@python3 -m scripts.setup_github_packages
 
 ##@ Internalt
 
