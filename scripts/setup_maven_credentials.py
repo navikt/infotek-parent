@@ -1,26 +1,21 @@
-#!/usr/bin/env python3
-"""Sett opp lokal Maven-tilgang til GitHub Packages."""
+"""Maven-delen av oppsettet for GitHub Packages. Kjøres via setup_github_packages."""
 
 from __future__ import annotations
 
-import argparse
 import os
-import platform
 import re
 import stat
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 from xml.parsers import expat
 
 from scripts.setup_node_package_token import SetupError, validate_gh
+from scripts.setup_node_package_token import atomic_write as write_text
 
 ZSHRC_START = "# --- infotek MAVEN_PASSWORD ---"
 ZSHRC_END = "# --- slutt infotek MAVEN_PASSWORD ---"
-ZSHRC_BLOCK = (
-    f'{ZSHRC_START}\nexport MAVEN_PASSWORD="$(gh auth token)"\n{ZSHRC_END}\n'
-)
+GITHUB_LOGIN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
 SERVER = (
     "<server>\n"
     "  <id>github</id>\n"
@@ -141,7 +136,19 @@ def update_settings(data: bytes) -> tuple[bytes, bool]:
     return insert_child(data, servers, server), True
 
 
-def update_zshrc(content: str) -> str:
+def zshrc_block(username: str) -> str:
+    if not GITHUB_LOGIN.match(username):
+        raise SetupError("Ugyldig GitHub-brukernavn for MAVEN_USERNAME.")
+    return (
+        f"{ZSHRC_START}\n"
+        f'export MAVEN_USERNAME="{username}"\n'
+        'export MAVEN_PASSWORD="$(gh auth token)"\n'
+        f"{ZSHRC_END}\n"
+    )
+
+
+def update_zshrc(content: str, username: str) -> str:
+    block = zshrc_block(username)
     start_count = content.count(ZSHRC_START)
     end_count = content.count(ZSHRC_END)
     if start_count != end_count or start_count > 1:
@@ -154,9 +161,9 @@ def update_zshrc(content: str) -> str:
             ".zshrc setter allerede MAVEN_PASSWORD utenfor den administrerte blokken."
         )
     if start_count:
-        return pattern.sub(ZSHRC_BLOCK, content)
+        return pattern.sub(lambda _match: block, content)
     separator = "" if not content or content.endswith("\n") else "\n"
-    return content + separator + ("\n" if content else "") + ZSHRC_BLOCK
+    return content + separator + ("\n" if content else "") + block
 
 
 def atomic_write(path: Path, data: bytes) -> None:
@@ -177,68 +184,36 @@ def atomic_write(path: Path, data: bytes) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def configure(home: Path, environment: dict[str, str], use_gh_token: bool = False) -> list[Path]:
+def gh_username() -> str:
+    result = subprocess.run(
+        ["gh", "api", "user", "--jq", ".login"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    username = result.stdout.strip() if result.returncode == 0 else ""
+    if not username:
+        raise SetupError("Fant ikke GitHub-brukernavnet. Kontroller innloggingen med gh auth status.")
+    return username
+
+
+def configure(home: Path) -> list[Path]:
     settings = home / ".m2" / "settings.xml"
     if settings.is_symlink():
         raise SetupError("settings.xml er en symlink; oppdater den manuelt.")
     original = settings.read_bytes() if settings.exists() else b"<settings>\n</settings>\n"
-    updated, changed = update_settings(original)
-    if not changed:
-        return []
+    updated, settings_changed = update_settings(original)
 
-    if not environment.get("MAVEN_USERNAME", "").strip():
-        raise SetupError("Sett MAVEN_USERNAME til ditt GitHub-brukernavn før oppsett.")
+    validate_gh()
     zshrc = home / ".zshrc"
-    zshrc_update: str | None = None
-    if use_gh_token:
-        if platform.system() != "Darwin" or Path(environment.get("SHELL", "")).name != "zsh":
-            raise SetupError("--gh-token støttes bare på macOS med zsh.")
-        validate_gh()
-        token = subprocess.run(
-            ["gh", "auth", "token"], text=True, capture_output=True, check=False
-        )
-        if token.returncode != 0 or not token.stdout.strip():
-            raise SetupError("GitHub CLI kunne ikke hente token.")
-        if zshrc.is_symlink():
-            raise SetupError(".zshrc er en symlink; oppdater den manuelt.")
-        zshrc_update = update_zshrc(zshrc.read_text() if zshrc.exists() else "")
-    elif not environment.get("MAVEN_PASSWORD", "").strip():
-        raise SetupError("Sett MAVEN_PASSWORD før oppsett, eller bruk --gh-token.")
+    current_zshrc = zshrc.read_text() if zshrc.exists() else ""
+    zshrc_update = update_zshrc(current_zshrc, gh_username())
 
-    changes = [settings]
-    if zshrc_update is not None and (
-        not zshrc.exists() or zshrc.read_text() != zshrc_update
-    ):
-        atomic_write(zshrc, zshrc_update.encode())
+    changes = []
+    if settings_changed:
+        atomic_write(settings, updated)
+        changes.append(settings)
+    if not zshrc.exists() or current_zshrc != zshrc_update:
+        write_text(zshrc, zshrc_update)
         changes.append(zshrc)
-    atomic_write(settings, updated)
     return changes
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--gh-token", action="store_true", help="koble MAVEN_PASSWORD til gh auth token i .zshrc"
-    )
-    args = parser.parse_args()
-    try:
-        changed = configure(Path.home(), os.environ, args.gh_token)
-    except (OSError, SetupError) as error:
-        print(f"Feil: {error}", file=sys.stderr)
-        return 1
-    if changed:
-        for path in changed:
-            print(f"Oppdaterte {path}")
-        if args.gh_token:
-            print("Start et nytt shell for å laste MAVEN_PASSWORD fra gh.")
-    else:
-        print(
-            "Eksisterende github-server er uendret. Hvis den lagrer brukernavn "
-            "eller token direkte, bør du endre den manuelt til referanser til "
-            "${env.MAVEN_USERNAME} og ${env.MAVEN_PASSWORD}."
-        )
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

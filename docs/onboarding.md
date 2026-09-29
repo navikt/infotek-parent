@@ -108,6 +108,10 @@ Du skal se alle repos med riktig branch og status `✅ ren`.
 ## 5. Autentisering mot GitHub Packages
 
 Teamet bruker GitHub Packages for Maven (Java/Kotlin) og npm (frontend).
+`make setup-github-packages` setter opp begge med samme script. Den varsler
+hvis `~/.npmrc`, `~/.m2/settings.xml` eller `~/.zshrc` har et token lagret
+direkte. Verdien skrives aldri ut. Kommandoen kan kjøres flere ganger, og den
+endrer ikke oppsett som allerede er riktig.
 
 ### Maven — `~/.m2/settings.xml`
 
@@ -119,10 +123,10 @@ export MAVEN_USERNAME=DITT_GITHUB_BRUKERNAVN
 # Alternativ A: les inn PAT uten å skrive verdien i shell-historikken
 read -rs MAVEN_PASSWORD
 export MAVEN_PASSWORD
-make setup-maven-credentials
+make setup-github-packages
 
 # Alternativ B (macOS/zsh): hent token fra GitHub CLI i hvert nytt shell
-make setup-maven-credentials GH_TOKEN=1
+make setup-github-packages GH_TOKEN=1
 ```
 
 Kjør bare kommandoen for alternativet du velger. For B må `gh` være innlogget
@@ -134,15 +138,17 @@ blokk i `~/.zshrc`, ikke tokenverdien. Start et nytt shell etterpå.
 setter passordet kun i det aktive shellet.
 
 Hvis du bruker et annet shell eller en annen plattform, sett begge
-miljøvariablene selv og kjør `make setup-maven-credentials`. Oppsettet utvider
+miljøvariablene selv og kjør `make setup-github-packages`. Oppsettet utvider
 ikke dagens automatiske macOS/zsh-støtte. Ikke skriv ut miljøvariablene i
 logger eller delte terminaløkter.
 
 Scriptet oppretter bare en manglende `github`-server. Finnes den fra før,
-endres verken den eller shell-konfigurasjonen. Kommandoen minner deg om å endre
-serveren manuelt hvis den inneholder brukernavn eller token direkte. Mangler
-brukernavn eller valgt passordkilde ved nyoppretting, stopper scriptet før det
-endrer filer.
+endres verken den eller shell-konfigurasjonen. Scriptet kontrollerer da
+`<username>` og `<password>`. Du får en advarsel hvis en verdi er lagret
+direkte, eller hvis den mangler `env.`-prefikset, for eksempel
+`${MAVEN_PASSWORD}`. Uten prefikset leser Maven en system property, ikke en
+miljøvariabel. Mangler brukernavn eller valgt passordkilde ved nyoppretting,
+stopper scriptet før det endrer filer.
 En ny server får kun disse referansene:
 
 ```xml
@@ -163,10 +169,10 @@ tilgang til private pakker og eventuell SSO-godkjenning. Publisering krever
 
 ### npm/pnpm — `~/.npmrc`
 
-Kjør anbefalt oppsett:
+Samme kommando som for Maven setter opp npm/pnpm:
 
 ```bash
-make setup-node-package-token
+make setup-github-packages
 ```
 
 Kommandoen bruker eksisterende GitHub CLI-innlogging og legger denne referansen
@@ -179,7 +185,10 @@ i `~/.npmrc`, sammen med registrene for `@navikt` og `@nais`:
 ```
 
 `~/.zshrc` får `export NODE_AUTH_TOKEN="$(gh auth token)"`. Selve tokenverdien
-lagres ikke i `.zshrc` eller `.npmrc`. Når shell-konfigurasjonen lastes, blir
+lagres ikke i `.zshrc` eller `.npmrc`. Hvis `~/.npmrc` allerede har et token
+lagret direkte for `npm.pkg.github.com`, byttes linjen til
+`${NODE_AUTH_TOKEN}`, og du får beskjed om å slette det gamle tokenet på GitHub.
+Når shell-konfigurasjonen lastes, blir
 tokenet tilgjengelig for npm, pnpm og andre prosesser som startes fra shellet.
 Unngå derfor kommandoer og debug-output som skriver ut miljøvariabler.
 

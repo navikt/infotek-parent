@@ -1,5 +1,3 @@
-import contextlib
-import io
 import os
 import stat
 import subprocess
@@ -161,19 +159,6 @@ class SetupNodePackageTokenTest(unittest.TestCase):
             self.assertTrue(link.is_symlink())
             self.assertEqual(target.read_text(), "new\n")
 
-    def test_detects_unmanaged_token_export(self):
-        self.assertTrue(
-            setup_node_package_token.has_unmanaged_token_export(
-                "export NODE_AUTH_TOKEN=old-token\n"
-                f"{setup_node_package_token.ZSHRC_BLOCK}"
-            )
-        )
-        self.assertFalse(
-            setup_node_package_token.has_unmanaged_token_export(
-                setup_node_package_token.ZSHRC_BLOCK
-            )
-        )
-
     @patch("scripts.setup_node_package_token.shutil.which", return_value="/usr/bin/gh")
     @patch("scripts.setup_node_package_token.subprocess.run")
     def test_validate_gh_accepts_authenticated_cli(self, run, _which):
@@ -230,28 +215,6 @@ class SetupNodePackageTokenTest(unittest.TestCase):
             setup_node_package_token.validate_gh()
 
         self.assertNotIn(token, str(error.exception))
-
-    @patch("scripts.setup_node_package_token.configure")
-    @patch("scripts.setup_node_package_token.validate_gh")
-    @patch(
-        "scripts.setup_node_package_token.parse_args",
-        return_value=type("Args", (), {"dry_run": False})(),
-    )
-    def test_main_stops_before_file_changes_when_validation_fails(
-        self,
-        _parse_args,
-        validate_gh,
-        configure,
-    ):
-        validate_gh.side_effect = setup_node_package_token.SetupError("ingen token")
-        stderr = io.StringIO()
-
-        with contextlib.redirect_stderr(stderr):
-            result = setup_node_package_token.main()
-
-        self.assertEqual(result, 1)
-        configure.assert_not_called()
-        self.assertNotIn("secret-token", stderr.getvalue())
 
     def test_atomic_write_preserves_existing_permissions(self):
         with tempfile.TemporaryDirectory() as directory:

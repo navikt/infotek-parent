@@ -26,10 +26,10 @@ export MAVEN_USERNAME=DITT_GITHUB_BRUKERNAVN
 # Manuelt: les inn PAT uten shell-historikk
 read -rs MAVEN_PASSWORD
 export MAVEN_PASSWORD
-make setup-maven-credentials
+make setup-github-packages
 
 # Valgfritt på macOS/zsh: koble fremtidige shell til gh auth token
-make setup-maven-credentials GH_TOKEN=1
+make setup-github-packages GH_TOKEN=1
 ```
 
 Kjør bare kommandoen for valgt passordkilde. Med `GH_TOKEN=1` må GitHub CLI
@@ -40,9 +40,10 @@ i `~/.zshrc`; start et nytt shell etterpå. Du setter fortsatt
 kjører Maven. På andre plattformer og shell setter du begge variablene selv.
 
 Kommandoen lager bare en manglende `github`-server, uten å skrive brukernavn
-eller PAT til disk. Hvis serveren finnes, endrer den ingenting, men minner deg
-om å bytte ut brukernavn og token som er lagret direkte. Hvis nødvendige
-verdier mangler, stopper den før filene endres.
+eller PAT til disk. Hvis serveren finnes, endrer den ingenting. Den varsler
+likevel hvis brukernavn eller token er lagret direkte, eller hvis en referanse
+mangler `env.`-prefikset. Hvis nødvendige verdier mangler, stopper den før
+filene endres. Kommandoen setter også opp npm/pnpm.
 
 ```xml
 <settings>

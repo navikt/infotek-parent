@@ -39,13 +39,14 @@ godkjennes med `cplt trust`. Les Linux-advarslene i
 [`docs/onboarding.md`](docs/onboarding.md) før du godkjenner Docker eller
 ubegrenset localhost.
 
-For lokal Maven-bruk mot GitHub Packages kan du kjøre
-`make setup-maven-credentials` etter at du har satt `MAVEN_USERNAME` og
-`MAVEN_PASSWORD` i shellet. Vil du hente passordet fra GitHub CLI i nye
-macOS/zsh-shell, bruk `make setup-maven-credentials GH_TOKEN=1` med
-`MAVEN_USERNAME` satt. Kommandoen oppretter bare en manglende `github`-server
-med miljøvariabelreferanser og lagrer ikke credentials. `make setup` tilbyr
-begge valg. Se [onboarding](docs/onboarding.md#5-autentisering-mot-github-packages)
+For lokal Maven- og npm/pnpm-bruk mot GitHub Packages kjører du
+`make setup-github-packages`. Kommandoen setter opp `~/.npmrc` og
+`~/.m2/settings.xml` med miljøvariabelreferanser. Den varsler også hvis
+`~/.npmrc`, `~/.m2/settings.xml` eller `~/.zshrc` har et token lagret direkte.
+Maven krever at `MAVEN_USERNAME` er satt, og at `MAVEN_PASSWORD` er satt eller
+at du bruker `GH_TOKEN=1` for å hente passordet fra GitHub CLI i nye
+macOS/zsh-shell. `make setup` tilbyr begge valg. Se
+[onboarding](docs/onboarding.md#5-autentisering-mot-github-packages)
 for eksempler og krav til `read:packages`.
 
 ```
@@ -67,7 +68,7 @@ make help
 | `make pnpm-versions` | Vis frontend-versjoner (Node, pnpm, Aksel) på tvers |
 | `make gh-add-repo ORG=navikt REPO=ny-app` | Registrer nytt repo i `repos.yaml` |
 | `make idea-sync-maven` | Synk `.idea/misc.xml` slik at IntelliJ ser alle Maven-repos i `repos/` som moduler (kjøres automatisk av `make git-clone`) |
-| `make setup-maven-credentials [GH_TOKEN=1]` | Opprett manglende lokal Maven-server med miljøvariabelreferanser |
+| `make setup-github-packages [GH_TOKEN=1]` | Sett opp GitHub Packages for npm/pnpm og Maven, og varsle om tokens som er lagret direkte |
 
 > **IntelliJ:** Maven-modullisten i `.idea/misc.xml` synkes automatisk hver gang du kjører `make git-clone`. Kun `managed: true`-repos i `repos.yaml` med en `pom.xml` tas med. Åpne prosjektet i IntelliJ og trigg «Reload All Maven Projects» (Maven-panelet) om modulene ikke dukker opp automatisk.
 
@@ -107,8 +108,8 @@ som mangler `NODE_AUTH_TOKEN`.
 
 `@nais/apm` ligger i GitHub Packages. Sett `NODE_AUTH_TOKEN` til et token
 med `read:packages` før migratoren oppdaterer lockfiler.
-Kjør `make setup-node-package-token` for å koble lokal npm/pnpm-bruk til
-eksisterende GitHub CLI-innlogging. Kommandoen endrer ikke Maven-oppsettet.
+Kjør `make setup-github-packages` for å koble lokal npm/pnpm-bruk til
+eksisterende GitHub CLI-innlogging. Kommandoen setter også opp Maven.
 Automatiseringen støtter macOS med zsh. Andre shell og plattformer må sette
 `NODE_AUTH_TOKEN` manuelt.
 
