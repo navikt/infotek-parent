@@ -36,6 +36,83 @@ class LoggingAgentTest(unittest.TestCase):
         self.assertIn("--silent", command)
         self.assertIn("--output-format", command)
         self.assertIn("json", command)
+        self.assertIn("com.papertrailapp:logback-syslog4j", command[command.index("-p") + 1])
+        self.assertIn("LogstashTcpSocketAppender", command[command.index("-p") + 1])
+
+    def test_audit_usage_reports_managed_and_direct_dependencies_and_appender(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            (repo_dir / "pom.xml").write_text(
+                "<project><dependencyManagement><dependencies>\n"
+                "<dependency><groupId>com.papertrailapp</groupId>\n"
+                "<artifactId>logback-syslog4j</artifactId></dependency>\n"
+                "</dependencies></dependencyManagement><dependencies>\n"
+                "<dependency><groupId>com.papertrailapp</groupId>\n"
+                "<artifactId>logback-syslog4j</artifactId></dependency>\n"
+                "</dependencies></project>\n"
+            )
+            backend = repo_dir / "backend"
+            backend.mkdir()
+            (backend / "pom.xml").write_text(
+                "<project><dependencies><dependency>\n"
+                "<groupId>com.papertrailapp</groupId>\n"
+                "<artifactId>logback-syslog4j</artifactId>\n"
+                "</dependency></dependencies><!--\n"
+                "<dependency><groupId>com.papertrailapp</groupId>"
+                "<artifactId>logback-syslog4j</artifactId></dependency>\n"
+                "--></project>\n"
+            )
+            (backend / "logback-spring.xml").write_text(
+                '<!--\n<appender class="com.papertrailapp.logback.Syslog4jAppender"/>\n-->\n'
+                '<appender class="com.papertrailapp.logback.Syslog4jAppender"/>\n'
+            )
+            (repo_dir / "target").mkdir()
+            (repo_dir / "target" / "pom.xml").write_text(
+                "<dependency><groupId>com.papertrailapp</groupId>"
+                "<artifactId>logback-syslog4j</artifactId></dependency>"
+            )
+            findings = logging_agent.audit_usage(repo_dir, "repos/example")
+            self.assertEqual(findings, [
+                "`repos/example/backend/pom.xml:3` (direkte avhengighet)",
+                "`repos/example/pom.xml:3` (versjon styrt i dependencyManagement)",
+                "`repos/example/pom.xml:6` (direkte avhengighet)",
+                "`repos/example/backend/logback-spring.xml:4` (Syslog4jAppender)",
+            ])
+
+    def test_audit_findings_include_parent_and_only_managed_repos(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            parent = root / "platform" / "maven"
+            parent.mkdir(parents=True)
+            (parent / "pom.xml").write_text(
+                "<dependency><groupId>com.papertrailapp</groupId>"
+                "<artifactId>logback-syslog4j</artifactId></dependency>"
+            )
+            managed = root / "repos" / "managed"
+            managed.mkdir(parents=True)
+            (managed / "logback.xml").write_text(
+                '<appender class="com.papertrailapp.logback.Syslog4jAppender"/>\n'
+            )
+            unmanaged = root / "repos" / "unmanaged"
+            unmanaged.mkdir()
+            (unmanaged / "pom.xml").write_text(
+                "<dependency><groupId>com.papertrailapp</groupId>"
+                "<artifactId>logback-syslog4j</artifactId></dependency>"
+            )
+            report = root / "findings.md"
+            with mock.patch.object(logging_agent, "ROOT", root), \
+                    mock.patch.object(logging_agent, "REPOS_DIR", root / "repos"):
+                logging_agent.write_audit_findings(
+                    [logging_agent.Repository("managed", "main"),
+                     logging_agent.Repository("missing", "main")],
+                    report,
+                )
+            text = report.read_text()
+            self.assertIn("platform/maven/pom.xml:1", text)
+            self.assertIn("repos/managed/logback.xml:1", text)
+            self.assertIn("| missing | ikke klonet |", text)
+            self.assertNotIn("unmanaged", text)
+            self.assertIn("LogstashTcpSocketAppender", text)
 
     def test_detect_test_command_various_repos(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -165,6 +242,7 @@ class LoggingAgentTest(unittest.TestCase):
         with mock.patch.object(logging_agent, "parse_repositories", return_value=[logging_agent.Repository("example", "main")]), \
                 mock.patch.object(logging_agent, "apply_repository", return_value=False), \
                 mock.patch.object(logging_agent, "write_status"), \
+                mock.patch.object(logging_agent, "write_audit_findings"), \
                 mock.patch.object(logging_agent, "run") as run_mock, \
                 mock.patch("sys.argv", ["logging_agent.py", "--apply", "--create-pr", "--repo", "example"]):
             exit_code = logging_agent.main()
@@ -175,6 +253,7 @@ class LoggingAgentTest(unittest.TestCase):
         with mock.patch.object(logging_agent, "parse_repositories", return_value=[logging_agent.Repository("example", "main")]), \
                 mock.patch.object(logging_agent, "apply_repository", return_value=True), \
                 mock.patch.object(logging_agent, "write_status"), \
+                mock.patch.object(logging_agent, "write_audit_findings"), \
                 mock.patch.object(logging_agent, "run", return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")) as run_mock, \
                 mock.patch("sys.argv", ["logging_agent.py", "--apply", "--create-pr", "--repo", "example"]):
             exit_code = logging_agent.main()
@@ -199,9 +278,23 @@ class LoggingAgentTest(unittest.TestCase):
             logging_agent.Repository("example", "main")
         ]), \
                 mock.patch.object(logging_agent, "apply_repository") as apply, \
+                mock.patch.object(logging_agent, "write_audit_findings") as findings, \
                 mock.patch("sys.argv", ["logging_agent.py", "--all", "--dry-run"]):
             self.assertEqual(logging_agent.main(), 0)
             apply.assert_not_called()
+            findings.assert_not_called()
+
+    def test_single_repo_run_reports_all_managed_repos(self):
+        repositories = [
+            logging_agent.Repository("selected", "main"),
+            logging_agent.Repository("other", "master"),
+        ]
+        with mock.patch.object(logging_agent, "parse_repositories", return_value=repositories), \
+                mock.patch.object(logging_agent, "write_status"), \
+                mock.patch.object(logging_agent, "write_audit_findings") as findings, \
+                mock.patch("sys.argv", ["logging_agent.py", "--repo", "selected"]):
+            self.assertEqual(logging_agent.main(), 0)
+            findings.assert_called_once_with(repositories)
 
     def test_repo_filter_reject_and_accept(self):
         with self.subTest("rejects unknown repo"):

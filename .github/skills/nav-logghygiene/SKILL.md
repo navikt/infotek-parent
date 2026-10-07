@@ -87,11 +87,21 @@ fra hvert kildesystem.
 3. Fjern flytlogger og suksesslogger som ikke har tydelig driftsverdi. Behold
    kontrollert logging for tokenfeil, eksterne systemfeil, degradert svar og
    uventede exceptions.
-4. Saniter før data blir del av exception-melding eller logger. Foretrekk
+4. Sjekk om Maven-POM-er deklarerer `com.papertrailapp:logback-syslog4j`,
+   også via parent-POM, og om `logback*.xml` bruker
+   `com.papertrailapp.logback.Syslog4jAppender`. Oppgi filsti og kodebevis.
+   Kontroller vedlikeholdsstatus mot kilde før du kaller biblioteket
+   uvedlikeholdt. Rapporter funn; ikke fjern eller bytt auditlogg automatisk.
+   `LogstashTcpSocketAppender` fra `net.logstash.logback:logstash-logback-encoder`
+   er en mulig erstatning for TCP, ikke en bekreftet drop-in-erstatning.
+   [Prosjektets dokumentasjon](https://github.com/logfellow/logstash-logback-encoder#tcp-appenders)
+   beskriver TLS, valg av encoder og tap av hendelser når asynkron kø er full.
+   Undersøk syslog-framing, CEF-format, mottakerkrav og tapsrisiko før migrering.
+5. Saniter før data blir del av exception-melding eller logger. Foretrekk
    allowlistede feilkoder, status, systemnavn og exception-type.
-5. Sjekk manifestet for Nais auto-instrumentering før custom HTTP-logger og
+6. Sjekk manifestet for Nais auto-instrumentering før custom HTTP-logger og
    metrikker fjernes.
-6. Kjør eksisterende målrettede tester og repoets vanlige bygg. Test spesielt at
+7. Kjør eksisterende målrettede tester og repoets vanlige bygg. Test spesielt at
    auditlogg, statuskoder og fallback-svar er uendret.
 
 ## Kotlin/Spring-mønstre
@@ -123,6 +133,8 @@ formatfeil og unødvendig konstruksjon når nivået er deaktivert.
 - [ ] Håndterte 5xx-feil logger kun sikker kontekst uten stack trace.
 - [ ] Uventede feil logges én gang sentralt med stack trace.
 - [ ] Auditlogg er urørt og separat fra ordinær applikasjonslogging.
+- [ ] Bruk av `logback-syslog4j` og `Syslog4jAppender` er rapportert med
+      filsti, og eventuell erstatning er vurdert mot TCP, format og levering.
 - [ ] `NoResourceFoundException` for et fjernet frontend-logger-endepunkt
       logges ikke som uventet feil (se «Kjente støykilder»).
 - [ ] Nais OpenTelemetry erstatter redundante HTTP-logger/metrikker.

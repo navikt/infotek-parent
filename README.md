@@ -92,6 +92,12 @@ kjøring til den er gjennomgått manuelt. Agent og tester har tidsavbrudd, og
 statusrapporten skiller mellom agentfeil, testfeil og endringer klare for review.
 
 Statusrapporten ligger i `docs/logging-agent-status.md`.
+En egen kontroll rapporterer bruk av `com.papertrailapp:logback-syslog4j` og
+`Syslog4jAppender` i parent-POM-en og alle managed-repoer til
+`docs/logging-agent-audit-findings.md`. Den foreslår en mulig TCP-erstatter,
+men endrer ikke avhengighet eller auditlogg. Vedlikeholdsstatus må bekreftes
+før biblioteket omtales som uvedlikeholdt. En vanlig kjøring uten `APPLY=1`
+oppdaterer rapporten uten å kjøre agenten; `DRY_RUN=1` skriver ingen filer.
 
 ### Observability
 

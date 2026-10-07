@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -18,11 +19,17 @@ REPOS_FILE = ROOT / "repos.yaml"
 REPOS_DIR = ROOT / "repos"
 STATUS_FILE = ROOT / "docs" / "logging-agent-status.md"
 TEST_RESULTS_FILE = ROOT / "docs" / "logging-agent-test-results.json"
+AUDIT_FINDINGS_FILE = ROOT / "docs" / "logging-agent-audit-findings.md"
 BRANCH = "chore/logging-hygiene"
 COMMIT_MESSAGE = "chore: rydd logging etter nav-logghygiene"
 TEST_RESULTS_VERSION = 1
 COMMAND_TIMEOUT_SECONDS = 30 * 60
 PR_TIMEOUT_SECONDS = 5 * 60
+APPENDER = "com.papertrailapp.logback.Syslog4jAppender"
+DEPENDENCY_BLOCK = re.compile(r"<dependency>\s*(.*?)\s*</dependency>", re.DOTALL)
+MANAGED_BLOCK = re.compile(r"<dependencyManagement>.*?</dependencyManagement>", re.DOTALL)
+XML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+SKIP_DIRECTORIES = {".git", "target", "node_modules", "build", "dist"}
 
 
 @dataclass(frozen=True)
@@ -47,6 +54,84 @@ def parse_repositories(path: Path = REPOS_FILE) -> list[Repository]:
     if current.get("managed") == "true":
         repositories.append(Repository(current["name"], current.get("default_branch", "main")))
     return repositories
+
+
+def without_xml_comments(content: str) -> str:
+    return XML_COMMENT.sub(lambda match: "\n" * match.group().count("\n"), content)
+
+
+def audit_usage(directory: Path, label: str) -> list[str]:
+    findings: list[str] = []
+    for pom in sorted(directory.rglob("pom.xml")):
+        if any(part in SKIP_DIRECTORIES for part in pom.relative_to(directory).parts):
+            continue
+        content = without_xml_comments(pom.read_text(encoding="utf-8"))
+        managed = [match.span() for match in MANAGED_BLOCK.finditer(content)]
+        for match in DEPENDENCY_BLOCK.finditer(content):
+            block = match.group()
+            if not (re.search(r"<groupId>\s*com\.papertrailapp\s*</groupId>", block)
+                    and re.search(r"<artifactId>\s*logback-syslog4j\s*</artifactId>", block)):
+                continue
+            line = content.count("\n", 0, match.start() + block.index("<artifactId>")) + 1
+            kind = "versjon styrt i dependencyManagement" if any(
+                start <= match.start() < end for start, end in managed
+            ) else "direkte avhengighet"
+            findings.append(f"`{label}/{pom.relative_to(directory)}:{line}` ({kind})")
+
+    for config in sorted(directory.rglob("logback*.xml")):
+        if any(part in SKIP_DIRECTORIES for part in config.relative_to(directory).parts):
+            continue
+        content = without_xml_comments(config.read_text(encoding="utf-8"))
+        for line, text in enumerate(content.splitlines(), start=1):
+            if APPENDER in text:
+                findings.append(
+                    f"`{label}/{config.relative_to(directory)}:{line}` (Syslog4jAppender)"
+                )
+    return findings
+
+
+def write_audit_findings(repositories: list[Repository], path: Path = AUDIT_FINDINGS_FILE) -> None:
+    rows = [("platform/maven", audit_usage(ROOT / "platform" / "maven", "platform/maven"))]
+    for repository in repositories:
+        directory = REPOS_DIR / repository.name
+        rows.append((
+            repository.name,
+            audit_usage(directory, f"repos/{repository.name}") if directory.is_dir() else None,
+        ))
+    report = [
+        "# Funn om syslog4j i auditlogging",
+        "",
+        "Kontrollen viser deklarert avhengighet og appenderbruk, ikke effektiv Maven-avhengighetsgraf.",
+        "Vedlikeholdsstatus for `com.papertrailapp:logback-syslog4j` er ikke bekreftet.",
+        "Ikke fjern eller bytt auditlogg som del av generell loggrydding.",
+        "",
+        "| Repo | Funn |",
+        "|---|---|",
+    ]
+    for name, findings in rows:
+        status = "ikke klonet" if findings is None else "<br>".join(findings) if findings else "ingen treff"
+        report.append(f"| {name} | {status} |")
+    report.extend([
+        "",
+        "## Mulig erstatning",
+        "",
+        "Undersøk `net.logstash.logback:logstash-logback-encoder` med "
+        "`LogstashTcpSocketAppender` og `PatternLayoutEncoder` som kandidat for TCP. "
+        "Prosjektet dokumenterer TCP, valgfri TLS og støtte for vilkårlig Logback-encoder. "
+        "Det er **ikke** en verifisert direkte erstatning: sjekk syslog-framing, "
+        "CEF-felt, Logback-versjon, mottakerkrav og hva som skjer når tilkobling "
+        "eller asynkron kø feiler. Standardoppsettet kan miste hendelser ved full kø. "
+        "Bevar `PERMIT`/`DENY` og verifiser levering til auditmottakeren før et bytte.",
+        "",
+        "Kilder: [Papertrails beskrivelse av TCP/TLS]"
+        "(https://github.com/papertrail/logback-syslog4j), "
+        "[logstash-logback-encoders TCP-dokumentasjon]"
+        "(https://github.com/logfellow/logstash-logback-encoder#tcp-appenders), "
+        "[Logbacks innebygde syslog-appender]"
+        "(https://logback.qos.ch/manual/appenders.html#SyslogAppender).",
+        "",
+    ])
+    path.write_text("\n".join(report), encoding="utf-8")
 
 
 def run(
@@ -118,7 +203,14 @@ def agent_command(repo_dir: Path, name: str) -> list[str]:
         f"Gå gjennom logging i repoet {name} etter nav-logghygiene. "
         "Gjør bare nødvendige, minimale endringer. Ikke logg PII, tokens, headers, "
         "URI-query eller request-/response-body. Bevar API-statuskoder, fallbacks "
-        "og separat auditlogg. Kjør relevante tester og rapporter kodebevis."
+        "og separat auditlogg. Sjekk com.papertrailapp:logback-syslog4j og "
+        "com.papertrailapp.logback.Syslog4jAppender, også ved parent-styrt versjon. "
+        "Rapporter filsti og kodebevis. Foreslå net.logstash.logback:logstash-logback-encoder "
+        "med LogstashTcpSocketAppender som kandidat, ikke automatisk migrering: "
+        "verifiser TCP/TLS, syslog-/CEF-format, mottaker, Logback-kompatibilitet "
+        "og risiko for tap ved full asynkron kø før bytte. "
+        "Ikke påstå at biblioteket er uvedlikeholdt uten verifiserbar kilde. "
+        "Kjør relevante tester og rapporter kodebevis."
     )
     return [
         "copilot",
@@ -419,6 +511,7 @@ def main() -> int:
                 apply_ok = False
 
     write_status(repositories)
+    write_audit_findings(repositories)
 
     if not apply_ok:
         return 1
