@@ -108,6 +108,10 @@ som mangler `NODE_AUTH_TOKEN`.
 
 `@nais/apm` ligger i GitHub Packages. Sett `NODE_AUTH_TOKEN` til et token
 med `read:packages` før migratoren oppdaterer lockfiler.
+Når skriptet oppretter en Vitest-test for observability, legger det også til
+`vitest` i `devDependencies` og oppdaterer lockfilen. Kjør
+`make observability-apply REPO=navn` på nytt fra en ren feature-branch hvis
+testen allerede finnes, men avhengigheten mangler.
 Kjør `make setup-github-packages` for å koble lokal npm/pnpm-bruk til
 eksisterende GitHub CLI-innlogging. Kommandoen setter også opp Maven.
 Automatiseringen støtter macOS med zsh. Andre shell og plattformer må sette
