@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 REPOS_FILE = ROOT / "repos.yaml"
 REPOS_DIR = ROOT / "repos"
 APM_VERSION = "0.6.3"
+VITEST_VERSION = "^4.1.11"
 IGNORED_PARTS = {"build", "dist", "node_modules", "target"}
 ENTRYPOINTS = (
     "src/main.tsx",
@@ -201,6 +202,24 @@ def ensure_apm_dependency(package_path: Path, apply: bool, result: Result) -> bo
     )
     if apply:
         dependencies["@nais/apm"] = APM_VERSION
+        package_path.write_text(
+            json.dumps(package, ensure_ascii=False, indent=detect_indent(package_path)) + "\n"
+        )
+    return True
+
+
+def ensure_vitest_dependency(package_path: Path, apply: bool, result: Result) -> bool:
+    package = read_json(package_path)
+    dependencies = package.get("dependencies", {})
+    dev_dependencies = package.setdefault("devDependencies", {})
+    if not isinstance(dependencies, dict) or not isinstance(dev_dependencies, dict):
+        result.manual_review(f"{package_path}: dependencies/devDependencies er ikke objekter")
+        return False
+    if "vitest" in dependencies or "vitest" in dev_dependencies:
+        return False
+    result.needs_changes(f"{package_path}: legg til vitest {VITEST_VERSION} som devDependency")
+    if apply:
+        dev_dependencies["vitest"] = VITEST_VERSION
         package_path.write_text(
             json.dumps(package, ensure_ascii=False, indent=detect_indent(package_path)) + "\n"
         )
@@ -497,6 +516,11 @@ def ensure_frontend_initialization(
         changed = True
         if apply:
             test_path.write_text(observability_test(repository.namespace))
+
+    if not test_path.is_file() or re.search(
+        r"""from\s+["']vitest["']""", test_path.read_text()
+    ):
+        changed = ensure_vitest_dependency(package_path, apply, result) or changed
 
     content = entrypoint.read_text()
     import_line = 'import { initializeObservability } from "./observability";'
