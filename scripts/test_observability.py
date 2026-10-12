@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts import observability
 
@@ -188,6 +189,116 @@ class ObservabilityTest(unittest.TestCase):
                 'toHaveBeenCalledWith({ namespace: "infotrygd", tracing: true });',
                 test_content,
             )
+            self.assertEqual(
+                json.loads(package_path.read_text())["devDependencies"]["vitest"],
+                observability.VITEST_VERSION,
+            )
+
+    def test_existing_observability_test_adds_missing_vitest_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            package_path = frontend / "package.json"
+            package_path.write_text(json.dumps({"dependencies": {"react": "19.0.0"}}) + "\n")
+            (source / "main.tsx").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "initializeObservability();\n"
+            )
+            (source / "observability.ts").write_text(
+                observability.observability_module("team")
+            )
+            (source / "observability.test.ts").write_text(
+                observability.observability_test("team")
+            )
+            repository = observability.Repository("example", "team", "main", ("dev-gcp",))
+
+            preview = observability.Result(repository.name)
+            self.assertTrue(
+                observability.ensure_frontend_initialization(
+                    package_path, repository, False, preview
+                )
+            )
+            self.assertNotIn("devDependencies", json.loads(package_path.read_text()))
+
+            first = observability.Result(repository.name)
+            self.assertTrue(
+                observability.ensure_frontend_initialization(
+                    package_path, repository, True, first
+                )
+            )
+            self.assertEqual(
+                json.loads(package_path.read_text())["devDependencies"]["vitest"],
+                observability.VITEST_VERSION,
+            )
+            second = observability.Result(repository.name)
+            self.assertFalse(
+                observability.ensure_frontend_initialization(
+                    package_path, repository, True, second
+                )
+            )
+            self.assertEqual(second.changes, [])
+
+    def test_existing_vitest_version_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            package_path = frontend / "package.json"
+            package_path.write_text(
+                json.dumps({"devDependencies": {"vitest": "^4.0.0"}}) + "\n"
+            )
+            (source / "main.tsx").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "initializeObservability();\n"
+            )
+            (source / "observability.ts").write_text(
+                observability.observability_module("team")
+            )
+            (source / "observability.test.ts").write_text(
+                observability.observability_test("team")
+            )
+            repository = observability.Repository("example", "team", "main", ("dev-gcp",))
+            result = observability.Result(repository.name)
+
+            self.assertFalse(
+                observability.ensure_frontend_initialization(
+                    package_path, repository, True, result
+                )
+            )
+            self.assertEqual(
+                json.loads(package_path.read_text())["devDependencies"]["vitest"],
+                "^4.0.0",
+            )
+            self.assertEqual(result.changes, [])
+
+    def test_existing_test_without_vitest_does_not_add_dependency(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            package_path = frontend / "package.json"
+            package_path.write_text(json.dumps({"dependencies": {"react": "19.0.0"}}) + "\n")
+            (source / "main.tsx").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "initializeObservability();\n"
+            )
+            (source / "observability.ts").write_text(
+                observability.observability_module("team")
+            )
+            (source / "observability.test.ts").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "test('starter observability', () => initializeObservability());\n"
+            )
+            repository = observability.Repository("example", "team", "main", ("dev-gcp",))
+            result = observability.Result(repository.name)
+
+            self.assertFalse(
+                observability.ensure_frontend_initialization(
+                    package_path, repository, True, result
+                )
+            )
+            self.assertNotIn("devDependencies", json.loads(package_path.read_text()))
 
     def test_frontend_initialization_flags_missing_namespace_for_review(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -796,6 +907,55 @@ class ObservabilityTest(unittest.TestCase):
             self.assertEqual(updated.count("autoInstrumentation:"), 1)
             self.assertEqual(second.status, "compliant")
             self.assertEqual(second.changes, [])
+
+    def test_process_repository_updates_lockfile_for_existing_observability_test(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repos_dir = Path(directory)
+            repo_dir = self.create_git_repository(repos_dir, "example")
+            frontend = repo_dir / "frontend"
+            source = frontend / "src"
+            source.mkdir(parents=True)
+            package_path = frontend / "package.json"
+            package_path.write_text(
+                json.dumps(
+                    {"dependencies": {"react": "19.0.0", "@nais/apm": observability.APM_VERSION}}
+                )
+                + "\n"
+            )
+            (source / "main.tsx").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "initializeObservability();\n"
+            )
+            (source / "observability.ts").write_text(
+                observability.observability_module("team")
+            )
+            (source / "observability.test.ts").write_text(
+                observability.observability_test("team")
+            )
+            (frontend / ".npmrc").write_text(
+                observability.REGISTRY_LINE + "\n" + observability.AUTH_TOKEN_LINE + "\n"
+            )
+            (repo_dir / ".github" / "workflows").mkdir(parents=True)
+            self.commit_all(repo_dir)
+            subprocess.run(
+                ["git", "switch", "-c", "bugfix/observability"],
+                cwd=repo_dir,
+                check=True,
+                capture_output=True,
+            )
+            repository = observability.Repository("example", "team", "main", ("dev-gcp",))
+
+            with patch.object(observability, "update_lockfile") as update_lockfile:
+                result = observability.process_repository(
+                    repository, apply=True, update_lockfiles=True, repos_dir=repos_dir
+                )
+
+            self.assertEqual(result.status, "changes-needed")
+            self.assertEqual(
+                json.loads(package_path.read_text())["devDependencies"]["vitest"],
+                observability.VITEST_VERSION,
+            )
+            update_lockfile.assert_called_once_with(package_path, result)
 
     def test_apply_blocks_default_branch(self):
         with tempfile.TemporaryDirectory() as directory:
