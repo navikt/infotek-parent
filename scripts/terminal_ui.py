@@ -157,6 +157,7 @@ def choose_cached_report(path: Path, title: str, summary: Callable[[], str], fre
             title,
             [("ny", "Lag ny rapport", "n"), ("quit", "Avslutt", "q")],
             clear=True,
+            timeout_seconds=REPORT_CHOICE_TIMEOUT_SECONDS,
         )
     age_seconds = max(0, int(time.time() - path.stat().st_mtime))
     return choose(
@@ -168,6 +169,7 @@ def choose_cached_report(path: Path, title: str, summary: Callable[[], str], fre
         ],
         default=0 if age_seconds < freshness_seconds else 1,
         clear=True,
+        timeout_seconds=REPORT_CHOICE_TIMEOUT_SECONDS,
     )
 
 

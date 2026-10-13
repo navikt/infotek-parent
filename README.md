@@ -134,6 +134,21 @@ Automatiseringen støtter macOS med zsh. Andre shell og plattformer må sette
 | `make mvn-update-kotlin VERSION=2.x.y` | Bump `kotlin.version` i alle repos + lager PRer |
 | `make pnpm-update-npmrc` | Synkroniser `.npmrc` til teamstandard + lager PRer |
 | `make pnpm-install` | Kjør `pnpm install` i alle frontend-mapper på tvers av repos |
+| `make pnpm-detach-frontend-config` | Velg ett eller flere managed frontend-repoer og fjern avhengigheten til parent-konfigurasjonen lokalt |
+
+`make pnpm-detach-frontend-config` viser en valgmeny og ber om bekreftelse før den
+endrer filer. Bruk `REPO=<navn>` for ett repo uten valgmeny, `DRY_RUN=1` for
+forhåndsvisning og `YES=1` for kjøring uten bekreftelse. Kommandoen legger
+gjeldende Biome- og TypeScript-standard fra `platform/pnpm/` inn i frontend-appen,
+bevarer lokale overstyringer og fjerner `@navikt/infotek-frontend-config` fra
+konfigurasjonen. Den sletter eventuell `package-lock.json`, regenererer
+`pnpm-lock.yaml` fra bunnen, flytter bort gammel `node_modules` og kjører
+`pnpm install` og `pnpm run build`. Ved feil får du tilbake de gamle lockfilene
+og `node_modules`. En ny lockfil kan oppdatere andre avhengigheter enn den
+delte pakken, og parent-standarden kan endre lint- og TypeScript-regler.
+Gjennomgå diffen og kjør appens tester før du publiserer selv. Kommandoen
+endrer ikke `repos.yaml`, backend eller Git-branch og lager ikke commit,
+push eller pull request.
 
 ### PR-behandling
 
