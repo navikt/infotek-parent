@@ -58,6 +58,17 @@ class TerminalUiTest(unittest.TestCase):
             self.assertEqual(1, mocked_choose.call_args.kwargs["default"])
             self.assertEqual(REPORT_CHOICE_TIMEOUT_SECONDS, mocked_choose.call_args.kwargs["timeout_seconds"])
 
+    def test_cached_report_timeout_defaults_to_recent_report(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "report.json"
+            report.touch()
+
+            with patch("scripts.terminal_ui.choose", return_value="fortsett") as mocked_choose:
+                self.assertEqual("fortsett", choose_cached_report(report, "Rapport", lambda: "0 PR-er"))
+
+            self.assertEqual(0, mocked_choose.call_args.kwargs["default"])
+            self.assertEqual(REPORT_CHOICE_TIMEOUT_SECONDS, mocked_choose.call_args.kwargs["timeout_seconds"])
+
     def test_fits_wide_review_table_into_80_columns(self) -> None:
         headers, rows, widths = fit_table(
             ("Tast", "Repo", "Branch", "Tittel", "Forfatter", "Status", "GH C/H", "Nais C/H"),

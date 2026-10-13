@@ -881,6 +881,10 @@ endif
 
 ##@ pnpm — Frontend
 
+pnpm-detach-frontend-config: export FRONTEND_DETACH_REPO = $(REPO)
+pnpm-detach-frontend-config: ## Gjør valgte managed frontender uavhengige av parent — bruk: make pnpm-detach-frontend-config [REPO=navn] [DRY_RUN=1] [YES=1]
+	@python3 scripts/detach-frontend-config.py $(if $(DRY_RUN),--dry-run) $(if $(YES),--yes)
+
 pnpm-migrate-frontend-config: ## Skriv eksplisitt frontend-konfig i ett managed repo — bruk: make pnpm-migrate-frontend-config REPO=navn [DRY_RUN=1]
 	@echo -e "$(BOLD)Migrerer til eksplisitt lokal TypeScript- og Biome-konfig$(RESET)"
 	@if [ -z "$(REPO)" ]; then \
