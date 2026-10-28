@@ -90,5 +90,6 @@ Rydd opp egne artefakter når økten er ferdig hvis de ikke lenger trengs.
 | [historisk-valutakalkulator](https://github.com/navikt/historisk-valutakalkulator) | `navikt` | `historisk` | — | ❌ |
 | [historisk-avgiftssystem](https://github.com/navikt/historisk-avgiftssystem) | `navikt` | `historisk` | dev-gcp, prod-gcp | ❌ |
 | [infotek-personkort](https://github.com/navikt/infotek-personkort) | `navikt` | `infotek` | — | ❌ |
+| [genie](https://github.com/navikt/genie) | `navikt` | `infotek` | dev-gcp | ✅ |
 
 <!-- AUTO-GENERATED:REPOS END -->
