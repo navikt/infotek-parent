@@ -284,6 +284,7 @@ Dette oppdaterer `repos.yaml` og regenererer `ai/AGENTS.md` automatisk.
 | [infotek-statistikk](https://github.com/navikt/infotek-statistikk) | Infotrygd statistikk  faste uttrekk for å lage månedsrapport. | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotek-statistikk) |
 | [infotrygd-the-final-countdown](https://github.com/navikt/infotrygd-the-final-countdown) | En nedtelling mot slutten av Infotrygd.  Infotrygd har fulgt oss i mange år, men nå nærmer systemets siste kapittel seg. Infotrygd – The Final Countdown viser hvor mye tid som gjenstår før systemet tas ut av drift.  Her kan vi følge nedtellingen dag for dag – helt til siste sekund. 🚀  It’s the final countdown… 🎶 | dev-gcp | [dev-gcp](https://console.nav.cloud.nais.io/team/infotek/app/dev-gcp/infotrygd-the-final-countdown) |
 | [infotek-personkort](https://github.com/navikt/infotek-personkort) ⚠️ | Oppslagsløsning for IP_90 personkort | — | — |
+| [genie](https://github.com/navikt/genie) | Genie er en saksbehandling app. | — | — |
 
 ### 🟧 `infotrygd` — [Nais Console](https://console.nav.cloud.nais.io/team/infotrygd)
 
