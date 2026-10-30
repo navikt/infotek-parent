@@ -917,19 +917,9 @@ pnpm-update-frontend-config: ## Bump @navikt/infotek-frontend-config til versjon
 	  esac; \
 	fi
 
-pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos — bruk: make pnpm-install [DRY_RUN=1]
-	@echo -e "$(BOLD)Kjører pnpm install i alle repos$(RESET)"
-	@if [ -n "$(DRY_RUN)" ]; then \
-	  python3 scripts/pnpm-install.py --dry-run; \
-	else \
-	  echo -e "\n$(CYAN)Forhåndsvisning$(RESET)"; \
-	  python3 scripts/pnpm-install.py --dry-run; \
-	  echo ""; \
-	  echo -n "  Kjør pnpm install i alle funn nå? [j/N] " && read ans && case "$$ans" in \
-	    [jJ]*) python3 scripts/pnpm-install.py;; \
-	    *) echo -e "  Avbrutt.";; \
-	  esac; \
-	fi
+pnpm-install: _require-yq ## Kjør pnpm install i frontend-mapper i managed repos — bruk: make pnpm-install [DRY_RUN=1]
+	@echo -e "$(BOLD)Kjører pnpm install i managed repos$(RESET)"
+	@python3 scripts/pnpm-install.py $(if $(DRY_RUN),--dry-run)
 
 pnpm-biome-check: _require-yq ## Kjør Biome-sjekk og typesjekk i managed frontend-repos — spør om auto-fix ved feil. Bruk: make pnpm-biome-check [FIX=1]
 	@if [ -n "$(FIX)" ]; then \
