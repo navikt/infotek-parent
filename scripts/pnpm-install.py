@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """
-Kjører pnpm install i alle frontend-mapper på tvers av repos.
+Kjører pnpm install i alle frontend-mapper i managed repos.
 
 Bruk:
   python3 scripts/pnpm-install.py [--dry-run]
 """
 
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 DRY_RUN = "--dry-run" in sys.argv
-REPOS_DIR = Path(__file__).parent.parent / "repos"
+ROOT = Path(__file__).parent.parent
+REPOS_DIR = ROOT / "repos"
+REPOS_FILE = ROOT / "repos.yaml"
 
 
 def run_streaming(cmd, cwd=None):
@@ -31,6 +34,14 @@ def run_streaming(cmd, cwd=None):
     return proc.returncode
 
 
+def managed_repo_names(repos_file: Path) -> list[str]:
+    result = subprocess.run(
+        ["yq", "e", ".repos[] | select(.managed == true) | .name", str(repos_file)],
+        capture_output=True, text=True, check=True,
+    )
+    return [name for name in result.stdout.split() if name]
+
+
 def find_package_jsons(repo_path):
     results = []
     for p in repo_path.rglob("package.json"):
@@ -41,10 +52,23 @@ def find_package_jsons(repo_path):
     return results
 
 
+def choose_targets(targets: list[tuple[Path, Path]], answer: str) -> list[tuple[Path, Path]]:
+    answer = answer.strip().lower()
+    if answer == "q":
+        return []
+    if not answer:
+        return targets
+    choices = [part.strip() for part in answer.split(",")]
+    if any(not part.isdigit() or not 1 <= int(part) <= len(targets) for part in choices):
+        raise ValueError("Oppgi ett eller flere numre fra listen, adskilt med komma")
+    return [targets[int(part) - 1] for part in dict.fromkeys(choices)]
+
+
 def main():
-    repos = sorted(d for d in REPOS_DIR.iterdir() if d.is_dir())
+    managed = set(managed_repo_names(REPOS_FILE))
+    repos = sorted(d for d in REPOS_DIR.iterdir() if d.is_dir() and d.name in managed)
     if not repos:
-        print("Ingen repos funnet. Kjør 'make git-clone' først.")
+        print("Ingen managed repos funnet. Kjør 'make git-clone' først.")
         sys.exit(1)
 
     targets: list[tuple[Path, Path]] = []
@@ -56,40 +80,21 @@ def main():
         print("Ingen package.json funnet i klonede repos.")
         return
 
-    selected_repo_names: set[str] | None = None
     if sys.stdin.isatty():
-        with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
-            for name in sorted({repo_dir.name for repo_dir, _ in targets}):
-                tmp.write(f"{name}\n")
-            tmp_path = tmp.name
+        print("\nFrontender i managed repos:")
+        for number, (_, pkg_dir) in enumerate(targets, start=1):
+            print(f"  {number}) {pkg_dir.relative_to(REPOS_DIR)}")
         try:
-            selector = subprocess.run(
-                [
-                    "python3",
-                    str(Path(__file__).parent / "select-repos.py"),
-                    "--input",
-                    tmp_path,
-                    "--repos-dir",
-                    str(REPOS_DIR),
-                    "--default-filter",
-                    "a",
-                ],
-                stdout=subprocess.PIPE,
-                text=True,
-                check=False,
-            )
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
-        picked = [line.strip() for line in selector.stdout.splitlines() if line.strip()]
-        if not picked:
+            targets = choose_targets(targets, input("\nVelg (flere med komma, Enter = alle, q = avbryt): "))
+        except ValueError as error:
+            print(f"❌ {error}")
+            sys.exit(1)
+        if not targets:
             print("Avbrutt.")
             return
-        selected_repo_names = set(picked)
 
     total, ok, failed = 0, 0, 0
     for repo_dir, pkg_dir in targets:
-        if selected_repo_names is not None and repo_dir.name not in selected_repo_names:
-            continue
         rel = pkg_dir.relative_to(REPOS_DIR)
         total += 1
         print(f"\n{'[DRY-RUN] ' if DRY_RUN else ''}⏳ pnpm install: {rel}", flush=True)
