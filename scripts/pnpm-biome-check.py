@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Kjører Biome-sjekk og typesjekk i alle frontend-repos på tvers av repos/.
+Kjører Biome-sjekk og typesjekk i frontend-mapper i managed repos fra repos.yaml.
 
 Bruk:
   python3 scripts/pnpm-biome-check.py           # sjekk, rapport + spør om fix
@@ -10,6 +10,8 @@ Bruk:
 
 Forutsetning: pnpm install er kjørt (make pnpm-install).
 """
+
+from __future__ import annotations
 
 import json
 import os
@@ -21,7 +23,10 @@ from pathlib import Path
 FIX_ALL = "--fix" in sys.argv
 DRY_RUN = "--dry-run" in sys.argv
 VERBOSE = "--verbose" in sys.argv
-REPOS_DIR = Path(__file__).parent.parent / "repos"
+ROOT = Path(__file__).parent.parent
+REPOS_DIR = ROOT / "repos"
+REPOS_FILE = ROOT / "repos.yaml"
+FRONTEND_PATHS = ("frontend", "backend-for-frontend/frontend")
 
 TYPECHECK_SCRIPTS = ["typecheck", "check-types", "tsc"]  # check-types-watch utelatt (blokkerer)
 
@@ -95,10 +100,22 @@ def ask_fix(label: str) -> bool:
         return False
 
 
+def managed_repo_names(repos_file: Path) -> list[str]:
+    result = subprocess.run(
+        ["yq", "e", ".repos[] | select(.managed == true) | .name", str(repos_file)],
+        capture_output=True, text=True, check=True,
+    )
+    return [name for name in result.stdout.split() if name]
+
+
+def find_frontend(repo_dir: Path) -> Path | None:
+    return next((repo_dir / p for p in FRONTEND_PATHS if (repo_dir / p / "package.json").is_file()), None)
+
+
 def check_repo(repo_dir: Path) -> tuple[int, int]:
     """Returnerer (biome_feil, tsc_feil)."""
-    frontend = repo_dir / "frontend"
-    if not frontend.is_dir():
+    frontend = find_frontend(repo_dir)
+    if frontend is None:
         return 0, 0
 
     scripts = read_scripts(frontend)
@@ -165,9 +182,11 @@ def check_repo(repo_dir: Path) -> tuple[int, int]:
 
 
 def main():
-    repos = sorted(d for d in REPOS_DIR.iterdir() if d.is_dir() and (d / ".git").is_dir())
+    repos = sorted(
+        REPOS_DIR / name for name in managed_repo_names(REPOS_FILE) if (REPOS_DIR / name / ".git").is_dir()
+    )
     if not repos:
-        print("Ingen repos funnet. Kjør 'make git-clone' først.")
+        print("Ingen managed repos funnet. Kjør 'make git-clone' først.")
         sys.exit(1)
 
     prefix = "[DRY-RUN] " if DRY_RUN else ""

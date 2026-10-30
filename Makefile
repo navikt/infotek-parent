@@ -931,7 +931,7 @@ pnpm-install: ## Kjør pnpm install i alle frontend-mapper på tvers av repos �
 	  esac; \
 	fi
 
-pnpm-biome-check: ## Kjør Biome-sjekk og typesjekk i alle frontend-repos — spør om auto-fix ved feil. Bruk: make pnpm-biome-check [FIX=1]
+pnpm-biome-check: _require-yq ## Kjør Biome-sjekk og typesjekk i managed frontend-repos — spør om auto-fix ved feil. Bruk: make pnpm-biome-check [FIX=1]
 	@if [ -n "$(FIX)" ]; then \
 	  python3 scripts/pnpm-biome-check.py --fix; \
 	else \
