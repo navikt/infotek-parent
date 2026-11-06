@@ -740,6 +740,7 @@ ALERT_SLACK_CHANNELS = {
 }
 PROMETHEUS_RULE_PATTERN = re.compile(r"(?m)^kind:\s*[\"']?PrometheusRule[\"']?\s*$")
 NAIS_ALERT_PATTERN = re.compile(r"(?m)^kind:\s*[\"']?Alert[\"']?\s*$")
+NAIS_ALERT_API_PATTERN = re.compile(r"(?m)^apiVersion:\s*[\"']?nais\.io/")
 TEMPLATE_PATTERN = re.compile(r"\{\{\s*([\w.-]+)\s*\}\}")
 DEPLOY_ACTION_PATTERN = re.compile(r"(?m)^\s*(?:-\s+)?uses:\s*nais/deploy/actions/deploy@")
 CLUSTER_PATTERN = re.compile(r"(?m)^\s*CLUSTER:\s*[\"']?(?P<cluster>[\w-]+)[\"']?\s*(?:#.*)?$")
@@ -913,7 +914,7 @@ def ensure_alerts(
         content = path.read_text(errors="ignore")
         if PROMETHEUS_RULE_PATTERN.search(content):
             existing.append(path)
-        elif NAIS_ALERT_PATTERN.search(content) and "nais.io" in content:
+        elif NAIS_ALERT_PATTERN.search(content) and NAIS_ALERT_API_PATTERN.search(content):
             result.manual_review(
                 f"{path.relative_to(repo_dir)}: migrer nais.io Alert til PrometheusRule"
             )
