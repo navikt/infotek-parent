@@ -110,7 +110,9 @@ dette automatisk:
   loggdestinasjon
 - oppretter `alerts.yaml` (`PrometheusRule`) ved siden av Nais-manifestene med
   varsler for nedetid, restarter, 5xx-rate og feillogger, og legger fila til
-  `RESOURCE` i prod-deploy (dev-deploy for repoer uten prod)
+  `RESOURCE` i prod-deploy (dev-deploy for repoer uten prod). Legg til
+  `SKIP_ALERTS=1` på make-kommandoen, eller `--skip-alerts` på skriptet, for
+  å la varsler være urørt
 
 Disse funnene må vurderes manuelt: egen MDC- eller callId-kode, feilsvar med
 `callId` eller `MDC.get("traceId")`, gamle `nais.io`-`Alert`-ressurser og

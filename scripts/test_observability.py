@@ -1182,6 +1182,24 @@ class ObservabilityTest(unittest.TestCase):
             self.assertEqual(len(candidates), 1)
             self.assertIn("Feilmelding.kt: MDC traceId", candidates[0])
 
+    def test_error_response_call_id_from_span_is_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            source = repo_dir / "src" / "main" / "kotlin"
+            source.mkdir(parents=True)
+            (source / "Feilmelding.kt").write_text(
+                "data class Feilmelding(val kode: String) {\n"
+                "    val callId: String? = Span.current().spanContext.traceId\n}\n"
+            )
+            (source / "ProblemDetail.kt").write_text(
+                'data class ProblemDetail(val kode: String) {\n    val callId = MDC.get("callId")\n}\n'
+            )
+
+            candidates = observability.error_response_trace_candidates(repo_dir)
+
+            self.assertEqual(len(candidates), 1)
+            self.assertIn("ProblemDetail.kt: feilsvar bruker callId", candidates[0])
+
     def create_deployable_repository(self, repos_dir: Path) -> Path:
         repo_dir = self.create_git_repository(repos_dir, "example")
         (repo_dir / "pom.xml").write_text("<project/>\n")
@@ -1249,6 +1267,24 @@ class ObservabilityTest(unittest.TestCase):
             self.assertIn("CLUSTER: prod-gcp\n          RESOURCE: nais/app/backend.yaml,nais/alerts.yaml", workflow)
             self.assertIn("#infotek-sheriff", " ".join(first.warnings))
             self.assertEqual(second.changes, [])
+
+    def test_skip_alerts_leaves_alerts_and_workflow_untouched(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repos_dir = Path(directory)
+            repo_dir = self.create_deployable_repository(repos_dir)
+            workflow = repo_dir / ".github" / "workflows" / "main.yml"
+            original = workflow.read_text()
+            repository = observability.Repository(
+                "example", "historisk", "main", ("dev-gcp", "prod-gcp")
+            )
+
+            result = observability.process_repository(
+                repository, True, False, repos_dir, skip_alerts=True
+            )
+
+            self.assertFalse((repo_dir / "nais" / "alerts.yaml").exists())
+            self.assertEqual(workflow.read_text(), original)
+            self.assertNotIn("#infotek-sheriff", " ".join(result.warnings))
 
     def test_deprecated_nais_alert_requires_migration(self):
         with tempfile.TemporaryDirectory() as directory:

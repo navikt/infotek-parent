@@ -728,7 +728,7 @@ def error_response_trace_candidates(repo_dir: Path) -> list[str]:
                 f"{relative}: MDC traceId er tom uten Micrometer Tracing-autokonfigurasjon; "
                 "bruk Span.current() fra Nais-agenten"
             )
-        if re.search(r"\bval\s+callId\b", content):
+        if re.search(r"\bval\s+callId\b(?![^\n]*Span\.current\(\))", content):
             candidates.append(f"{relative}: feilsvar bruker callId; teamstandard er traceId")
     return candidates
 
@@ -1249,6 +1249,7 @@ def process_repository(
     apply: bool,
     update_lockfiles: bool,
     repos_dir: Path = REPOS_DIR,
+    skip_alerts: bool = False,
 ) -> Result:
     result = Result(repository.name)
     repo_dir = repos_dir / repository.name
@@ -1309,7 +1310,8 @@ def process_repository(
         update_manifest(manifest, apply, java, result)
 
     remove_frontend_logger_endpoint(repo_dir, frontend_ready, apply, result)
-    ensure_alerts(repository, repo_dir, java, apply, result)
+    if not skip_alerts:
+        ensure_alerts(repository, repo_dir, java, apply, result)
 
     for candidate in error_response_trace_candidates(repo_dir):
         result.manual_review(candidate)
@@ -1354,6 +1356,11 @@ def main() -> int:
         help="oppdater lockfiler etter package.json-endringer",
     )
     parser.add_argument("--json", action="store_true", help="skriv JSON lines")
+    parser.add_argument(
+        "--skip-alerts",
+        action="store_true",
+        help="hopp over sjekk og oppretting av PrometheusRule-varsler",
+    )
     args = parser.parse_args()
 
     repositories = parse_repositories()
@@ -1366,7 +1373,12 @@ def main() -> int:
             return 2
 
     results = [
-        process_repository(repository, args.apply, args.update_lockfiles)
+        process_repository(
+            repository,
+            args.apply,
+            args.update_lockfiles,
+            skip_alerts=args.skip_alerts,
+        )
         for repository in repositories
     ]
     for result in results:
