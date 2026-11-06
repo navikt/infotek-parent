@@ -124,6 +124,23 @@ Automatiseringen støtter macOS med zsh. Andre shell og plattformer må sette
 | `make observability-apply REPO=navn` | Oppdater ett eksisterende repo og lockfil |
 | `make observability-init REPO=navn` | Klargjør observability i et nytt repo |
 
+`observability-apply` og `observability-init` krever en ren feature-branch i
+underrepoet. En feature-branch i parent-repoet er ikke nok. Skriptet blokkerer
+default branch og detached HEAD før det endrer filer, og oppretter ikke branches.
+
+Kjør først `make git-update` selv og avklar eventuelle avvik. Fra parent-mappen,
+med underrepoet på oppdatert default branch og uten lokale endringer:
+
+```bash
+git -C repos/historisk-tidsbegrenset-uforestonad switch -c chore/observability
+python3 scripts/observability.py --repo historisk-tidsbegrenset-uforestonad
+make observability-apply REPO=historisk-tidsbegrenset-uforestonad
+```
+
+Bytt repo-navnet for andre repoer. Gjennomgå sjekkresultatet før du kjører apply,
+og gjennomgå diffen og kjør relevante tester etterpå. Hvis branchen allerede
+finnes, kontroller den før du bytter til den eller velger et annet branch-navn.
+
 ### Masseoppdateringer
 
 | Kommando | Beskrivelse |

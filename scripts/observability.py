@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -690,9 +691,19 @@ def process_repository(
         return result
     if apply and branch in {"detached", repository.default_branch}:
         result.status = "blocked"
-        result.warnings.append(
-            f"{repo_dir}: opprett en feature-branch fra {repository.default_branch} før --apply"
-        )
+        git_command = f"git -C {shlex.quote(str(repo_dir))}"
+        if branch == "detached":
+            result.warnings.append(
+                f"{repo_dir}: detached HEAD; bytt først til {repository.default_branch} "
+                "og kontroller status før du oppretter en feature-branch. "
+                f"Kjør: {git_command} switch {shlex.quote(repository.default_branch)}"
+            )
+        else:
+            result.warnings.append(
+                f"{repo_dir}: står på default-branchen {repository.default_branch}; "
+                "opprett en feature-branch i dette underrepoet før --apply. "
+                f"Kjør: {git_command} switch -c chore/observability"
+            )
         return result
 
     packages = frontend_packages(repo_dir)

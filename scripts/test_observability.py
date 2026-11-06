@@ -1,4 +1,5 @@
 import json
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -958,34 +959,87 @@ class ObservabilityTest(unittest.TestCase):
             update_lockfile.assert_called_once_with(package_path, result)
 
     def test_apply_blocks_default_branch(self):
+        for default_branch in ("main", "master"):
+            with self.subTest(default_branch=default_branch):
+                with tempfile.TemporaryDirectory(prefix="observability test ") as directory:
+                    repos_dir = Path(directory)
+                    repo_dir = self.create_git_repository(
+                        repos_dir, "example", default_branch
+                    )
+                    (repo_dir / "pom.xml").write_text("<project/>\n")
+                    (repo_dir / "app.yaml").write_text(
+                        "kind: Application\nspec:\n  image: test\n"
+                    )
+                    self.commit_all(repo_dir)
+                    repository = observability.Repository(
+                        "example", "team", default_branch, ("dev-gcp",)
+                    )
+
+                    with patch.object(observability, "update_lockfile") as update_lockfile:
+                        result = observability.process_repository(
+                            repository,
+                            apply=True,
+                            update_lockfiles=True,
+                            repos_dir=repos_dir,
+                        )
+
+                    self.assertEqual(result.status, "blocked")
+                    warning = result.warnings[0]
+                    self.assertIn(f"default-branchen {default_branch}", warning)
+                    self.assertIn("opprett en feature-branch", warning)
+                    command = warning.split("Kjør: ", 1)[1]
+                    self.assertEqual(
+                        shlex.split(command),
+                        ["git", "-C", str(repo_dir), "switch", "-c", "chore/observability"],
+                    )
+                    self.assertEqual(
+                        observability.git_status(repo_dir), (default_branch, False)
+                    )
+                    update_lockfile.assert_not_called()
+
+    def test_apply_blocks_detached_head_with_default_branch_guidance(self):
         with tempfile.TemporaryDirectory() as directory:
             repos_dir = Path(directory)
-            repo_dir = self.create_git_repository(repos_dir, "example")
+            repo_dir = self.create_git_repository(repos_dir, "example", "master")
             (repo_dir / "pom.xml").write_text("<project/>\n")
+            (repo_dir / "app.yaml").write_text(
+                "kind: Application\nspec:\n  image: test\n"
+            )
             self.commit_all(repo_dir)
+            subprocess.run(
+                ["git", "switch", "--detach"],
+                cwd=repo_dir,
+                check=True,
+                capture_output=True,
+            )
             repository = observability.Repository(
-                "example",
-                "team",
-                "main",
-                ("dev-gcp",),
+                "example", "team", "master", ("dev-gcp",)
             )
 
-            result = observability.process_repository(
-                repository,
-                apply=True,
-                update_lockfiles=False,
-                repos_dir=repos_dir,
-            )
+            with patch.object(observability, "update_lockfile") as update_lockfile:
+                result = observability.process_repository(
+                    repository,
+                    apply=True,
+                    update_lockfiles=True,
+                    repos_dir=repos_dir,
+                )
 
             self.assertEqual(result.status, "blocked")
-            self.assertIn("opprett en feature-branch", result.warnings[0])
+            self.assertIn("detached HEAD", result.warnings[0])
+            self.assertIn("git -C", result.warnings[0])
+            self.assertIn("switch master", result.warnings[0])
+            self.assertNotIn("switch -c", result.warnings[0])
+            self.assertEqual(observability.git_status(repo_dir), ("detached", False))
+            update_lockfile.assert_not_called()
 
     @staticmethod
-    def create_git_repository(repos_dir: Path, name: str) -> Path:
+    def create_git_repository(
+        repos_dir: Path, name: str, default_branch: str = "main"
+    ) -> Path:
         repo_dir = repos_dir / name
         repo_dir.mkdir()
         subprocess.run(
-            ["git", "init", "-b", "main"],
+            ["git", "init", "-b", default_branch],
             cwd=repo_dir,
             check=True,
             capture_output=True,
