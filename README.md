@@ -103,6 +103,8 @@ Standarden følger historisk-pensjon og infotrygd-hentsaksliste. Migratoren gjø
 dette automatisk:
 
 - legger til `@nais/apm` i GCP-frontender, men nedgraderer aldri en nyere versjon
+- setter `app` og `namespace` i `init()`, slik at telemetrien ikke havner på
+  `unknown-app`. Appnavnet hentes fra Nais-manifestet
 - godtar eksisterende `@nais/apm`-init i en annen modul enn `observability.ts`
 - fjerner gammel frontend-logging med `loglevel-plugin-remote`, kallet i
   entrypoint og den ubeskyttede `/api/frontendLogger`-controlleren med tester

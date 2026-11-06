@@ -153,7 +153,7 @@ class ObservabilityTest(unittest.TestCase):
                 observability.APM_VERSION,
             )
             self.assertIn(
-                'init({ namespace: "team", tracing: true });',
+                'init({ app: "example", namespace: "team", tracing: true });',
                 (source / "observability.ts").read_text(),
             )
 
@@ -184,10 +184,10 @@ class ObservabilityTest(unittest.TestCase):
             module_content = (source / "observability.ts").read_text()
             test_content = (source / "observability.test.ts").read_text()
             self.assertIn(
-                'init({ namespace: "infotrygd", tracing: true });', module_content
+                'init({ app: "example", namespace: "infotrygd", tracing: true });', module_content
             )
             self.assertIn(
-                'toHaveBeenCalledWith({ namespace: "infotrygd", tracing: true });',
+                'app: "example",\n        namespace: "infotrygd",',
                 test_content,
             )
             self.assertEqual(
@@ -207,10 +207,10 @@ class ObservabilityTest(unittest.TestCase):
                 "initializeObservability();\n"
             )
             (source / "observability.ts").write_text(
-                observability.observability_module("team")
+                observability.observability_module("example", "team")
             )
             (source / "observability.test.ts").write_text(
-                observability.observability_test("team")
+                observability.observability_test("example", "team")
             )
             repository = observability.Repository("example", "team", "main", ("dev-gcp",))
 
@@ -254,10 +254,10 @@ class ObservabilityTest(unittest.TestCase):
                 "initializeObservability();\n"
             )
             (source / "observability.ts").write_text(
-                observability.observability_module("team")
+                observability.observability_module("example", "team")
             )
             (source / "observability.test.ts").write_text(
-                observability.observability_test("team")
+                observability.observability_test("example", "team")
             )
             repository = observability.Repository("example", "team", "main", ("dev-gcp",))
             result = observability.Result(repository.name)
@@ -285,7 +285,7 @@ class ObservabilityTest(unittest.TestCase):
                 "initializeObservability();\n"
             )
             (source / "observability.ts").write_text(
-                observability.observability_module("team")
+                observability.observability_module("example", "team")
             )
             (source / "observability.test.ts").write_text(
                 'import { initializeObservability } from "./observability";\n'
@@ -334,6 +334,89 @@ class ObservabilityTest(unittest.TestCase):
             self.assertTrue(
                 any("mangler namespace" in warning for warning in result.warnings)
             )
+
+    def test_frontend_initialization_adds_app_to_legacy_template(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            package_path = frontend / "package.json"
+            package_path.write_text(json.dumps({"devDependencies": {"vitest": "3.0.0"}}) + "\n")
+            (source / "main.tsx").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "initializeObservability();\n"
+            )
+            (source / "observability.ts").write_text(
+                'import { init } from "@nais/apm";\n\n'
+                "export function initializeObservability() {\n"
+                '    init({ namespace: "historisk", tracing: true });\n'
+                "}\n"
+            )
+            (source / "observability.test.ts").write_text(
+                'import { expect, test } from "vitest";\n'
+                'expect(init).toHaveBeenCalledWith({ namespace: "historisk", tracing: true });\n'
+            )
+            repository = observability.Repository("repo", "historisk", "main", ("dev-gcp",))
+            first = observability.Result(repository.name)
+            second = observability.Result(repository.name)
+
+            observability.ensure_frontend_initialization(
+                package_path, repository, True, first, "historisk-app"
+            )
+            changed = observability.ensure_frontend_initialization(
+                package_path, repository, True, second, "historisk-app"
+            )
+
+            self.assertIn(
+                'init({ app: "historisk-app", namespace: "historisk", tracing: true });',
+                (source / "observability.ts").read_text(),
+            )
+            self.assertIn(
+                'toHaveBeenCalledWith({ app: "historisk-app", namespace: "historisk", tracing: true })',
+                (source / "observability.test.ts").read_text(),
+            )
+            self.assertEqual(first.status, "changes-needed")
+            self.assertFalse(changed)
+            self.assertEqual(second.status, "compliant")
+
+    def test_frontend_initialization_flags_custom_module_without_app(self):
+        with tempfile.TemporaryDirectory() as directory:
+            frontend = Path(directory)
+            source = frontend / "src"
+            source.mkdir()
+            package_path = frontend / "package.json"
+            package_path.write_text(json.dumps({"devDependencies": {"vitest": "3.0.0"}}) + "\n")
+            (source / "main.tsx").write_text(
+                'import { initializeObservability } from "./observability";\n'
+                "initializeObservability();\n"
+            )
+            module = (
+                'import { init } from "@nais/apm";\n\n'
+                "export function initializeObservability() {\n"
+                '    init({ namespace: "historisk", beforeSend });\n'
+                "}\n"
+            )
+            (source / "observability.ts").write_text(module)
+            repository = observability.Repository("repo", "historisk", "main", ("dev-gcp",))
+            result = observability.Result(repository.name)
+
+            observability.ensure_frontend_initialization(package_path, repository, True, result)
+
+            self.assertEqual((source / "observability.ts").read_text(), module)
+            self.assertIn("mangler app i init()", " ".join(result.warnings))
+
+    def test_frontend_app_name_prefers_frontend_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo_dir = Path(directory)
+            nais = repo_dir / "nais"
+            nais.mkdir()
+            for name in ("example-backend", "example-frontend"):
+                (nais / f"{name}.yaml").write_text(
+                    "apiVersion: nais.io/v1alpha1\nkind: Application\n"
+                    f"metadata:\n  name: {name}\nspec:\n  image: x\n"
+                )
+
+            self.assertEqual(observability.frontend_app_name(repo_dir), "example-frontend")
 
     def test_ensure_npmrc_normalizes_trailing_slash_and_old_token_var(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -929,10 +1012,10 @@ class ObservabilityTest(unittest.TestCase):
                 "initializeObservability();\n"
             )
             (source / "observability.ts").write_text(
-                observability.observability_module("team")
+                observability.observability_module("example", "team")
             )
             (source / "observability.test.ts").write_text(
-                observability.observability_test("team")
+                observability.observability_test("example", "team")
             )
             (frontend / ".npmrc").write_text(
                 observability.REGISTRY_LINE + "\n" + observability.AUTH_TOKEN_LINE + "\n"

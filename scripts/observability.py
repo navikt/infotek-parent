@@ -1017,21 +1017,21 @@ def find_entrypoint(frontend_dir: Path) -> Path | None:
     return None
 
 
-def observability_module(namespace: str) -> str:
+def observability_module(app: str, namespace: str) -> str:
     return (
         'import { init } from "@nais/apm";\n\n'
         "export function initializeObservability() {\n"
-        "    // namespace kan ikke løses fra meta-tags eller build-time env her:\n"
+        "    // app og namespace kan ikke løses fra meta-tags eller build-time env her:\n"
         "    // BFF-en server statisk index.html uten SSR-templating, og\n"
         "    // nais.yaml har ikke spec.frontend.generatedConfig. Uten dette\n"
-        '    // faller init() tilbake til "unknown-team". namespace er stabil\n'
-        "    // på tvers av miljø, så den er trygg å hardkode.\n"
-        f'    init({{ namespace: "{namespace}", tracing: true }});\n'
+        '    // faller init() tilbake til "unknown-app" og "unknown-team". Begge er\n'
+        "    // stabile på tvers av miljø, så de er trygge å hardkode.\n"
+        f'    init({{ app: "{app}", namespace: "{namespace}", tracing: true }});\n'
         "}\n"
     )
 
 
-def observability_test(namespace: str) -> str:
+def observability_test(app: str, namespace: str) -> str:
     return (
         'import { beforeEach, expect, test, vi } from "vitest";\n\n'
         "const { init } = vi.hoisted(() => ({ init: vi.fn() }));\n\n"
@@ -1043,9 +1043,39 @@ def observability_test(namespace: str) -> str:
         'test("initialiserer Nais frontend-observability", () => {\n'
         "    initializeObservability();\n\n"
         "    expect(init).toHaveBeenCalledOnce();\n"
-        f'    expect(init).toHaveBeenCalledWith({{ namespace: "{namespace}", tracing: true }});\n'
+        "    expect(init).toHaveBeenCalledWith({\n"
+        f'        app: "{app}",\n'
+        f'        namespace: "{namespace}",\n'
+        "        tracing: true,\n"
+        "    });\n"
         "});\n"
     )
+
+
+LEGACY_INIT_PATTERN = re.compile(
+    r"""(?P<prefix>(?:\binit|toHaveBeenCalledWith)\(\{\s*)"""
+    r"""(?P<rest>namespace:\s*["'][\w-]+["'],\s*tracing:\s*true\s*\}\))"""
+)
+
+
+def add_app_to_legacy_init(content: str, app: str) -> str:
+    return LEGACY_INIT_PATTERN.sub(
+        lambda match: f'{match["prefix"]}app: "{app}", {match["rest"]}', content
+    )
+
+
+def frontend_app_name(repo_dir: Path) -> str | None:
+    names = {
+        name
+        for manifest in nais_manifests(repo_dir)
+        if (name := application_name(manifest, repo_dir))
+    }
+    frontend_names = {name for name in names if "frontend" in name}
+    if len(frontend_names) == 1:
+        return frontend_names.pop()
+    if len(names) == 1:
+        return names.pop()
+    return None
 
 
 def ensure_frontend_initialization(
@@ -1053,7 +1083,9 @@ def ensure_frontend_initialization(
     repository: Repository,
     apply: bool,
     result: Result,
+    app: str | None = None,
 ) -> bool:
+    app = app or repository.name
     frontend_dir = package_path.parent
     entrypoint = find_entrypoint(frontend_dir)
     if entrypoint is None:
@@ -1065,7 +1097,7 @@ def ensure_frontend_initialization(
     test_path = source_dir / "observability.test.ts"
     changed = False
 
-    expected_module = observability_module(repository.namespace)
+    expected_module = observability_module(app, repository.namespace)
     if not module_path.is_file():
         if existing_apm_initialization(source_dir):
             return False
@@ -1087,12 +1119,25 @@ def ensure_frontend_initialization(
             result.manual_review(
                 f"{module_path}: mangler namespace i init() — se manuell fiks i chore/observability"
             )
+        elif "app:" not in module_content:
+            if LEGACY_INIT_PATTERN.search(module_content):
+                result.needs_changes(f"{module_path}: legg til app i init()")
+                changed = True
+                if apply:
+                    module_path.write_text(add_app_to_legacy_init(module_content, app))
+            else:
+                result.manual_review(f"{module_path}: mangler app i init()")
 
     if not test_path.is_file():
         result.needs_changes(f"{test_path}: legg til initialiseringstest")
         changed = True
         if apply:
-            test_path.write_text(observability_test(repository.namespace))
+            test_path.write_text(observability_test(app, repository.namespace))
+    elif LEGACY_INIT_PATTERN.search(test_content := test_path.read_text()):
+        result.needs_changes(f"{test_path}: forvent app i init()")
+        changed = True
+        if apply:
+            test_path.write_text(add_app_to_legacy_init(test_content, app))
 
     if not test_path.is_file() or re.search(
         r"""from\s+["']vitest["']""", test_path.read_text()
@@ -1297,7 +1342,7 @@ def process_repository(
             )
             frontend_ready = frontend_ready and legacy_removed
             source_changed = ensure_frontend_initialization(
-                package_path, repository, apply, result
+                package_path, repository, apply, result, frontend_app_name(repo_dir)
             )
             if dependency_changed or config_changed or legacy_changed or source_changed:
                 changed_packages.append(package_path)
