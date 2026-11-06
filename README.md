@@ -99,12 +99,32 @@ Statusrapporten ligger i `docs/logging-agent-status.md`.
 GCP-frontender, FSS-frontender og Java-backender. FSS-frontender får ikke
 browser-instrumentering.
 
-Migratoren legger til `@nais/apm` i GCP-frontender, aktiverer Nais
-auto-instrumentering for Java-workloads og fjerner Elastic som loggdestinasjon.
-Den rapporterer egen logging som må vurderes manuelt. Auditlogg,
-forretningsmetrikker, fallbacks og korrelasjonsheadere endres ikke automatisk.
-For frontender som bruker GitHub Packages, rapporterer den også npm/pnpm-workflows
-som mangler `NODE_AUTH_TOKEN`.
+Standarden følger historisk-pensjon og infotrygd-hentsaksliste. Migratoren gjør
+dette automatisk:
+
+- legger til `@nais/apm` i GCP-frontender, men nedgraderer aldri en nyere versjon
+- godtar eksisterende `@nais/apm`-init i en annen modul enn `observability.ts`
+- fjerner gammel frontend-logging med `loglevel-plugin-remote`, kallet i
+  entrypoint og den ubeskyttede `/api/frontendLogger`-controlleren med tester
+- aktiverer Nais auto-instrumentering for Java-workloads og fjerner Elastic som
+  loggdestinasjon
+- oppretter `alerts.yaml` (`PrometheusRule`) ved siden av Nais-manifestene med
+  varsler for nedetid, restarter, 5xx-rate og feillogger, og legger fila til
+  `RESOURCE` i prod-deploy (dev-deploy for repoer uten prod)
+
+Disse funnene må vurderes manuelt: egen MDC- eller callId-kode, feilsvar med
+`callId` eller `MDC.get("traceId")`, gamle `nais.io`-`Alert`-ressurser og
+gammel logging som brukes på andre måter enn et enkelt kall. Spring Boot 4 uten
+Micrometer Tracing-autokonfigurasjon gir tom `traceId` i MDC. Bruk derfor
+`Span.current()` fra Nais-agenten i feilsvar. Auditlogg, forretningsmetrikker,
+fallbacks og korrelasjonsheadere endres ikke automatisk.
+
+Varslene går til Slack-kanalen som er satt for namespacet i Nais Console. For
+`infotek` og `historisk` skal kanalen være `#infotek-sheriff`.
+
+For frontender som bruker GitHub Packages, rapporterer migratoren workflow-steg
+som installerer pakker (`install`, `ci`, `add` og lignende) uten `NODE_AUTH_TOKEN`.
+`pnpm run` og andre script-kjøringer trenger ikke token.
 
 `@nais/apm` ligger i GitHub Packages. Sett `NODE_AUTH_TOKEN` til et token
 med `read:packages` før migratoren oppdaterer lockfiler.
