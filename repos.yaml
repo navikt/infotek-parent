@@ -3,6 +3,9 @@ team: infotek
 # Legg til nye repos med: make add-repo ORG=<org> REPO=<navn> DESC="<beskrivelse>"
 #
 # Gyldige orger: navikt | historisk | infotryg | infotek
+#
+# Nais-workloads: et repo eier <nais_app eller name>, -backend og -frontend.
+# Andre workloads fra samme repo føres opp i nais_workloads: [navn, ...].
 repos:
   # ── Namespace: infotek ─────────────────────────────────────────────────────
   - name: infotek-databaseuttrekk
@@ -172,6 +175,7 @@ repos:
     stack: []
     default_branch: main
     managed: true
+    nais_workloads: [genie-pdfgen]
     environments:
       - dev-gcp
       - prod-gcp
