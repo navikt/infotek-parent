@@ -610,23 +610,23 @@ pr-rerun: ## Rerun feilede CI-sjekker på åpne PRer — bruk: make pr-rerun [DR
 logging-agent: ## Kjør logging-agent kontrollert — bruk: make logging-agent REPO=navn [APPLY=1] [CREATE_PR=1] eller ALL=1
 	@python3 scripts/logging_agent.py $(if $(REPO),--repo $(REPO),) $(if $(ALL),--all,) $(if $(DRY_RUN),--dry-run,) $(if $(APPLY),--apply,) $(if $(CREATE_PR),--create-pr,)
 
-observability-check: ## Sjekk Nais APM, auto-instrumentering og logging i alle managed-repoer
-	@python3 scripts/observability.py
+observability-check: ## Sjekk Nais APM, auto-instrumentering, logging og varsler i alle managed-repoer
+	@python3 scripts/observability.py $(if $(SKIP_ALERTS),--skip-alerts,)
 
 observability-status: ## Skriv maskinlesbar observability-status som JSON lines
-	@python3 scripts/observability.py --json
+	@python3 scripts/observability.py --json $(if $(SKIP_ALERTS),--skip-alerts,)
 
-observability-apply: ## Oppdater ett managed-repo — bruk: make observability-apply REPO=navn
+observability-apply: ## Oppdater ett managed-repo — bruk: make observability-apply REPO=navn [SKIP_ALERTS=1]
 ifndef REPO
 	$(error REPO mangler. Bruk: make observability-apply REPO=navn)
 endif
-	@python3 scripts/observability.py --apply --update-lockfiles --repo $(REPO)
+	@python3 scripts/observability.py --apply --update-lockfiles --repo $(REPO) $(if $(SKIP_ALERTS),--skip-alerts,)
 
 observability-init: ## Klargjør observability i et nytt managed-repo — bruk: make observability-init REPO=navn
 ifndef REPO
 	$(error REPO mangler. Bruk: make observability-init REPO=navn)
 endif
-	@python3 scripts/observability.py --apply --update-lockfiles --repo $(REPO)
+	@python3 scripts/observability.py --apply --update-lockfiles --repo $(REPO) $(if $(SKIP_ALERTS),--skip-alerts,)
 
 ##@ git — Masseoperasjoner
 
