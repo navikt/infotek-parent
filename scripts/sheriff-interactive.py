@@ -15,8 +15,9 @@ Bruk:
 
 Kandidater fra rapporten er åpne bot-/Dependabot-PR-er som ikke er draft, er
 `MERGEABLE` og har grønn CI. De prioriteres i denne rekkefølgen: (1)
-security-relevante non-major-oppdateringer (advisory/CVE/GHSA/dependency-
-treff mot GitHub-alerts, eller "security"/"sikkerhet" i tittel/body), (2)
+security-relevante non-major-oppdateringer (CVE/GHSA i tittel/body, en
+oppdatert pakke som har åpen Dependabot-alert, eller "security"/"sikkerhet"
+i tittelen), (2)
 øvrige non-major-oppdateringer, (3) major-version-oppdateringer sist —
 uansett security-relevans. Major-bumps gjenkjennes via "major" som eget ord
 i tittel/branch-navn (Dependabot-grupper heter ofte f.eks. "npm-major"/
@@ -28,12 +29,14 @@ godkjenningsrunden og i oppdater/merge-sveipen.
 **State-fil:** `tmp/sheriff-interactive-state.json` (opprettes automatisk —
 `tmp/` er allerede gitignored). For hver PR brukeren har godkjent lagres
 repo, PR-nummer, url, tittel, base-branch, godkjent-tidspunkt, status og
-sist-sjekket-tidspunkt (samt eventuell feilmelding). Statuser:
+sist-sjekket-tidspunkt (samt eventuell feilmelding). Rader for repoer som
+ikke har `managed: true` i repos.yaml blir liggende i filen, men vises og
+behandles ikke. Statuser:
 `approved_pending_update` → `waiting_ci` → `merged`, eller `blocked` (feilet/
 konflikt/rød CI — krever manuell håndtering) og `skipped` (bruker svarte
 nei). `merged`/`blocked`/`skipped` er sluttilstander og røres ikke automatisk
-igjen — slett/rediger raden i state-filen manuelt for å ta en `blocked`-PR
-opp på nytt.
+igjen. Når en ny rapport lages, tømmes state-filen, slik at alle åpne
+bot-PR-er vurderes på nytt.
 
 **1. Godkjenningsrunde (ubegrenset antall PR-er per repo):**
 For hver kandidat i rapporten som IKKE allerede finnes i state-filen (uansett
@@ -94,6 +97,8 @@ status og sist sjekket. Bruk `--status` for å se denne tabellen alene, uten
 from __future__ import annotations
 
 import argparse
+import functools
+import importlib.util
 import json
 import os
 import re
@@ -137,6 +142,10 @@ ADVISORY_PATTERN = re.compile(
 )
 BUMP_PATTERN = re.compile(r"[Bb]umps?\s+(\S+)\s+from\s+([\w.\-]+)\s+to\s+([\w.\-]+)")
 MAJOR_KEYWORD_PATTERN = re.compile(r"\bmajor\b", re.IGNORECASE)
+TITLE_PACKAGE_PATTERN = re.compile(r"\b[Bb]umps?\s+(\S+)\s+from\s")
+UPDATES_PACKAGE_PATTERN = re.compile(r"Updates\s+`([^`]+)`\s+from")
+LINKED_PACKAGE_PATTERN = re.compile(r"\[([^\]]+)\]\(")
+SECURITY_WORD_PATTERN = re.compile(r"(?<![\w.:/-])(security|sikkerhet)(?![\w.:/-])")
 FRESH_PR_FIELDS = (
     "number,title,url,isDraft,mergeable,mergeStateStatus,reviewDecision,"
     "statusCheckRollup,reviews,baseRefName,headRefName,state,mergedAt,closed"
@@ -306,28 +315,38 @@ def managed_repositories(report: dict) -> list[dict]:
     ]
 
 
-def advisory_terms(details: dict) -> set[str]:
-    terms: set[str] = set()
+def vulnerable_dependencies(details: dict) -> set[str]:
+    dependencies: set[str] = set()
     github = details.get("github") or {}
     dependabot = github.get("dependabot") or {}
     if dependabot.get("status") == "ok":
         for alert in dependabot.get("items") or []:
             if not isinstance(alert, dict):
                 continue
-            for key in ("dependency", "cve", "ghsa"):
-                value = alert.get(key)
-                if isinstance(value, str) and value.strip():
-                    terms.add(value.strip().lower())
-    return terms
+            value = alert.get("dependency")
+            if isinstance(value, str) and value.strip():
+                dependencies.add(value.strip().lower())
+    return dependencies
 
 
-def is_security_relevant(pr: dict, terms: set[str]) -> bool:
-    haystack = f"{pr.get('title', '')}\n{pr.get('body', '')}".lower()
-    if ADVISORY_PATTERN.search(haystack):
+def updated_packages(pr: dict) -> set[str]:
+    title = pr.get("title") or ""
+    body = pr.get("body") or ""
+    packages = {match.group(1) for match in TITLE_PACKAGE_PATTERN.finditer(title)}
+    packages.update(match.group(1) for match in UPDATES_PACKAGE_PATTERN.finditer(body))
+    for line in body.splitlines():
+        if line.startswith("Bumps "):
+            packages.update(match.group(1) for match in LINKED_PACKAGE_PATTERN.finditer(line))
+    return {package.lower() for package in packages}
+
+
+def is_security_relevant(pr: dict, vulnerable: set[str]) -> bool:
+    title = (pr.get("title") or "").lower()
+    if ADVISORY_PATTERN.search(f"{title}\n{pr.get('body') or ''}"):
         return True
-    if "security" in haystack or "sikkerhet" in haystack:
+    if SECURITY_WORD_PATTERN.search(title):
         return True
-    return any(term and term in haystack for term in terms)
+    return bool(updated_packages(pr) & vulnerable)
 
 
 def leading_major(version: str) -> str | None:
@@ -376,7 +395,7 @@ def build_candidates(report: dict) -> list[tuple[Candidate, bool, bool]]:
         prs_result = details.get("dependabot_prs") or {}
         if prs_result.get("status") != "ok":
             continue
-        terms = advisory_terms(details)
+        terms = vulnerable_dependencies(details)
         for pr in prs_result.get("items") or []:
             if not is_mergeable_candidate(pr):
                 continue
@@ -511,9 +530,8 @@ def print_header(text: str) -> None:
 
 
 def print_candidate(
-    candidate: Candidate, index: int, total: int, security_relevant: bool, is_major: bool
-) -> None:
-    pr = candidate.pr
+    candidate: Candidate, pr: dict, index: int, total: int, security_relevant: bool, is_major: bool
+) -> str:
     print_header(f"Kandidat {index}/{total}: {candidate.slug}#{candidate.number}")
 
     diff = fetch_pr_diff(candidate)
@@ -527,10 +545,10 @@ def print_candidate(
         priority = f"{YELLOW}major sist{RESET}"
     file_stat, files = summarize_files(pr)
     print_header("Sammendrag")
-    print(f"  {pr.get('title', '-')}  {DIM}→ {candidate.base_ref}{RESET}")
+    print(f"  {pr.get('title', '-')}  {DIM}→ {pr.get('baseRefName') or 'ukjent base'}{RESET}")
     print(
         f"  CI {ci_state} ({len(checks)})  ·  review {review}  ·  "
-        f"merge {pr.get('mergeable', '-')} / {pr.get('mergeStateStatus', '-')}"
+        f"merge {pr.get('mergeable') or '-'} / {pr.get('mergeStateStatus') or '-'}"
     )
     print(f"  {dependency_summary(pr)}  ·  {file_stat}  ·  prioritet {priority}")
     if files:
@@ -814,6 +832,27 @@ def load_state(path: Path) -> dict:
     return data
 
 
+@functools.cache
+def managed_slugs() -> frozenset[str]:
+    spec = importlib.util.spec_from_file_location("nais_vulnerability_report", REPORT_SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return frozenset(
+        f"{repository.get('org', 'navikt')}/{repository['name']}"
+        for repository in module.parse_repositories()
+    )
+
+
+def managed_entries(state: dict) -> dict:
+    slugs = managed_slugs()
+    return {
+        key: entry
+        for key, entry in (state.get("prs") or {}).items()
+        if f"{entry.get('org')}/{entry.get('repo')}" in slugs
+    }
+
+
 def save_state(path: Path, state: dict) -> None:
     """Skriver state-filen atomisk (temp-fil + replace), slik at Ctrl-C aldri
     kan etterlate en delvis skrevet/korrupt state-fil."""
@@ -858,7 +897,7 @@ def candidate_from_state_entry(entry: dict) -> Candidate:
 
 
 def print_status_table(state: dict) -> None:
-    entries: dict = state.get("prs") or {}
+    entries: dict = managed_entries(state)
     if not entries:
         print("\nIngen PR-er i state-filen ennå.")
         return
@@ -948,13 +987,16 @@ def run_approval_round(
         key = state_key(candidate.org, candidate.name, candidate.number)
         processed += 1
         clear_screen()
-        diff = print_candidate(candidate, processed, max(total, processed + len(queue)), security_relevant, is_major)
 
         try:
-            known = fetch_pr_status(candidate)
+            known = {**candidate.pr, **fetch_pr_status(candidate)}
         except RuntimeError as error:
             print(f"  ⚠️  Kunne ikke hente fersk PR-status: {error}")
             known = candidate.pr
+
+        diff = print_candidate(
+            candidate, known, processed, max(total, processed + len(queue)), security_relevant, is_major
+        )
 
         already_approved = known.get("reviewDecision") == "APPROVED"
         if already_approved:
@@ -1214,7 +1256,7 @@ def run_pending_sweep(state: dict, state_path: Path, dry_run: bool) -> None:
     non-major, deretter major-bumps sist (stabilt på nøkkel innenfor hver
     gruppe). Dette er uavhengig av de per-repo-begrensningene som allerede
     gjelder for selve update/merge-handlingene."""
-    entries: dict = state.get("prs") or {}
+    entries: dict = managed_entries(state)
     pending_keys = [key for key, entry in entries.items() if entry.get("status") not in TERMINAL_STATUSES]
     if not pending_keys:
         print("\nIngen ventende PR-er i state-filen å sjekke.")
@@ -1238,7 +1280,7 @@ def run_pending_sweep(state: dict, state_path: Path, dry_run: bool) -> None:
 
 
 def count_pending(state: dict) -> int:
-    entries: dict = state.get("prs") or {}
+    entries: dict = managed_entries(state)
     return sum(1 for entry in entries.values() if entry.get("status") not in TERMINAL_STATUSES)
 
 
@@ -1253,7 +1295,7 @@ def sync_merged_or_closed_blocked_entries(state: dict, state_path: Path, dry_run
     Rader som fortsatt er reelt blokkert/åpne røres ikke her — de håndteres
     av den interaktive `reconcile_blocked_entries` senere i kjøringen.
     Returnerer antall rader som ble oppdatert stille."""
-    entries: dict = state.get("prs") or {}
+    entries: dict = managed_entries(state)
     blocked_keys = [key for key, entry in entries.items() if entry.get("status") == STATUS_BLOCKED]
     updated = 0
     for key in blocked_keys:
@@ -1294,7 +1336,7 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
     en PR som fortsatt er reelt blokkert, eller som nå har endret seg (f.eks.
     bare BEHIND igjen), forblir 'blocked' med mindre brukeren eksplisitt
     velger å fjerne raden i menyen under (kun i interaktiv modus)."""
-    entries: dict = state.get("prs") or {}
+    entries: dict = managed_entries(state)
     blocked_keys = sorted(key for key, entry in entries.items() if entry.get("status") == STATUS_BLOCKED)
     if not blocked_keys:
         return
@@ -1485,7 +1527,7 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
                         break
                     continue
                 if action == "fjern":
-                    del entries[key]
+                    del state["prs"][key]
                     save_state(state_path, state)
                     print(f"    {GREEN}✓ Rad fjernet — {label} tas opp på nytt neste kjøring.{RESET}")
                     break
@@ -1494,7 +1536,16 @@ def reconcile_blocked_entries(state: dict, state_path: Path, interactive: bool) 
             break
 
 
-def generate_fresh_report(output: Path | None) -> Path:
+def clear_previous_choices(state: dict, state_path: Path, dry_run: bool) -> None:
+    removed = len(state.get("prs") or {})
+    state["prs"] = {}
+    if not dry_run:
+        save_state(state_path, state)
+    if removed:
+        print(f"Ny rapport: fjernet {removed} tidligere valg fra {state_path.name}.")
+
+
+def generate_fresh_report(output: Path | None, state: dict, dry_run: bool) -> Path:
     report_path = output or DEFAULT_REPORT
     report_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = report_path.with_name(f"{report_path.name}.tmp.{os.getpid()}")
@@ -1511,6 +1562,7 @@ def generate_fresh_report(output: Path | None) -> Path:
     finally:
         if temp_path.exists():
             temp_path.unlink()
+    clear_previous_choices(state, STATE_PATH, dry_run)
     if result.returncode != 0:
         print(
             "\u26a0\ufe0f  nais-vulnerability-report.py returnerte feilkode "
@@ -1531,18 +1583,18 @@ def report_summary(path: Path) -> tuple[int, int]:
     return age_seconds, candidates
 
 
-def choose_report_source(args: argparse.Namespace) -> Path:
+def choose_report_source(args: argparse.Namespace, state: dict) -> Path:
     if args.report:
         print(f"Bruker lagret rapport: {args.report} (ingen ny rapport genereres).")
         return args.report
     if args.output:
-        return generate_fresh_report(args.output)
+        return generate_fresh_report(args.output, state, args.dry_run)
     if DEFAULT_REPORT.exists():
         try:
             load_report(DEFAULT_REPORT)
         except RuntimeError as error:
             print(f"⚠️  {error}")
-            return generate_fresh_report(None)
+            return generate_fresh_report(None, state, args.dry_run)
     report_choice = choose_cached_report(
         DEFAULT_REPORT,
         "Sheriff-rapport",
@@ -1553,7 +1605,7 @@ def choose_report_source(args: argparse.Namespace) -> Path:
         raise KeyboardInterrupt
     if report_choice == "fortsett":
         return DEFAULT_REPORT
-    return generate_fresh_report(None)
+    return generate_fresh_report(None, state, args.dry_run)
 
 
 def parse_args() -> argparse.Namespace:
@@ -1649,7 +1701,7 @@ def main() -> int:
         if report_path is None:
             # Første runde: velg rapport
             try:
-                report_path = choose_report_source(args)
+                report_path = choose_report_source(args, state)
             except RuntimeError as error:
                 print(f"❌ {error}", file=sys.stderr)
                 return 1
@@ -1676,7 +1728,7 @@ def main() -> int:
                     break
                 if refresh_choice == "ny":
                     try:
-                        report_path = generate_fresh_report(args.output)
+                        report_path = generate_fresh_report(args.output, state, args.dry_run)
                         report = load_report(report_path)
                         candidates = build_candidates(report)
                     except RuntimeError as error:
@@ -1707,7 +1759,7 @@ def main() -> int:
                     continue
                 if candidate_choice == "refresh":
                     try:
-                        report_path = generate_fresh_report(args.output)
+                        report_path = generate_fresh_report(args.output, state, args.dry_run)
                         report = load_report(report_path)
                         candidates = build_candidates(report)
                     except RuntimeError as error:
@@ -1742,8 +1794,8 @@ def main() -> int:
 
         # --- Kort sammendrag før tilbake til hovedmeny ---
         pending_count = count_pending(state)
-        merged_count = sum(1 for e in state.get("prs", {}).values() if e.get("status") == STATUS_MERGED)
-        blocked_count = sum(1 for e in state.get("prs", {}).values() if e.get("status") == STATUS_BLOCKED)
+        merged_count = sum(1 for e in managed_entries(state).values() if e.get("status") == STATUS_MERGED)
+        blocked_count = sum(1 for e in managed_entries(state).values() if e.get("status") == STATUS_BLOCKED)
         print(
             f"\n{BOLD}Sammendrag:{RESET} {GREEN}{merged_count} merget{RESET} · "
             f"{YELLOW}{pending_count} venter{RESET} · {RED}{blocked_count} blokkert{RESET}"

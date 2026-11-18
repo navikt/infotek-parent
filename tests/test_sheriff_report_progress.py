@@ -143,6 +143,79 @@ class SheriffReportProgressTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown"):
             module.select_repositories([{"org": "navikt", "name": "first"}], ["navikt/unknown"])
 
+    def test_nais_summary_counts_only_managed_repository_workloads(self) -> None:
+        report = {
+            "scope": {
+                "repositories": [
+                    {"name": "genie", "namespace": "infotek", "nais_workloads": ["genie-pdfgen"]},
+                    {"name": "brukeroppslag", "namespace": "infotek"},
+                ]
+            },
+            "nais": {
+                "infotek": {
+                    "summary": {
+                        "status": "ok",
+                        "summary": [
+                            {"workload_name": "genie", "critical": 1, "high": 1, "medium": 0, "low": 0},
+                            {"workload_name": "genie-pdfgen", "critical": 2, "high": 0, "medium": 0, "low": 0},
+                            {"workload_name": "brukeroppslag-backend", "critical": 0, "high": 3, "medium": 0, "low": 0},
+                            {"workload_name": "arkivert-app", "critical": 9, "high": 9, "medium": 9, "low": 9},
+                        ],
+                    },
+                    "vulnerabilities": {
+                        "status": "ok",
+                        "items": [{"workload_name": "genie-pdfgen"}, {"workload_name": "arkivert-app"}],
+                    },
+                }
+            },
+        }
+
+        totals = module.managed_nais_totals(report, "infotek", report["nais"]["infotek"])
+
+        self.assertEqual(3, totals["critical"])
+        self.assertEqual(4, totals["high"])
+        self.assertEqual(1, totals["findings"])
+        self.assertEqual(["brukeroppslag-backend", "genie", "genie-pdfgen"], totals["workloads"])
+
+    def test_repository_alert_counts_use_nais_workload_name(self) -> None:
+        report = {
+            "nais": {
+                "infotrygd": {
+                    "summary": {
+                        "status": "ok",
+                        "summary": [
+                            {"workload_name": "hentsaksliste-backend", "critical": 1, "high": 2},
+                            {"workload_name": "hentsaksliste-frontend", "critical": 0, "high": 1},
+                        ],
+                    },
+                    "vulnerabilities": {"status": "ok", "items": []},
+                }
+            }
+        }
+
+        self.assertEqual((1, 3), module.nais_alert_counts(report, {"name": "hentsaksliste", "namespace": "infotrygd"}))
+
+    def test_dependabot_prs_include_status_from_pr_view(self) -> None:
+        listed = {"status": "ok", "items": [{"number": 7, "title": "Bump x", "user": {"login": "dependabot[bot]"}}]}
+        details = (
+            '{"baseRefName": "main", "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", '
+            '"reviewDecision": "APPROVED", "statusCheckRollup": '
+            '[{"name": "build", "status": "COMPLETED", "conclusion": "SUCCESS"}]}'
+        )
+
+        with (
+            patch.object(module, "list_open_pull_requests", return_value=listed),
+            patch.object(module, "run", return_value=(0, details, "")),
+        ):
+            result = module.fetch_dependabot_prs({"org": "navikt", "name": "example"}, [])
+
+        pr = result["items"][0]
+        self.assertEqual("main", pr["baseRefName"])
+        self.assertEqual("MERGEABLE", pr["mergeable"])
+        self.assertEqual("CLEAN", pr["mergeStateStatus"])
+        self.assertEqual("APPROVED", pr["reviewDecision"])
+        self.assertEqual("SUCCESS", pr["statusCheckRollup"][0]["conclusion"])
+
 
 if __name__ == "__main__":
     unittest.main()
